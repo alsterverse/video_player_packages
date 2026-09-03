@@ -28,6 +28,14 @@ extern BOOL FVPDiagEnabled(void);
 /// Switches logging on or off at runtime; see the method channel above.
 extern void FVPDiagSetEnabled(BOOL enabled);
 
+/// Whether a texture player withholds readiness until its decoder has a frame.
+///
+/// On by default. The switch exists so a harness can measure both arms from one
+/// binary: the window being closed is a frame or two wide, and comparing it
+/// across two builds would compare two different timing environments as well.
+extern BOOL FVPFirstFrameGatingEnabled(void);
+extern void FVPFirstFrameGatingSetEnabled(BOOL enabled);
+
 /// Logs one `[VideoDiag/ios]` line, prefixed with the wall clock in
 /// milliseconds so the app's own `[VideoDiag]` lines interleave with these.
 extern void FVPDiagLog(NSString *format, ...) NS_FORMAT_FUNCTION(1, 2);

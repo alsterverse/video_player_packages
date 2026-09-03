@@ -17,6 +17,16 @@ BOOL FVPDiagEnabled(void) {
   return gFVPDiagEnabled;
 }
 
+static BOOL gFVPFirstFrameGating = YES;
+
+BOOL FVPFirstFrameGatingEnabled(void) { return gFVPFirstFrameGating; }
+
+void FVPFirstFrameGatingSetEnabled(BOOL enabled) {
+  gFVPFirstFrameGating = enabled;
+  NSLog(@"[VideoDiag/ios] t=%.3f ev=gating.%@", NSDate.date.timeIntervalSince1970 * 1000.0,
+        enabled ? @"on" : @"off");
+}
+
 void FVPDiagSetEnabled(BOOL enabled) {
   if (gFVPDiagEnabled == enabled) {
     return;

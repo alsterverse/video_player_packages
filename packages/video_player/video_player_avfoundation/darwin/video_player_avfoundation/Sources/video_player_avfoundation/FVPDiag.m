@@ -27,6 +27,18 @@ void FVPFirstFrameGatingSetEnabled(BOOL enabled) {
         enabled ? @"on" : @"off");
 }
 
+static double gFVPPlaceholderHoldMs = 0.0;
+
+double FVPDiagPlaceholderHoldMs(void) { return gFVPPlaceholderHoldMs; }
+
+void FVPDiagSetPlaceholderHoldMs(double milliseconds) {
+  gFVPPlaceholderHoldMs = milliseconds;
+  if (milliseconds > 0) {
+    NSLog(@"[VideoDiag/ios] t=%.3f ev=placeholder.hold ms=%.0f",
+          NSDate.date.timeIntervalSince1970 * 1000.0, milliseconds);
+  }
+}
+
 void FVPDiagSetEnabled(BOOL enabled) {
   if (gFVPDiagEnabled == enabled) {
     return;

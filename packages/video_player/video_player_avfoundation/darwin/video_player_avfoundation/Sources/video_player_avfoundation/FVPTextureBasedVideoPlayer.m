@@ -60,6 +60,8 @@
 // since that loadAsset. Every one of these is a frame of placeholder on screen
 // if the widget has already swapped away from its thumbnail.
 @property(nonatomic, assign) NSUInteger diagPlaceholderServed;
+// Diagnostic: when the artificial hold on the current content expires.
+@property(nonatomic, assign) double diagHoldUntil;
 // Diagnostic: consecutive copyPixelBuffer calls while paused. The selfRefresh
 // loop has no exit when paused with no incoming buffers, so a large count
 // means the display link is stuck on and the raster thread is churning.
@@ -343,6 +345,7 @@
 
     // The frame the previous asset decoded says nothing about this one.
     self.hasDecodableFrame = NO;
+    self.diagHoldUntil = 0;
 
     // Release the old pixel buffer
     CVBufferRelease(self.latestPixelBuffer);
@@ -462,6 +465,25 @@
     self.targetTime = currentTime;
   }
   self.targetTime += duration;
+
+  // Diagnostic: hold whatever the texture currently has for a while once the
+  // engine starts pulling, so the hole lasts long enough for the simulator's
+  // recorder to catch. Timed from the first pull, not from the load: the engine
+  // does not pull until the page is on screen, which here is a second later,
+  // and a hold measured from the load has expired by then.
+  double holdMs = FVPDiagPlaceholderHoldMs();
+  if (holdMs > 0 && self.diagLoadTime > 0) {
+    double now = NSDate.date.timeIntervalSince1970 * 1000.0;
+    if (self.diagHoldUntil == 0) {
+      self.diagHoldUntil = now + holdMs;
+      FVPDiagLog(@"ev=hold.begin tex=%lld ms=%.0f hasBuffer=%d",
+                 self.frameUpdater.textureIdentifier, holdMs,
+                 self.latestPixelBuffer != NULL);
+    }
+    if (now < self.diagHoldUntil) {
+      return CVPixelBufferRetain(self.latestPixelBuffer);
+    }
+  }
 
   CVPixelBufferRef buffer = NULL;
   CMTime outputItemTime = [self.videoOutput itemTimeForHostTime:self.targetTime];

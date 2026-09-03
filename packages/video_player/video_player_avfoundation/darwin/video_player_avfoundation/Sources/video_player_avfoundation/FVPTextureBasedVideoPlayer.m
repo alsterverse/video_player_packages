@@ -47,6 +47,8 @@
 // AVPlayerItemStatusReadyToPlay says the item can play, not that there is a
 // picture, and the page puts the texture on screen the moment Dart is told.
 @property(nonatomic, assign) BOOL hasDecodableFrame;
+// Whether the engine has been handed a decoded frame of the current asset.
+@property(nonatomic, assign) BOOL hasRenderedFirstFrame;
 // Readiness reports that arrived before the decoder had a frame, to be sent
 // once it does (or once the wait times out).
 @property(nonatomic, assign) BOOL initializedPending;
@@ -345,6 +347,7 @@
 
     // The frame the previous asset decoded says nothing about this one.
     self.hasDecodableFrame = NO;
+    self.hasRenderedFirstFrame = NO;
     self.diagHoldUntil = 0;
 
     // Release the old pixel buffer
@@ -362,21 +365,23 @@
                                           (__bridge CFDictionaryRef)pixelBufferAttributes,
                                           &transparentBuffer);
     if (status == kCVReturnSuccess && transparentBuffer) {
-        // Set the buffer to opaque black (BGRA = 0,0,0,255), or to magenta when
-        // diagnosing: on screen, black is indistinguishable from a texture that
-        // has never been drawn, and the two have different causes. Magenta says
-        // the engine composited this placeholder.
-        const BOOL diag = FVPDiagEnabled();
+        // Clear to fully transparent, not to opaque black. This buffer exists to
+        // stop the previous video's last frame showing through a load, and it
+        // does that either way -- but the engine composites it for the frame or
+        // two between the page revealing the texture and the first decoded
+        // frame being pulled, and an opaque buffer paints that as black. A
+        // transparent one lets whatever the page draws behind the texture show
+        // instead.
         CVPixelBufferLockBaseAddress(transparentBuffer, 0);
         uint8_t *baseAddress = (uint8_t *)CVPixelBufferGetBaseAddress(transparentBuffer);
-        baseAddress[0] = diag ? 255 : 0;  // B
-        baseAddress[1] = 0;               // G
-        baseAddress[2] = diag ? 255 : 0;  // R
-        baseAddress[3] = 255;             // A (fully opaque)
+        baseAddress[0] = 0;  // B
+        baseAddress[1] = 0;  // G
+        baseAddress[2] = 0;  // R
+        baseAddress[3] = 0;  // A
         CVPixelBufferUnlockBaseAddress(transparentBuffer, 0);
         self.latestPixelBuffer = transparentBuffer;
-        FVP_DIAG(@"ev=placeholder.set tex=%lld color=%@", self.frameUpdater.textureIdentifier,
-                 diag ? @"magenta" : @"black");
+        FVP_DIAG(@"ev=placeholder.set tex=%lld color=transparent",
+                 self.frameUpdater.textureIdentifier);
     } else {
         self.latestPixelBuffer = NULL;
     }
@@ -498,6 +503,11 @@
 
   if (buffer && self.waitingForFrame) {
     self.waitingForFrame = NO;
+  }
+
+  if (buffer && !self.hasRenderedFirstFrame) {
+    self.hasRenderedFirstFrame = YES;
+    [self.eventListener videoPlayerDidRenderFirstFrame];
   }
 
   if (FVPDiagEnabled() && self.diagLoadTime > 0) {

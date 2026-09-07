@@ -11,6 +11,7 @@
 #import <video_player_avfoundation/FVPEventBridge.h>
 #import <video_player_avfoundation/FVPNativeVideoViewFactory.h>
 #import <video_player_avfoundation/FVPTextureBasedVideoPlayer_Test.h>
+#import <video_player_avfoundation/FVPVideoPlayer_Internal.h>
 #import <video_player_avfoundation/FVPVideoPlayerPlugin_Test.h>
 
 #if TARGET_OS_IOS
@@ -690,6 +691,36 @@
   [self waitForExpectationsWithTimeout:30.0 handler:nil];
   XCTAssertGreaterThan([stubAVPlayer.beforeTolerance intValue], 0);
   XCTAssertGreaterThan([stubAVPlayer.afterTolerance intValue], 0);
+}
+
+- (void)testLoadAssetSupersedesALoadStillInFlight {
+  // A real AVPlayer rather than StubAVPlayer, whose currentItem is frozen to
+  // whatever it was handed -- and which item the player ends up holding is the
+  // whole question here.
+  FVPVideoPlayer *player = [[FVPVideoPlayer alloc]
+      initWithPlayerItem:[self playerItemWithURL:[NSURL URLWithString:@"https://example.com/a.mp4"]]
+               avFactory:[[FVPDefaultAVFactory alloc] init]
+            viewProvider:[[StubViewProvider alloc] init]];
+  player.eventListener = OCMProtocolMock(@protocol(FVPVideoEventListener));
+
+  NSURL *superseded = [NSURL URLWithString:@"https://example.com/superseded.mp4"];
+  NSURL *wanted = [NSURL URLWithString:@"https://example.com/wanted.mp4"];
+
+  // Neither URL resolves, so the first load is still in flight when the second
+  // arrives. That is the state a fast scroll through a feed produces, and it
+  // used to make the second load a silent no-op: the player kept fetching a
+  // video nobody was waiting for any more, while Dart had already published the
+  // second URL and was waiting on readiness that could never come.
+  [player loadAsset:superseded httpHeaders:@{}];
+  XCTAssertTrue(player.loadingNewAsset);
+
+  [player loadAsset:wanted httpHeaders:@{}];
+
+  AVURLAsset *asset = (AVURLAsset *)player.player.currentItem.asset;
+  XCTAssertEqualObjects(asset.URL, wanted,
+                        @"the second load must replace the first, not be dropped");
+  XCTAssertTrue(player.loadingNewAsset,
+                @"a load is still running -- the one that superseded the first");
 }
 
 /// Sanity checks a video player playing the given URL with the actual AVPlayer. This is essentially

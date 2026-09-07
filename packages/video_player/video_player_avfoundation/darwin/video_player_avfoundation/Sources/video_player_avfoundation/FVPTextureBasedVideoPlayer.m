@@ -350,6 +350,17 @@
     self.hasRenderedFirstFrame = NO;
     self.diagHoldUntil = 0;
 
+    // Abandon the previous asset's first-frame wait along with the asset.
+    // Superseding a load in flight leaves that wait's timeout armed, and
+    // nothing else invalidates it: the generation would still match and
+    // hasDecodableFrame has just been cleared, so it would fire against *this*
+    // asset and release a readiness the new item has not reached — reporting
+    // a duration and size for an item that is not ready to play. Any readiness
+    // the superseded asset had already deferred goes with it; the new item
+    // defers its own once it reaches AVPlayerItemStatusReadyToPlay.
+    self.firstFrameWaitGeneration++;
+    self.reloadingEndPending = NO;
+
     // Release the old pixel buffer
     CVBufferRelease(self.latestPixelBuffer);
 

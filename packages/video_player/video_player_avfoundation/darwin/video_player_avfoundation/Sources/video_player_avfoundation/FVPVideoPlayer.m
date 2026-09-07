@@ -321,6 +321,17 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 - (void)reportStatusForPlayerItem:(AVPlayerItem *)item {
   NSAssert(self.eventListener,
            @"reportStatusForPlayerItem was called when the event listener was not set.");
+
+  // An item that -loadAsset: has superseded can still report in. Its observers
+  // are removed as it is swapped out, but AVFoundation delivers status changes
+  // on its own queue, so one already in flight lands after the swap. What
+  // became of that item says nothing about the load running now: its failure
+  // would fail a load that is still fine, and its readiness would finish that
+  // load with the wrong item's duration and dimensions.
+  if (item != self.player.currentItem) {
+    return;
+  }
+
   switch (item.status) {
     case AVPlayerItemStatusFailed:
       // A failed item ends the load as surely as a ready one does, and the flag
@@ -517,10 +528,17 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)loadAsset:(NSURL *)url httpHeaders:(nonnull NSDictionary<NSString *, NSString *> *)headers {
-  if (_loadingNewAsset) {
-    return;
-  }
-
+  // A load already in flight is superseded, not a reason to refuse this one.
+  // Refusing was silent — no error, no event — while Dart had already
+  // published the new dataSource and handed its caller a completer, so the
+  // controller ended up advertising a video it never fetched and the caller
+  // waited out its own timeout. The subclass had by then also blanked the
+  // texture for a load that would never happen.
+  //
+  // Everything below is written against whatever item is current, so it swaps
+  // an unfinished one out as readily as a finished one, which is what
+  // ExoPlayer does on Android. _loadingNewAsset stays set because a load
+  // genuinely is still running — this one.
   _loadingNewAsset = YES;
 
   NSDictionary<NSString *, id> *options = nil;

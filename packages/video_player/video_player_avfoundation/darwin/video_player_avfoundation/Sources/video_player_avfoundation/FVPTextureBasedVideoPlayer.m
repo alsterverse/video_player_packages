@@ -7,6 +7,8 @@
 
 #import "./include/video_player_avfoundation/FVPDiag.h"
 
+#import <os/lock.h>
+
 #define MAXIMUM_FRAME_WAIT_IN_SECONDS 0.2
 #define MAXIMUM_ASSET_LOAD_WAIT_IN_SECONDS 1.0
 
@@ -21,10 +23,6 @@
 @property(nonatomic) FVPFrameUpdater *frameUpdater;
 // The display link that drives frameUpdater.
 @property(nonatomic) NSObject<FVPDisplayLink> *displayLink;
-// The latest buffer obtained from video output. This is stored so that it can be returned from
-// copyPixelBuffer again if nothing new is available, since the engine has undefined behavior when
-// returning NULL.
-@property(nonatomic) CVPixelBufferRef latestPixelBuffer;
 // The time that represents when the next frame displays.
 @property(nonatomic) CFTimeInterval targetTime;
 // Whether to enqueue textureFrameAvailable from copyPixelBuffer.
@@ -75,7 +73,18 @@
 - (void)expectFrameWithTimeout:(NSTimeInterval)timeout;
 @end
 
-@implementation FVPTextureBasedVideoPlayer
+@implementation FVPTextureBasedVideoPlayer {
+  // The latest buffer obtained from video output. This is stored so that it can be returned from
+  // copyPixelBuffer again if nothing new is available, since the engine has undefined behavior when
+  // returning NULL.
+  //
+  // Upstream only ever touches it on the raster thread, from copyPixelBuffer. The placeholder that
+  // -loadAsset: installs replaces it from the main thread as well, so every access goes through
+  // _latestPixelBufferLock: without it the raster thread could retain a buffer main had just
+  // released, or both could release the same one, and the engine's later CFRelease traps.
+  CVPixelBufferRef _latestPixelBuffer;
+  os_unfair_lock _latestPixelBufferLock;
+}
 
 - (instancetype)initWithPlayerItem:(AVPlayerItem *)item
                       frameUpdater:(FVPFrameUpdater *)frameUpdater
@@ -384,9 +393,6 @@
     self.firstFrameWaitGeneration++;
     self.reloadingEndPending = NO;
 
-    // Release the old pixel buffer
-    CVBufferRelease(self.latestPixelBuffer);
-
     // Create a transparent pixel buffer to avoid showing stale frames from the previous video
     CVPixelBufferRef transparentBuffer = NULL;
     NSDictionary *pixelBufferAttributes = @{
@@ -413,11 +419,11 @@
         baseAddress[2] = 0;  // R
         baseAddress[3] = 0;  // A
         CVPixelBufferUnlockBaseAddress(transparentBuffer, 0);
-        self.latestPixelBuffer = transparentBuffer;
+        [self replaceLatestPixelBuffer:transparentBuffer];
         FVP_DIAG(@"ev=placeholder.set tex=%lld color=transparent",
                  self.frameUpdater.textureIdentifier);
     } else {
-        self.latestPixelBuffer = NULL;
+        [self replaceLatestPixelBuffer:NULL];
     }
 
     // Reset timing state to avoid drift issues with the new video
@@ -465,6 +471,33 @@
   // here instead. See https://github.com/flutter/flutter/issues/181387.
   _displayLink.running = NO;
   _displayLink = nil;
+}
+
+#pragma mark - Latest pixel buffer
+
+/// Stores buffer as the latest, taking over the caller's owned reference, and
+/// releases the one it replaces.
+- (void)replaceLatestPixelBuffer:(CVPixelBufferRef)buffer {
+  os_unfair_lock_lock(&_latestPixelBufferLock);
+  CVPixelBufferRef previous = _latestPixelBuffer;
+  _latestPixelBuffer = buffer;
+  os_unfair_lock_unlock(&_latestPixelBufferLock);
+  CVBufferRelease(previous);
+}
+
+/// Returns an owned reference to the latest buffer, as the engine expects.
+- (CVPixelBufferRef)copyLatestPixelBuffer {
+  os_unfair_lock_lock(&_latestPixelBufferLock);
+  CVPixelBufferRef buffer = CVBufferRetain(_latestPixelBuffer);
+  os_unfair_lock_unlock(&_latestPixelBufferLock);
+  return buffer;
+}
+
+- (BOOL)hasLatestPixelBuffer {
+  os_unfair_lock_lock(&_latestPixelBufferLock);
+  BOOL hasBuffer = _latestPixelBuffer != NULL;
+  os_unfair_lock_unlock(&_latestPixelBufferLock);
+  return hasBuffer;
 }
 
 #pragma mark - FlutterTexture
@@ -518,10 +551,10 @@
       self.diagHoldUntil = now + holdMs;
       FVPDiagLog(@"ev=hold.begin tex=%lld ms=%.0f hasBuffer=%d",
                  self.frameUpdater.textureIdentifier, holdMs,
-                 self.latestPixelBuffer != NULL);
+                 [self hasLatestPixelBuffer]);
     }
     if (now < self.diagHoldUntil) {
-      return CVPixelBufferRetain(self.latestPixelBuffer);
+      return [self copyLatestPixelBuffer];
     }
   }
 
@@ -530,9 +563,8 @@
   if ([self.videoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
     buffer = [self.videoOutput copyPixelBufferForItemTime:outputItemTime itemTimeForDisplay:NULL];
     if (buffer) {
-      // Balance the owned reference from copyPixelBufferForItemTime.
-      CVBufferRelease(self.latestPixelBuffer);
-      self.latestPixelBuffer = buffer;
+      // Takes over the owned reference from copyPixelBufferForItemTime.
+      [self replaceLatestPixelBuffer:buffer];
     }
   }
 
@@ -612,7 +644,7 @@
 
   // Add a retain for the engine, since the copyPixelBufferForItemTime has already been accounted
   // for, and the engine expects an owning reference.
-  return CVBufferRetain(self.latestPixelBuffer);
+  return [self copyLatestPixelBuffer];
 }
 
 - (void)onTextureUnregistered:(NSObject<FlutterTexture> *)texture {

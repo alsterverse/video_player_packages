@@ -628,8 +628,14 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       if (!_isDisposed) {
         _isDisposed = true;
         _timer?.cancel();
+        // Forget the id before the platform does. A VideoPlayer still in the
+        // tree reads it on its next build, and a disposed id makes the
+        // platform throw "No active player with ID"; an uninitialized one
+        // renders nothing.
+        final int playerId = _playerId;
+        _playerId = kUninitializedPlayerId;
         await _eventSubscription?.cancel();
-        await _videoPlayerPlatform.dispose(_playerId);
+        await _videoPlayerPlatform.dispose(playerId);
       }
       _lifeCycleObserver?.dispose();
     }

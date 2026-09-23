@@ -231,6 +231,15 @@
 /// Sends whatever readiness was held back, and makes sure the display link is
 /// running so the frame reaches the engine as soon as the texture is on screen.
 - (void)releaseDeferredReadiness {
+  // Both releases assert that the current item is ready to play, but the
+  // triggers are not tied to one: a media-data callback queued for an item
+  // -loadAsset: has since swapped out still lands here, and the new item may
+  // not be ready yet. Leave the readiness held; the current item releases it
+  // once it has a frame of its own.
+  if (self.player.currentItem.status != AVPlayerItemStatusReadyToPlay) {
+    FVP_DIAG(@"ev=ready.release.skipped tex=%lld", self.frameUpdater.textureIdentifier);
+    return;
+  }
   self.hasDecodableFrame = YES;
 
   if (self.initializedPending) {
@@ -242,6 +251,14 @@
     [super finishLoadingNewAsset];
   }
   [self expectFrame];
+}
+
+/// Invalidates a pending first-frame timeout and drops any readiness it holds,
+/// for when the item it was held for has been discarded.
+- (void)abandonFirstFrameWait {
+  self.firstFrameWaitGeneration++;
+  self.initializedPending = NO;
+  self.reloadingEndPending = NO;
 }
 
 - (void)reportInitialized {
@@ -330,6 +347,12 @@
 
 - (void)stopWithError:(FlutterError *_Nullable *_Nonnull)error {
   [super stopWithError:error];
+
+  // Stopping drops the item, so there is nothing left for held-back readiness
+  // to report on. The pool stops players the moment they scroll away, often
+  // inside the first-frame wait, and a timeout left armed would then report
+  // an item that is gone — an assertion failure in -reportInitialized.
+  [self abandonFirstFrameWait];
 
   // The base implementation clears isPlaying and drops the player item, but never recomputes the
   // display link, so a player that was playing keeps its link running (and pumping
@@ -432,6 +455,7 @@
 
 - (void)disposeWithError:(FlutterError *_Nullable *_Nonnull)error {
   [super disposeWithError:error];
+  [self abandonFirstFrameWait];
 
   [self.playerLayer removeFromSuperlayer];
 

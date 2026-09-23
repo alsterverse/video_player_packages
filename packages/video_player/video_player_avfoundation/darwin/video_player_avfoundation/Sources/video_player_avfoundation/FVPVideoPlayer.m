@@ -286,6 +286,28 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
                       ofObject:(id)object
                         change:(NSDictionary *)change
                        context:(void *)context {
+  // KVO fires on whichever thread changed the property, and AVFoundation
+  // changes item status on its own queues. Handled there, a status change
+  // races -loadAsset: on main: the "is this still the current item" check can
+  // pass just before main swaps the item, and the stale item's readiness then
+  // arms a first-frame wait that main no longer invalidates. When that wait
+  // times out it finishes the new load against an item that is not ready,
+  // tripping the assertion in -finishLoadingNewAsset. Events sent from here
+  // also reach Flutter off the platform thread. Serialise everything on main,
+  // where every check below is re-evaluated against the item current by then.
+  if (!NSThread.isMainThread) {
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      typeof(self) strongSelf = weakSelf;
+      // A player disposed while the hop was queued has no listener left.
+      if (!strongSelf || strongSelf->_disposed) {
+        return;
+      }
+      [strongSelf observeValueForKeyPath:path ofObject:object change:change context:context];
+    });
+    return;
+  }
+
   if (context == timeRangeContext) {
     NSMutableArray<NSArray<NSNumber *> *> *values = [[NSMutableArray alloc] init];
     for (NSValue *rangeValue in [object loadedTimeRanges]) {

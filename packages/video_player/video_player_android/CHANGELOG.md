@@ -1,3 +1,9 @@
+## NEXT
+
+* Migrates to Built-in Kotlin to support AGP 9 (mirrors upstream
+  flutter/packages#11798).
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
 ## 2.9.2
 
 * Bumps kotlin_version to 2.3.0.

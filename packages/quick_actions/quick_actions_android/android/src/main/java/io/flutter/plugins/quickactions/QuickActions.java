@@ -11,25 +11,25 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
+import android.util.Log;
 import androidx.annotation.ChecksSdkIntAtLeast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
-import io.flutter.plugins.quickactions.Messages.AndroidQuickActionsApi;
-import io.flutter.plugins.quickactions.Messages.FlutterError;
-import io.flutter.plugins.quickactions.Messages.ShortcutItemMessage;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import kotlin.Result;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
+import org.jetbrains.annotations.NotNull;
 
 final class QuickActions implements AndroidQuickActionsApi {
+  private static final String TAG = "QuickActionsAndroid";
   static final String EXTRA_ACTION = "some unique action key";
 
   private final Context context;
@@ -48,7 +48,8 @@ final class QuickActions implements AndroidQuickActionsApi {
   }
 
   // Returns true when running on a version of Android that supports quick actions.
-  // When this returns false, methods should silently no-op, per the documented behavior (see README.md).
+  // When this returns false, methods should silently no-op, per the documented behavior (see
+  // README.md).
   @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.N_MR1)
   boolean isVersionAllowed() {
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1;
@@ -56,13 +57,13 @@ final class QuickActions implements AndroidQuickActionsApi {
 
   @Override
   public void setShortcutItems(
-      @NonNull List<ShortcutItemMessage> itemsList, @NonNull Messages.VoidResult result) {
+      @NonNull List<ShortcutItemMessage> itemsList,
+      @NotNull Function1<? super @NotNull Result<@NotNull Unit>, @NotNull Unit> callback) {
     if (!isVersionAllowed()) {
-      result.success();
+      ResultUtilsKt.completeWithUnitSuccess(callback);
       return;
     }
     List<ShortcutInfoCompat> shortcuts = shortcutItemMessageToShortcutInfo(itemsList);
-    Executor uiThreadExecutor = new UiThreadExecutor();
     ThreadPoolExecutor executor =
         new ThreadPoolExecutor(0, 1, 1, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
 
@@ -76,21 +77,16 @@ final class QuickActions implements AndroidQuickActionsApi {
             // Leave dynamicShortcutsSet as false
           }
 
-          final boolean didSucceed = dynamicShortcutsSet;
-
-          // TODO(camsim99): Investigate removing all of the executor logic in favor of background channels.
-          uiThreadExecutor.execute(
-              () -> {
-                if (didSucceed) {
-                  result.success();
-                } else {
-                  result.error(
-                      new FlutterError(
-                          "quick_action_setshortcutitems_failure",
-                          "Exception thrown when setting dynamic shortcuts",
-                          null));
-                }
-              });
+          if (dynamicShortcutsSet) {
+            ResultUtilsKt.completeWithUnitSuccess(callback);
+          } else {
+            ResultUtilsKt.completeWithError(
+                callback,
+                new FlutterError(
+                    "quick_action_setshortcutitems_failure",
+                    "Exception thrown when setting dynamic shortcuts",
+                    null));
+          }
         });
   }
 
@@ -108,10 +104,12 @@ final class QuickActions implements AndroidQuickActionsApi {
       return null;
     }
     if (activity == null) {
-      throw new FlutterError(
-          "quick_action_getlaunchaction_no_activity",
-          "There is no activity available when launching action",
-          null);
+      // The engine can run without an attached activity, for instance when it is cached and warmed
+      // up by a background service. Nothing launched the app in that case, so there is no launch
+      // action to report. Any action that arrives later is reported through the plugin's
+      // onNewIntent listener once an activity attaches.
+      Log.d(TAG, "There is no activity available when getting the launch action.");
+      return null;
     }
     final Intent intent = activity.getIntent();
     final String launchAction = intent.getStringExtra(EXTRA_ACTION);
@@ -176,14 +174,5 @@ final class QuickActions implements AndroidQuickActionsApi {
         .putExtra(EXTRA_ACTION, type)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-  }
-
-  static class UiThreadExecutor implements Executor {
-    private final Handler handler = new Handler(Looper.getMainLooper());
-
-    @Override
-    public void execute(Runnable command) {
-      handler.post(command);
-    }
   }
 }

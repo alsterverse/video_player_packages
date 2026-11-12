@@ -7,20 +7,22 @@ import 'package:file/file.dart';
 import 'package:flutter_plugin_tools/src/common/core.dart';
 import 'package:flutter_plugin_tools/src/update_excerpts_command.dart';
 import 'package:git/git.dart';
+import 'package:platform/platform.dart';
 import 'package:test/test.dart';
 
 import 'mocks.dart';
 import 'util.dart';
 
-void runAllTests(MockPlatform platform) {
+void runAllTests(NativePlatform platform) {
   late Directory packagesDir;
   late CommandRunner<void> runner;
 
   setUp(() {
     final RecordingProcessRunner processRunner;
     final GitDir gitDir;
-    (:packagesDir, :processRunner, gitProcessRunner: _, :gitDir) =
-        configureBaseCommandMocks(platform: platform);
+    (:packagesDir, :processRunner, gitProcessRunner: _, :gitDir) = configureBaseCommandMocks(
+      platform: platform,
+    );
     runner = CommandRunner<void>('', '')
       ..addCommand(
         UpdateExcerptsCommand(
@@ -39,10 +41,7 @@ void runAllTests(MockPlatform platform) {
     required String filename,
     bool failOnChange = false,
   }) async {
-    final RepositoryPackage package = createFakePackage(
-      'a_package',
-      packagesDir,
-    );
+    final RepositoryPackage package = createFakePackage('a_package', packagesDir);
     package.readmeFile.writeAsStringSync(before);
     package.directory.childFile(filename).writeAsStringSync(source);
     Object? errorObject;
@@ -78,19 +77,11 @@ A B C
 // #enddocregion SomeSection
 FAIL
 ''';
-    await testInjection(
-      before: readme,
-      source: source,
-      after: readme,
-      filename: filename,
-    );
+    await testInjection(before: readme, source: source, after: readme, filename: filename);
   });
 
   test('fails if example injection fails', () async {
-    final RepositoryPackage package = createFakePackage(
-      'a_package',
-      packagesDir,
-    );
+    final RepositoryPackage package = createFakePackage('a_package', packagesDir);
     package.readmeFile.writeAsStringSync('''
 Example:
 
@@ -121,9 +112,7 @@ FAIL
       output,
       containsAllInOrder(<Matcher>[
         contains('Injecting excerpts failed:'),
-        contains(
-          'main.dart: did not find a "// #docregion UnknownSection" pragma',
-        ),
+        contains('main.dart: did not find a "// #docregion UnknownSection" pragma'),
       ]),
     );
   });
@@ -159,19 +148,11 @@ A B C
 ```
 ''';
 
-    await testInjection(
-      before: before,
-      source: source,
-      after: after,
-      filename: filename,
-    );
+    await testInjection(before: before, source: source, after: after, filename: filename);
   });
 
   test('fails if READMEs are changed with --fail-on-change', () async {
-    final RepositoryPackage package = createFakePackage(
-      'a_package',
-      packagesDir,
-    );
+    final RepositoryPackage package = createFakePackage('a_package', packagesDir);
     package.readmeFile.writeAsStringSync('''
 Example:
 
@@ -198,19 +179,14 @@ FAIL
     );
 
     expect(commandError, isA<ToolExit>());
-    expect(
-      output.join('\n'),
-      contains('The following files have out of date excerpts:'),
-    );
+    expect(output.join('\n'), contains('The following files have out of date excerpts:'));
   });
 
-  test(
-    'does not fail if READMEs are not changed with --fail-on-change',
-    () async {
-      const filename = 'main.dart';
+  test('does not fail if READMEs are not changed with --fail-on-change', () async {
+    const filename = 'main.dart';
 
-      const readme =
-          '''
+    const readme =
+        '''
 Example:
 
 <?code-excerpt "$filename (aa)"?>
@@ -223,7 +199,7 @@ B
 ```
 ''';
 
-      const source = '''
+    const source = '''
 // #docregion aa
 A
 // #enddocregion aa
@@ -232,15 +208,14 @@ B
 // #enddocregion bb
 ''';
 
-      await testInjection(
-        before: readme,
-        source: source,
-        after: readme,
-        filename: filename,
-        failOnChange: true,
-      );
-    },
-  );
+    await testInjection(
+      before: readme,
+      source: source,
+      after: readme,
+      filename: filename,
+      failOnChange: true,
+    );
+  });
 
   test('indents the plaster', () async {
     const filename = 'main.dart';
@@ -275,12 +250,7 @@ B
 ```
 ''';
 
-    await testInjection(
-      before: before,
-      source: source,
-      after: after,
-      filename: filename,
-    );
+    await testInjection(before: before, source: source, after: after, filename: filename);
   });
 
   test('does not unindent blocks if plaster will not unindent', () async {
@@ -316,12 +286,7 @@ Example:
 ```
 ''';
 
-    await testInjection(
-      before: before,
-      source: source,
-      after: after,
-      filename: filename,
-    );
+    await testInjection(before: before, source: source, after: after, filename: filename);
   });
 
   test('unindents blocks', () async {
@@ -357,12 +322,7 @@ A
 ```
 ''';
 
-    await testInjection(
-      before: before,
-      source: source,
-      after: after,
-      filename: filename,
-    );
+    await testInjection(before: before, source: source, after: after, filename: filename);
   });
 
   test('unindents blocks and plaster', () async {
@@ -398,19 +358,11 @@ A
 ```
 ''';
 
-    await testInjection(
-      before: before,
-      source: source,
-      after: after,
-      filename: filename,
-    );
+    await testInjection(before: before, source: source, after: after, filename: filename);
   });
 
   test('relative path bases', () async {
-    final RepositoryPackage package = createFakePackage(
-      'a_package',
-      packagesDir,
-    );
+    final RepositoryPackage package = createFakePackage('a_package', packagesDir);
     package.readmeFile.writeAsStringSync('''
 <?code-excerpt "main.dart (a)"?>
 ```dart
@@ -445,18 +397,12 @@ X
 // #enddocregion a
 ''');
     package.directory.childDirectory('test').createSync();
-    package.directory
-        .childDirectory('test')
-        .childFile('main.dart')
-        .writeAsStringSync('''
+    package.directory.childDirectory('test').childFile('main.dart').writeAsStringSync('''
 // #docregion a
 Y
 // #enddocregion a
 ''');
-    package.directory
-        .childDirectory('test')
-        .childDirectory('test')
-        .createSync();
+    package.directory.childDirectory('test').childDirectory('test').createSync();
     package.directory
         .childDirectory('test')
         .childDirectory('test')
@@ -506,10 +452,7 @@ Y
   });
 
   test('logs snippets checked', () async {
-    final RepositoryPackage package = createFakePackage(
-      'a_package',
-      packagesDir,
-    );
+    final RepositoryPackage package = createFakePackage('a_package', packagesDir);
     package.readmeFile.writeAsStringSync('''
 Example:
 
@@ -526,16 +469,9 @@ A B C
 FAIL
 ''');
 
-    final List<String> output = await runCapturingPrint(runner, <String>[
-      'update-excerpts',
-    ]);
+    final List<String> output = await runCapturingPrint(runner, <String>['update-excerpts']);
 
-    expect(
-      output,
-      containsAllInOrder(<Matcher>[
-        contains('Checked 1 snippet(s) in README.md.'),
-      ]),
-    );
+    expect(output, containsAllInOrder(<Matcher>[contains('Checked 1 snippet(s) in README.md.')]));
   });
 
   group('File type tests', () {
@@ -545,25 +481,14 @@ FAIL
       <String, String>{'filename': 'main.dart'},
       <String, String>{'filename': 'main.js'},
       <String, String>{'filename': 'main.kt', 'language': 'kotlin'},
+      <String, String>{'filename': 'main.kts', 'language': 'kotlin'},
       <String, String>{'filename': 'main.java'},
       <String, String>{'filename': 'main.gradle', 'language': 'groovy'},
       <String, String>{'filename': 'main.m', 'language': 'objectivec'},
       <String, String>{'filename': 'main.swift'},
-      <String, String>{
-        'filename': 'main.css',
-        'prefix': '/* ',
-        'suffix': ' */',
-      },
-      <String, String>{
-        'filename': 'main.html',
-        'prefix': '<!--',
-        'suffix': '-->',
-      },
-      <String, String>{
-        'filename': 'main.xml',
-        'prefix': '<!--',
-        'suffix': '-->',
-      },
+      <String, String>{'filename': 'main.css', 'prefix': '/* ', 'suffix': ' */'},
+      <String, String>{'filename': 'main.html', 'prefix': '<!--', 'suffix': '-->'},
+      <String, String>{'filename': 'main.xml', 'prefix': '<!--', 'suffix': '-->'},
       <String, String>{'filename': 'main.yaml', 'prefix': '# '},
       <String, String>{'filename': 'main.sh', 'prefix': '# '},
       <String, String>{'filename': 'main', 'language': 'txt', 'prefix': ''},
@@ -605,12 +530,7 @@ A B C
 ```
 ''';
 
-        await testInjection(
-          before: before,
-          source: source,
-          after: after,
-          filename: filename,
-        );
+        await testInjection(before: before, source: source, after: after, filename: filename);
       });
     }
 
@@ -619,6 +539,6 @@ A B C
 }
 
 void main() {
-  runAllTests(MockPlatform());
-  runAllTests(MockPlatform(isWindows: true));
+  runAllTests(createMockPlatform());
+  runAllTests(createMockPlatform(isWindows: true));
 }

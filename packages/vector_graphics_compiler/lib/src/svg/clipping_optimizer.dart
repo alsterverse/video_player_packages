@@ -23,8 +23,7 @@ class _Result {
 /// there are multiple path nodes in ResolvedClipNode.clips
 /// or cases where the intersection of the clip and the path
 /// results in Path.commands being empty.
-class ClippingOptimizer extends Visitor<_Result, Node>
-    with ErrorOnUnResolvedNode<_Result, Node> {
+class ClippingOptimizer extends Visitor<_Result, Node> with ErrorOnUnResolvedNode<_Result, Node> {
   ///List of clips to apply.
   final List<Path> clipsToApply = <Path>[];
 
@@ -121,6 +120,7 @@ class ClippingOptimizer extends Visitor<_Result, Node>
       child: childResult.node,
       mask: maskNode.mask,
       blendMode: maskNode.blendMode,
+      maskType: maskNode.maskType,
     );
     final result = _Result(newMaskNode);
     result.children.add(childResult.node);
@@ -147,18 +147,12 @@ class ClippingOptimizer extends Visitor<_Result, Node>
       if (childResult.deleteClipNode) {
         result = _Result(childResult.node);
       } else {
-        final newClipNode = ResolvedClipNode(
-          child: childResult.node,
-          clips: clipNode.clips,
-        );
+        final newClipNode = ResolvedClipNode(child: childResult.node, clips: clipNode.clips);
         result = _Result(newClipNode);
       }
     } else {
       final _Result childResult = clipNode.child.accept(this, clipNode);
-      final newClipNode = ResolvedClipNode(
-        child: childResult.node,
-        clips: clipNode.clips,
-      );
+      final newClipNode = ResolvedClipNode(child: childResult.node, clips: clipNode.clips);
       result = _Result(newClipNode);
     }
     return result;
@@ -168,15 +162,17 @@ class ClippingOptimizer extends Visitor<_Result, Node>
   // ignore: library_private_types_in_public_api
   _Result visitResolvedPath(ResolvedPathNode pathNode, Node data) {
     var result = _Result(pathNode);
-    var hasStrokeWidth = false;
+    var cannotOptimize = false;
     var deleteClipNode = true;
 
-    if (pathNode.paint.stroke?.width != null) {
-      hasStrokeWidth = true;
+    if (pathNode.paint.stroke?.width != null ||
+        pathNode.paint.filterBlurX != null ||
+        pathNode.paint.filterBlurY != null) {
+      cannotOptimize = true;
       result.deleteClipNode = false;
     }
 
-    if (clipsToApply.isNotEmpty && !hasStrokeWidth) {
+    if (clipsToApply.isNotEmpty && !cannotOptimize) {
       var newPathNode = pathNode;
       for (final Path clipPath in clipsToApply) {
         final ResolvedPathNode intersection = applyClip(newPathNode, clipPath);
@@ -204,10 +200,7 @@ class ClippingOptimizer extends Visitor<_Result, Node>
 
   @override
   // ignore: library_private_types_in_public_api
-  _Result visitResolvedVerticesNode(
-    ResolvedVerticesNode verticesNode,
-    Node data,
-  ) {
+  _Result visitResolvedVerticesNode(ResolvedVerticesNode verticesNode, Node data) {
     final result = _Result(verticesNode);
     return result;
   }
@@ -215,11 +208,29 @@ class ClippingOptimizer extends Visitor<_Result, Node>
   @override
   // ignore: library_private_types_in_public_api
   _Result visitSaveLayerNode(SaveLayerNode layerNode, Node data) {
+    final bool hasLayerBlur =
+        layerNode.paint.filterBlurX != null || layerNode.paint.filterBlurY != null;
+    final List<Path>? savedClips = hasLayerBlur && clipsToApply.isNotEmpty
+        ? List<Path>.of(clipsToApply)
+        : null;
+    if (savedClips != null) {
+      clipsToApply.clear();
+    }
+
     final newChildren = <Node>[];
+    bool deleteClipNode = !hasLayerBlur;
     for (final Node child in layerNode.children) {
       final _Result childResult = child.accept(this, layerNode);
       newChildren.add(childResult.node);
+      if (!childResult.deleteClipNode) {
+        deleteClipNode = false;
+      }
     }
+
+    if (savedClips != null) {
+      clipsToApply.addAll(savedClips);
+    }
+
     final newLayerNode = SaveLayerNode(
       layerNode.attributes,
       paint: layerNode.paint,
@@ -229,6 +240,7 @@ class ClippingOptimizer extends Visitor<_Result, Node>
     final result = _Result(newLayerNode);
     result.children = newChildren;
     result.childCount = newChildren.length;
+    result.deleteClipNode = deleteClipNode;
     return result;
   }
 
@@ -257,10 +269,7 @@ class ClippingOptimizer extends Visitor<_Result, Node>
 
   @override
   // ignore: library_private_types_in_public_api
-  _Result visitResolvedImageNode(
-    ResolvedImageNode resolvedImageNode,
-    Node data,
-  ) {
+  _Result visitResolvedImageNode(ResolvedImageNode resolvedImageNode, Node data) {
     final result = _Result(resolvedImageNode);
     result.deleteClipNode = false;
     return result;
@@ -274,14 +283,10 @@ class ClippingOptimizer extends Visitor<_Result, Node>
 
   @override
   // ignore: library_private_types_in_public_api
-  _Result visitResolvedTextPositionNode(
-    ResolvedTextPositionNode textPositionNode,
-    void data,
-  ) {
+  _Result visitResolvedTextPositionNode(ResolvedTextPositionNode textPositionNode, void data) {
     return _Result(
       ResolvedTextPositionNode(textPositionNode.textPosition, <Node>[
-        for (final Node child in textPositionNode.children)
-          child.accept(this, data).node,
+        for (final Node child in textPositionNode.children) child.accept(this, data).node,
       ]),
     );
   }

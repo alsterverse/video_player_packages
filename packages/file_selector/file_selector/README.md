@@ -8,7 +8,7 @@ A Flutter plugin that manages files and interactions with file dialogs.
 
 |             | Android | iOS     | Linux | macOS  | Web | Windows     |
 |-------------|---------|---------|-------|--------|-----|-------------|
-| **Support** | SDK 24+ | iOS 13+ | Any   | 10.15+ | Any | Windows 10+ |
+| **Support** | SDK 24+ | iOS 15+ | Any   | 12+    | Any | Windows 10+ |
 
 ## Setup
 
@@ -40,9 +40,7 @@ const typeGroup = XTypeGroup(
   extensions: <String>['jpg', 'png'],
   uniformTypeIdentifiers: <String>['public.jpeg', 'public.png'],
 );
-final XFile? file = await openFile(
-  acceptedTypeGroups: <XTypeGroup>[typeGroup],
-);
+final XFile? file = await openFile(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
 ```
 
 #### Open multiple files at once
@@ -69,9 +67,7 @@ final List<XFile> files = await openFiles(
 <?code-excerpt "readme_standalone_excerpts.dart (Save)"?>
 ```dart
 const fileName = 'suggested_name.txt';
-final FileSaveLocation? result = await getSaveLocation(
-  suggestedName: fileName,
-);
+final FileSaveLocation? result = await getSaveLocation(suggestedName: fileName);
 if (result == null) {
   // Operation was canceled by the user.
   return;
@@ -79,11 +75,7 @@ if (result == null) {
 
 final fileData = Uint8List.fromList('Hello World!'.codeUnits);
 const mimeType = 'text/plain';
-final textFile = XFile.fromData(
-  fileData,
-  mimeType: mimeType,
-  name: fileName,
-);
+final textFile = XFile.fromData(fileData, mimeType: mimeType, name: fileName);
 await textFile.saveTo(result.path);
 ```
 
@@ -105,14 +97,12 @@ Different platforms support different type group filter options. To avoid
 filters that cover all platforms you are targeting, or that you conditionally
 pass different `XTypeGroup`s based on `Platform`.
 
-|                          | Andoid | iOS | Linux | macOS  | Web | Windows     |
-|--------------------------|--------|-----|-------|--------|-----|-------------|
-| `extensions`             | ✔️      |     | ✔️     | ✔️      | ✔️   | ✔️           |
-| `mimeTypes`              | ✔️      |     | ✔️     | ✔️†     | ✔️   |             |
-| `uniformTypeIdentifiers` |        | ✔️   |       | ✔️      |     |             |
-| `webWildCards`           |        |     |       |        | ✔️   |             |
-
-† `mimeTypes` are not supported on version of macOS earlier than 11 (Big Sur).
+|                          | Android | iOS | Linux | macOS | Web | Windows |
+|--------------------------|---------|-----|-------|-------|-----|---------|
+| `extensions`             | ✔️      |     | ✔️    | ✔️    | ✔️  | ✔️      |
+| `mimeTypes`              | ✔️      |     | ✔️    | ✔️    | ✔️  |         |
+| `uniformTypeIdentifiers` |         | ✔️  |       | ✔️    |     |         |
+| `webWildCards`           |         |     |       |       | ✔️  |         |
 
 ### Features supported by platform
 

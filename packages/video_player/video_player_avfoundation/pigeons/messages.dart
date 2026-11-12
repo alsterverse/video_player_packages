@@ -2,19 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Contains plugin-class-level APIs.
+
 import 'package:pigeon/pigeon.dart';
 
 @ConfigurePigeon(
   PigeonOptions(
     dartOut: 'lib/src/messages.g.dart',
-    objcHeaderOut:
-        'darwin/video_player_avfoundation/Sources/video_player_avfoundation/include/video_player_avfoundation/messages.g.h',
-    objcSourceOut:
-        'darwin/video_player_avfoundation/Sources/video_player_avfoundation/messages.g.m',
-    objcOptions: ObjcOptions(
-      prefix: 'FVP',
-      headerIncludePath: './include/video_player_avfoundation/messages.g.h',
-    ),
+    swiftOut: 'darwin/video_player_avfoundation/Sources/video_player_avfoundation/Messages.g.swift',
     copyrightHeader: 'pigeons/copyright.txt',
   ),
 )
@@ -48,40 +43,129 @@ class TexturePlayerIds {
   final int textureId;
 }
 
+/// Raw audio track data from AVMediaSelectionOption (for HLS streams).
+class MediaSelectionAudioTrackData {
+  MediaSelectionAudioTrackData({
+    required this.index,
+    this.displayName,
+    this.languageCode,
+    required this.isSelected,
+    this.commonMetadataTitle,
+  });
+
+  int index;
+  String? displayName;
+  String? languageCode;
+  bool isSelected;
+  String? commonMetadataTitle;
+}
+
+/// Video track data from AVAssetVariant (HLS variants) for iOS 15+.
+class MediaSelectionVideoTrackData {
+  MediaSelectionVideoTrackData({
+    required this.variantIndex,
+    this.label,
+    this.bitrate,
+    this.width,
+    this.height,
+    this.frameRate,
+    this.codec,
+    required this.isSelected,
+  });
+
+  int variantIndex;
+  String? label;
+  int? bitrate;
+  int? width;
+  int? height;
+  double? frameRate;
+  String? codec;
+  bool isSelected;
+}
+
+/// Video track data from AVAssetTrack (regular videos).
+class AssetVideoTrackData {
+  AssetVideoTrackData({
+    required this.trackId,
+    this.label,
+    this.width,
+    this.height,
+    this.frameRate,
+    this.codec,
+    required this.isSelected,
+  });
+
+  int trackId;
+  String? label;
+  int? width;
+  int? height;
+  double? frameRate;
+  String? codec;
+  bool isSelected;
+}
+
+/// Container for video track data from iOS.
+class NativeVideoTrackData {
+  NativeVideoTrackData({this.assetTracks, this.mediaSelectionTracks});
+
+  /// Asset-based tracks (for regular videos)
+  List<AssetVideoTrackData>? assetTracks;
+
+  /// Media selection tracks (for HLS variants on iOS 15+)
+  List<MediaSelectionVideoTrackData>? mediaSelectionTracks;
+}
+
 @HostApi()
 abstract class AVFoundationVideoPlayerApi {
-  @ObjCSelector('initialize')
   void initialize();
   // Creates a new player using a platform view for rendering and returns its
   // ID.
-  @ObjCSelector('createPlatformViewPlayerWithOptions:')
-  int createForPlatformView(CreationOptions params);
+  @async
+  @SwiftFunction('createPlatformViewPlayer(options:)')
+  int createForPlatformView(CreationOptions creationOptions);
   // Creates a new player using a texture for rendering and returns its IDs.
-  @ObjCSelector('createTexturePlayerWithOptions:')
+  @async
+  @SwiftFunction('createTexturePlayer(options:)')
   TexturePlayerIds createForTextureView(CreationOptions creationOptions);
-  @ObjCSelector('load:')
+  @SwiftFunction('load(_:)')
   void load(LoadMessage msg);
-  @ObjCSelector('setMixWithOthers:')
+  @SwiftFunction('setMixWithOthers(_:)')
   void setMixWithOthers(bool mixWithOthers);
-  @ObjCSelector('fileURLForAssetWithName:package:')
+  @SwiftFunction('fileURLForAsset(name:package:)')
   String? getAssetUrl(String asset, String? package);
 }
 
 @HostApi()
 abstract class VideoPlayerInstanceApi {
-  @ObjCSelector('setLooping:')
+  @SwiftFunction('setLooping(_:)')
   void setLooping(bool looping);
-  @ObjCSelector('setVolume:')
+  @SwiftFunction('setVolume(_:)')
   void setVolume(double volume);
-  @ObjCSelector('setPlaybackSpeed:')
+  @SwiftFunction('setPlaybackSpeed(_:)')
   void setPlaybackSpeed(double speed);
   void play();
-  @ObjCSelector('position')
   int getPosition();
   @async
-  @ObjCSelector('seekTo:')
+  @SwiftFunction('seek(to:)')
   void seekTo(int position);
   void pause();
   void stop();
   void dispose();
+  @async
+  List<MediaSelectionAudioTrackData> getAudioTracks();
+  @async
+  @SwiftFunction('selectAudioTrack(atIndex:)')
+  void selectAudioTrack(int trackIndex);
+
+  /// Gets the available video tracks for the video.
+  @async
+  NativeVideoTrackData getVideoTracks();
+
+  /// Selects a video track by setting preferredPeakBitRate.
+  /// Pass 0 to enable auto quality selection.
+  @SwiftFunction('selectVideoTrack(withBitrate:)')
+  void selectVideoTrack(int bitrate);
+
+  @SwiftFunction('setPreventsDisplaySleepDuringVideoPlayback(_:)')
+  void setPreventsDisplaySleepDuringVideoPlayback(bool preventsDisplaySleepDuringVideoPlayback);
 }

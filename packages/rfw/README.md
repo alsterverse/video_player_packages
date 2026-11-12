@@ -23,13 +23,6 @@ experiencing them in production. Please [file
 issues](https://github.com/flutter/flutter/issues/new?labels=p:%20rfw,package,P2)
 if you run into them.
 
-## Feedback
-
-We would love to hear your experiences using this package, whether
-positive or negative. In particular, stories of uses of this package
-in production would be very interesting. Please add comments to [issue
-90218](https://github.com/flutter/flutter/issues/90218).
-
 ## Limitations
 
 Once you realize that you can ship UI (and maybe logic, e.g. using
@@ -299,10 +292,7 @@ class _ExampleState extends State<Example> {
   static WidgetLibrary _createLocalWidgets() {
     return LocalWidgetLibrary(<String, LocalWidgetBuilder>{
       'GreenBox': (BuildContext context, DataSource source) {
-        return ColoredBox(
-          color: const Color(0xFF002211),
-          child: source.child(<Object>['child']),
-        );
+        return ColoredBox(color: const Color(0xFF002211), child: source.child(<Object>['child']));
       },
       'Hello': (BuildContext context, DataSource source) {
         return Center(

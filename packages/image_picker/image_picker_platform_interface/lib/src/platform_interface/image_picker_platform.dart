@@ -205,11 +205,7 @@ abstract class ImagePickerPlatform extends PlatformInterface {
   ///
   /// If no images were picked, the return value is null.
   @Deprecated('Use getMultiImageWithOptions instead.')
-  Future<List<XFile>?> getMultiImage({
-    double? maxWidth,
-    double? maxHeight,
-    int? imageQuality,
-  }) {
+  Future<List<XFile>?> getMultiImage({double? maxWidth, double? maxHeight, int? imageQuality}) {
     throw UnimplementedError('getMultiImage() has not been implemented.');
   }
 
@@ -260,6 +256,10 @@ abstract class ImagePickerPlatform extends PlatformInterface {
   ///
   /// Returns a [LostDataResponse] object if successfully retrieved the lost data. The [LostDataResponse] object can
   /// represent either a successful image/video selection, or a failure.
+  ///
+  /// Retrieving the lost data is a one-time operation: implementations must
+  /// clear the stored data once it has been returned, so that subsequent calls
+  /// return an empty [LostDataResponse] rather than the same data again.
   ///
   /// Calling this on a non-Android platform will throw [UnimplementedError] exception.
   ///
@@ -331,9 +331,7 @@ abstract class ImagePickerPlatform extends PlatformInterface {
   Future<List<XFile>> getMultiVideoWithOptions({
     MultiVideoPickerOptions options = const MultiVideoPickerOptions(),
   }) {
-    throw UnimplementedError(
-      'getMultiVideoWithOptions() has not been implemented.',
-    );
+    throw UnimplementedError('getMultiVideoWithOptions() has not been implemented.');
   }
 
   /// Returns true if the implementation supports [source].

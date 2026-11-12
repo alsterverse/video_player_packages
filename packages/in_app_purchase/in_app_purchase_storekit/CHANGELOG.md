@@ -1,5 +1,93 @@
 ## NEXT
 
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.4.17
+
+* Uses `Product.purchase(confirmIn:options:)` for StoreKit 2 purchases when a view controller,
+  window scene, or window is available. Fixes purchases never completing on iOS 27 and iPadOS 27.
+
+## 0.4.16
+
+* Adds `SK2Transaction.currentEntitlements()` to query active subscriptions and non-consumable entitlements.
+
+## 0.4.15
+
+* Exposes `sk2Transaction` on `SK2PurchaseDetails`.
+
+## 0.4.14+1
+
+* Suppresses deprecation warnings for StoreKit 1 APIs, which are used as
+  the fallback on iOS < 15 and macOS < 12.
+* Replaces the deprecated `Locale.currencyCode` with `Locale.currency`.
+
+## 0.4.14
+
+* Adds `showManageSubscriptions` to `InAppPurchaseStoreKitPlatformAddition`, which presents the
+  App Store sheet for managing subscriptions. Requires StoreKit 2 and iOS 15+.
+
+## 0.4.13+3
+
+* Removes unused handling of the deprecated `SKDownload` hosted content
+  callbacks.
+
+## 0.4.13+2
+
+* Removes availability checks for iOS and macOS versions below the package minimum (iOS 13 and macOS 10.15).
+
+## 0.4.13+1
+
+* Fixes `completePurchase` never completing with StoreKit 2 when the transaction
+  is not found, such as an already finished consumable.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+* Fixes lint issues.
+
+## 0.4.13
+
+* Exposes expirationDate on SK2PurchaseDetails.
+
+## 0.4.12
+
+* Adds support for setting introductory offer eligibility from a server-signed
+  compact JWS via `Sk2PurchaseParam.introductoryOfferEligibilityCompactJWS`,
+  which is forwarded to StoreKit 2 as
+  `Product.PurchaseOption.introductoryOfferEligibility(compactJWS:)`.
+
+## 0.4.11+2
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 0.4.11+1
+
+* Fixes StoreKit 2 restore transactions not grouping purchases into a single event.
+  
+## 0.4.11
+
+* Fixes StoreKit 2 date format does not match in_app_purchase_platform_interface PurchaseDetails.transactionDate format.
+  Fixes both `SK2Transaction.purchaseDate` and `SK2Transaction.expirationDate`.
+
+## 0.4.10+1
+
+* Fixes SK2Transaction to expose the real purchased quantity instead of defaulting to 1.
+
+## 0.4.10
+
+* Clarifies `completePurchase` usage and the consequences of unfinished transactions in the README and API docstrings.
+* Prevents duplicate purchase attempts in StoreKit 2 by throwing a `storekit_duplicate_product_object` error when a product already has an unfinished transaction.
+
+## 0.4.9
+
+* Add support for offer codes in StoreKit 2.
+* Updates minimum supported SDK version to Flutter 3.38.
+
+## 0.4.8+1
+
+* Fixes StoreKit 2 purchase flow to send cancelled/pending/unverified results to `purchaseStream`.
+
+## 0.4.8
+
+* Fixes an issue causing StoreKit2 purchases to be reported as `restored` and left in an
+  unfinished state, due to `pendingCompletePurchase` being false.
 * Fixes Xcode 26.2 analyzer warnings in example app tests.
 
 ## 0.4.7
@@ -18,7 +106,7 @@
 ## 0.4.6
 
 * Adds a new case `.unverified` to enum `SK2ProductPurchaseResult`
-* Fixes the StoreKit2 implementation throwing `PlatformException`s instead of returning the corresponding 
+* Fixes the StoreKit2 implementation throwing `PlatformException`s instead of returning the corresponding
 `SK2ProductPurchaseResult` when a purchase is cancelled / unverified / pending.
 
 ## 0.4.5
@@ -47,7 +135,7 @@
 
 * Updates minimum supported SDK version to Flutter 3.27/Dart 3.6.
 * Adds **Win Back Offers** support for StoreKit2:
-    - Includes new `isWinBackOfferEligible` function for eligibility verification
+  * Includes new `isWinBackOfferEligible` function for eligibility verification
 * Adds **Promotional Offers** support in StoreKit2 purchases
 * Fixes introductory pricing handling in promotional offers list in StoreKit2
 * Ensures proper `appAccountToken` handling for StoreKit2 purchases

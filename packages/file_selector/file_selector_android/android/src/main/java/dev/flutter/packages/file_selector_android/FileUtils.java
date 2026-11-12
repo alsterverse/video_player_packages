@@ -66,9 +66,11 @@ public class FileUtils {
       String[] uriDocumentIdSplit = uriDocumentId.split(":");
 
       if (uriDocumentIdSplit.length < 2) {
-        // We expect the URI document ID to contain its storage volume and name to determine its path.
+        // We expect the URI document ID to contain its storage volume and name to
+        // determine its path.
         throw new UnsupportedOperationException(
-            "Retrieving the path of a document with an unknown storage volume or name is unsupported by this plugin.");
+            "Retrieving the path of a document with an unknown storage volume or name is"
+                + " unsupported by this plugin.");
       }
 
       String documentStorageVolume = uriDocumentIdSplit[0];
@@ -122,6 +124,11 @@ public class FileUtils {
   public static String getPathFromCopyOfFileFromUri(@NonNull Context context, @NonNull Uri uri)
       throws IOException, SecurityException, IllegalArgumentException {
     try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+      if (inputStream == null) {
+        // The provider cannot serve the file (see `FileSelectorApiImpl#toFileResponse`); surface
+        // it as the IO failure it is instead of dereferencing the null stream in `copy()`.
+        throw new IOException("The content provider returned no stream for the file.");
+      }
       String uuid = UUID.nameUUIDFromBytes(uri.toString().getBytes()).toString();
       File targetDirectory = new File(context.getCacheDir(), uuid);
       targetDirectory.mkdir();
@@ -208,7 +215,8 @@ public class FileUtils {
     return fileName.substring(0, lastDotIndex);
   }
 
-  // From https://developer.android.com/privacy-and-security/risks/untrustworthy-contentprovider-provided-filename#sanitize-provided-filenames.
+  // From
+  // https://developer.android.com/privacy-and-security/risks/untrustworthy-contentprovider-provided-filename#sanitize-provided-filenames.
   protected static @Nullable String sanitizeFilename(@Nullable String displayName) {
     if (displayName == null) {
       return null;

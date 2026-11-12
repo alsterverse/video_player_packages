@@ -18,9 +18,10 @@ jobs:
     steps:
     # Checks out a copy of the repo.
     - name: Check out code
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         fetch-depth: 0 # Fetch all history so the tool can get all the tags to determine version.
+        persist-credentials: false
     - name: "Install Flutter"
       uses: ./.github/workflows/internals/install_flutter
     - name: Set up tools
@@ -40,22 +41,26 @@ jobs:
     # because there doesn't appear to be anything to wait for. To avoid that,
     # explicitly wait for one LUCI test by name first.
     - name: Wait for test check-in
-      uses: lewagon/wait-on-check-action@0dceb95e7c4cad8cc7422aee3885998f5cab9c79
+      uses: lewagon/wait-on-check-action@96d9100b431964d10e0136aff8b9ccb92470505e
       with:
         ref: ${{ github.sha }}
         check-name: 'Linux ci_yaml packages roller'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         wait-interval: 30 # seconds
+        # Cocoon waits up to 15 minutes for commits to mirror to Git-on-Borg
+        # before registering post-submit LUCI checks.
+        checks-discovery-timeout: 900 # seconds
         allowed-conclusions: success,neutral
         # verbose:true will produce too many logs that hang github actions web UI.
         verbose: false
 
     # This workflow should be the last to run. So wait for all the other tests to succeed.
     - name: Wait on all tests
-      uses: lewagon/wait-on-check-action@0dceb95e7c4cad8cc7422aee3885998f5cab9c79
+      uses: lewagon/wait-on-check-action@96d9100b431964d10e0136aff8b9ccb92470505e
       with:
         ref: ${{ github.sha }}
         running-workflow-name: 'release'
+        ignore-checks: triage,noResponse
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         wait-interval: 180 # seconds
         allowed-conclusions: success,neutral
@@ -64,7 +69,10 @@ jobs:
 
     - name: run release
       run: |
+        gh auth setup-git
         git config --global user.name ${{ secrets.USER_NAME }}
         git config --global user.email ${{ secrets.USER_EMAIL }}
         dart ./script/tool/lib/src/main.dart publish --all-changed --base-sha=HEAD~ --skip-confirmation --remote=origin
-      env: {PUB_CREDENTIALS: "${{ secrets.PUB_CREDENTIALS }}"}
+      env:
+        PUB_CREDENTIALS: "${{ secrets.PUB_CREDENTIALS }}"
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

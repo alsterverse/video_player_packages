@@ -62,12 +62,28 @@ public final class TextureVideoPlayer extends VideoPlayer implements SurfaceProd
         asset.getMediaItem(),
         options,
         () -> {
+          ExoPlayer.Builder builder = new ExoPlayer.Builder(context);
+          if (options.backBufferDurationMs != null) {
+            if (options.backBufferDurationMs < 0) {
+              throw new IllegalArgumentException("backBufferDurationMs must be at least 0");
+            }
+            if (options.backBufferDurationMs > 0) {
+              // Clamp the value to ensure it fits within the int range expected by
+              // DefaultLoadControl.
+              int backBufferInt =
+                  (int) Math.min(options.backBufferDurationMs.longValue(), Integer.MAX_VALUE);
+              DefaultLoadControl loadControl =
+                  new DefaultLoadControl.Builder()
+                      .setBackBuffer(backBufferInt, /* retainBackBufferFromKeyframe= */ true)
+                      .build();
+              builder.setLoadControl(loadControl);
+            }
+          }
           androidx.media3.exoplayer.trackselection.DefaultTrackSelector trackSelector =
               new androidx.media3.exoplayer.trackselection.DefaultTrackSelector(context);
-          ExoPlayer.Builder builder =
-              new ExoPlayer.Builder(context)
-                  .setTrackSelector(trackSelector)
-                  .setMediaSourceFactory(asset.getMediaSourceFactory(context));
+          builder
+              .setTrackSelector(trackSelector)
+              .setMediaSourceFactory(asset.getMediaSourceFactory(context));
           return builder.build();
         });
   }
@@ -98,7 +114,8 @@ public final class TextureVideoPlayer extends VideoPlayer implements SurfaceProd
       @NonNull ExoPlayer exoPlayer, @Nullable SurfaceProducer surfaceProducer) {
     if (surfaceProducer == null) {
       throw new IllegalArgumentException(
-          "surfaceProducer cannot be null to create an ExoPlayerEventListener for TextureVideoPlayer.");
+          "surfaceProducer cannot be null to create an ExoPlayerEventListener for"
+              + " TextureVideoPlayer.");
     }
     boolean surfaceProducerHandlesCropAndRotation = surfaceProducer.handlesCropAndRotation();
     return new TextureExoPlayerEventListener(

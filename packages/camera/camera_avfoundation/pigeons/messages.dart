@@ -7,14 +7,7 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(
   PigeonOptions(
     dartOut: 'lib/src/messages.g.dart',
-    objcHeaderOut:
-        'ios/camera_avfoundation/Sources/camera_avfoundation_objc/include/camera_avfoundation/messages.g.h',
-    objcSourceOut:
-        'ios/camera_avfoundation/Sources/camera_avfoundation_objc/messages.g.m',
-    objcOptions: ObjcOptions(
-      prefix: 'FCP',
-      headerIncludePath: './include/camera_avfoundation/messages.g.h',
-    ),
+    swiftOut: 'darwin/camera_avfoundation/Sources/camera_avfoundation/Messages.swift',
     copyrightHeader: 'pigeons/copyright.txt',
   ),
 )
@@ -46,12 +39,7 @@ enum PlatformCameraLensType {
 }
 
 // Pigeon version of DeviceOrientation.
-enum PlatformDeviceOrientation {
-  portraitUp,
-  landscapeLeft,
-  portraitDown,
-  landscapeRight,
-}
+enum PlatformDeviceOrientation { portraitUp, landscapeLeft, portraitDown, landscapeRight }
 
 // Pigeon version of ExposureMode.
 enum PlatformExposureMode { auto, locked }
@@ -70,6 +58,8 @@ enum PlatformImageFormatGroup { bgra8888, yuv420 }
 
 // Pigeon version of ResolutionPreset.
 enum PlatformResolutionPreset { low, medium, high, veryHigh, ultraHigh, max }
+
+enum PlatformVideoStabilizationMode { off, standard, cinematic, cinematicExtended }
 
 // Pigeon version of CameraDescription.
 class PlatformCameraDescription {
@@ -115,6 +105,44 @@ class PlatformCameraState {
   final bool focusPointSupported;
 }
 
+// Pigeon version of the data needed for a CameraImageData.
+class PlatformCameraImageData {
+  PlatformCameraImageData({
+    required this.formatCode,
+    required this.width,
+    required this.height,
+    required this.planes,
+    required this.lensAperture,
+    required this.sensorExposureTimeNanoseconds,
+    required this.sensorSensitivity,
+  });
+
+  /// The FourCharCode of the image format.
+  final int formatCode;
+
+  final int width;
+  final int height;
+  final List<PlatformCameraImagePlane> planes;
+  final double lensAperture;
+  final int sensorExposureTimeNanoseconds;
+  final double sensorSensitivity;
+}
+
+// Pigeon version of the data needed for a CameraImagePlane.
+class PlatformCameraImagePlane {
+  const PlatformCameraImagePlane({
+    required this.bytes,
+    required this.bytesPerRow,
+    required this.width,
+    required this.height,
+  });
+
+  final Uint8List bytes;
+  final int bytesPerRow;
+  final int width;
+  final int height;
+}
+
 // Pigeon version of to MediaSettings.
 class PlatformMediaSettings {
   PlatformMediaSettings({
@@ -151,9 +179,6 @@ class PlatformSize {
 @HostApi()
 abstract class CameraApi {
   /// Returns the list of available cameras.
-  // TODO(stuartmorgan): Make the generic type non-nullable once supported.
-  // https://github.com/flutter/flutter/issues/97848
-  // The consuming code treats it as non-nullable.
   @async
   @ObjCSelector('availableCamerasWithCompletion')
   List<PlatformCameraDescription> getAvailableCameras();
@@ -211,8 +236,8 @@ abstract class CameraApi {
   /// Begins recording video, optionally enabling streaming to Dart at the same
   /// time.
   @async
-  @ObjCSelector('startVideoRecordingWithStreaming:')
-  void startVideoRecording(bool enableStream);
+  @ObjCSelector('startVideoRecordingWithStreaming:videoOutputPath:')
+  void startVideoRecording(bool enableStream, String? videoOutputPath);
 
   /// Stops recording video, and results the path to the resulting file.
   @async
@@ -285,6 +310,16 @@ abstract class CameraApi {
   @ObjCSelector('setZoomLevel:')
   void setZoomLevel(double zoom);
 
+  /// Sets the video stabilization mode.
+  @async
+  @ObjCSelector('setVideoStabilizationMode:')
+  void setVideoStabilizationMode(PlatformVideoStabilizationMode mode);
+
+  /// Gets if the given video stabilization mode is supported.
+  @async
+  @ObjCSelector('isVideoStabilizationModeSupported:')
+  bool isVideoStabilizationModeSupported(PlatformVideoStabilizationMode mode);
+
   /// Pauses streaming of preview frames.
   @async
   void pausePreview();
@@ -303,6 +338,26 @@ abstract class CameraApi {
   @async
   @ObjCSelector('setImageFileFormat:')
   void setImageFileFormat(PlatformImageFileFormat format);
+
+  /// Sets the JPEG compression quality for still image capture.
+  @async
+  @ObjCSelector('setJpegImageQuality:')
+  void setJpegImageQuality(int quality);
+
+  /// Returns whether the current session configuration supports
+  /// zero-shutter-lag capture.
+  @async
+  bool isZeroShutterLagSupported();
+
+  /// Enables or disables zero-shutter-lag capture.
+  @async
+  @ObjCSelector('setZeroShutterLagEnabled:')
+  void setZeroShutterLagEnabled(bool enabled);
+}
+
+@EventChannelApi()
+abstract class CameraImageStreamEventApi {
+  PlatformCameraImageData imageDataStream();
 }
 
 /// Handler for native callbacks that are not tied to a specific camera ID.

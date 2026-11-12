@@ -7,10 +7,18 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(
   PigeonOptions(
     dartOut: 'lib/src/messages.g.dart',
-    objcHeaderOut: 'ios/Classes/messages.g.h',
-    objcSourceOut: 'ios/Classes/messages.g.m',
+    // This uses a different output name to avoid conflicts with the pigeon
+    // files in other packages, without having to use full relative paths
+    // in #includes (which would make source sharing harder to manage).
+    objcHeaderOut:
+        'ios/google_maps_flutter_ios/Sources/google_maps_flutter_ios/include/google_maps_flutter_ios/google_maps_flutter_pigeon_messages.g.h',
+    objcSourceOut:
+        'ios/google_maps_flutter_ios/Sources/google_maps_flutter_ios/google_maps_flutter_pigeon_messages.g.m',
     objcOptions: ObjcOptions(prefix: 'FGM'),
     copyrightHeader: 'pigeons/copyright.txt',
+    // Use the base package name so that the generated code can be shared
+    // across the implementation copies.
+    dartPackageName: 'google_maps_flutter_ios',
   ),
 )
 /// Pigeon equivalent of MapType
@@ -214,6 +222,7 @@ class PlatformMarker {
     this.visible = true,
     this.zIndex = 0,
     this.clusterManagerId,
+    this.collisionBehavior,
   });
 
   final double alpha;
@@ -230,6 +239,14 @@ class PlatformMarker {
   final int zIndex;
   final String markerId;
   final String? clusterManagerId;
+  final PlatformMarkerCollisionBehavior? collisionBehavior;
+}
+
+/// Pigeon equivalent of the MarkerCollisionBehavior enum.
+enum PlatformMarkerCollisionBehavior {
+  requiredDisplay,
+  optionalAndHidesLowerPriority,
+  requiredAndHidesOptional,
 }
 
 /// Pigeon equivalent of the Polygon class.
@@ -430,6 +447,8 @@ class PlatformMapViewCreationParams {
   final List<PlatformGroundOverlay> initialGroundOverlays;
 }
 
+enum PlatformMarkerType { marker, advancedMarker }
+
 /// Pigeon equivalent of MapConfiguration.
 class PlatformMapConfiguration {
   PlatformMapConfiguration({
@@ -448,6 +467,7 @@ class PlatformMapConfiguration {
     required this.indoorViewEnabled,
     required this.trafficEnabled,
     required this.buildingsEnabled,
+    required this.markerType,
     required this.mapId,
     required this.style,
   });
@@ -467,6 +487,7 @@ class PlatformMapConfiguration {
   final bool? indoorViewEnabled;
   final bool? trafficEnabled;
   final bool? buildingsEnabled;
+  final PlatformMarkerType markerType;
   final String? mapId;
   final String? style;
 }
@@ -489,12 +510,7 @@ class PlatformSize {
 
 /// Pigeon representation of a color.
 class PlatformColor {
-  PlatformColor({
-    required this.red,
-    required this.green,
-    required this.blue,
-    required this.alpha,
-  });
+  PlatformColor({required this.red, required this.green, required this.blue, required this.alpha});
 
   final double red;
   final double green;
@@ -566,11 +582,7 @@ class PlatformBitmapAsset {
 
 /// Pigeon equivalent of [AssetImageBitmap].
 class PlatformBitmapAssetImage {
-  PlatformBitmapAssetImage({
-    required this.name,
-    required this.scale,
-    this.size,
-  });
+  PlatformBitmapAssetImage({required this.name, required this.scale, this.size});
   final String name;
   final double scale;
   final PlatformSize? size;
@@ -611,6 +623,26 @@ class PlatformBitmapBytesMap {
 /// Pigeon equivalent of [MapBitmapScaling].
 enum PlatformMapBitmapScaling { auto, none }
 
+/// Pigeon equivalent of [PinConfig].
+class PlatformBitmapPinConfig {
+  PlatformBitmapPinConfig({
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.glyphColor,
+    required this.glyphTextColor,
+    required this.glyphText,
+    required this.glyphBitmap,
+  });
+
+  final PlatformColor? backgroundColor;
+  final PlatformColor? borderColor;
+
+  final PlatformColor? glyphColor;
+  final PlatformColor? glyphTextColor;
+  final String? glyphText;
+  final PlatformBitmap? glyphBitmap;
+}
+
 /// Interface for non-test interactions with the native SDK.
 ///
 /// For test-only state queries, see [MapsInspectorApi].
@@ -644,10 +676,7 @@ abstract class MapsApi {
 
   /// Updates the set of custer managers for clusters on the map.
   @ObjCSelector('updateClusterManagersByAdding:removing:')
-  void updateClusterManagers(
-    List<PlatformClusterManager> toAdd,
-    List<String> idsToRemove,
-  );
+  void updateClusterManagers(List<PlatformClusterManager> toAdd, List<String> idsToRemove);
 
   /// Updates the set of markers on the map.
   @ObjCSelector('updateMarkersByAdding:changing:removing:')
@@ -709,10 +738,7 @@ abstract class MapsApi {
   /// Moves the camera according to [cameraUpdate], animating the update using a
   /// duration in milliseconds if provided.
   @ObjCSelector('animateCameraWithUpdate:duration:')
-  void animateCamera(
-    PlatformCameraUpdate cameraUpdate,
-    int? durationMilliseconds,
-  );
+  void animateCamera(PlatformCameraUpdate cameraUpdate, int? durationMilliseconds);
 
   /// Gets the current map zoom level.
   @ObjCSelector('currentZoomLevel')
@@ -753,6 +779,10 @@ abstract class MapsApi {
 
   /// Takes a snapshot of the map and returns its image data.
   Uint8List? takeSnapshot();
+
+  /// Returns true if the map supports advanced markers.
+  @ObjCSelector('isAdvancedMarkersAvailable')
+  bool isAdvancedMarkersAvailable();
 }
 
 /// Interface for calls from the native SDK to Dart.
@@ -821,11 +851,7 @@ abstract class MapsCallbackApi {
   /// Called to get data for a map tile.
   @async
   @ObjCSelector('tileWithOverlayIdentifier:location:zoom:')
-  PlatformTile getTileOverlayTile(
-    String tileOverlayId,
-    PlatformPoint location,
-    int zoom,
-  );
+  PlatformTile getTileOverlayTile(String tileOverlayId, PlatformPoint location, int zoom);
 }
 
 /// Dummy interface to force generation of the platform view creation params,

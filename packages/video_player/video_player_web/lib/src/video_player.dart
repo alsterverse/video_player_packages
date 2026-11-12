@@ -40,10 +40,9 @@ const String _kDefaultErrorMessage =
 class VideoPlayer {
   /// Create a [VideoPlayer] from a [web.HTMLVideoElement] instance.
   VideoPlayer({
-    required web.HTMLVideoElement videoElement,
+    required this._videoElement,
     @visibleForTesting StreamController<VideoEvent>? eventController,
-  }) : _videoElement = videoElement,
-       _eventController = eventController ?? StreamController<VideoEvent>();
+  }) : _eventController = eventController ?? StreamController<VideoEvent>();
 
   final StreamController<VideoEvent> _eventController;
   final web.HTMLVideoElement _videoElement;
@@ -107,19 +106,13 @@ class VideoPlayer {
 
     _videoElement.onPlay.listen((dynamic _) {
       _eventController.add(
-        VideoEvent(
-          eventType: VideoEventType.isPlayingStateUpdate,
-          isPlaying: true,
-        ),
+        VideoEvent(eventType: VideoEventType.isPlayingStateUpdate, isPlaying: true),
       );
     });
 
     _videoElement.onPause.listen((dynamic _) {
       _eventController.add(
-        VideoEvent(
-          eventType: VideoEventType.isPlayingStateUpdate,
-          isPlaying: false,
-        ),
+        VideoEvent(eventType: VideoEventType.isPlayingStateUpdate, isPlaying: false),
       );
     });
 
@@ -309,23 +302,14 @@ class VideoPlayer {
 
   // Sends an [VideoEventType.initialized] [VideoEvent] with info about the wrapped video.
   void _sendInitialized() {
-    final Duration? duration = convertNumVideoDurationToPluginDuration(
-      _videoElement.duration,
-    );
+    final Duration? duration = convertNumVideoDurationToPluginDuration(_videoElement.duration);
 
     final Size? size = _videoElement.videoHeight.isFinite
-        ? Size(
-            _videoElement.videoWidth.toDouble(),
-            _videoElement.videoHeight.toDouble(),
-          )
+        ? Size(_videoElement.videoWidth.toDouble(), _videoElement.videoHeight.toDouble())
         : null;
 
     _eventController.add(
-      VideoEvent(
-        eventType: VideoEventType.initialized,
-        duration: duration,
-        size: size,
-      ),
+      VideoEvent(eventType: VideoEventType.initialized, duration: duration, size: size),
     );
   }
 
@@ -339,9 +323,7 @@ class VideoPlayer {
       _isBuffering = buffering;
       _eventController.add(
         VideoEvent(
-          eventType: _isBuffering
-              ? VideoEventType.bufferingStart
-              : VideoEventType.bufferingEnd,
+          eventType: _isBuffering ? VideoEventType.bufferingStart : VideoEventType.bufferingEnd,
         ),
       );
     }

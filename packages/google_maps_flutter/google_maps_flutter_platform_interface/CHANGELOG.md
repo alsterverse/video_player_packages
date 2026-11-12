@@ -1,3 +1,34 @@
+## NEXT
+
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 2.18.0
+
+* Adds support for configuring the color displayed behind unloaded map tiles.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 2.17.0
+
+* Adds support for tapping points of interest on the map.
+
+## 2.16.1
+
+* Fixes the `PinConfig` code sample in the `BitmapDescriptor` documentation.
+
+## 2.16.0
+
+* Adds support for `mapTypeControlEnabled`, `fullscreenControlEnabled`, and `streetViewControlEnabled` for web.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 2.15.0
+
+* Adds support for `colorScheme` for cloud-based maps styling brightness in web.
+
+## 2.14.2
+
+* Adds documentation about iOS rendering issue with `PinConfig`.
+* Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
+
 ## 2.14.1
 
 * Replaces internal use of deprecated methods.

@@ -12,28 +12,27 @@ import 'page.dart';
 /// Page for demonstrating marker clustering support.
 class ClusteringPage extends GoogleMapExampleAppPage {
   /// Default Constructor.
-  const ClusteringPage({Key? key})
-    : super(const Icon(Icons.place), 'Manage clustering', key: key);
+  const ClusteringPage({super.key}) : super(const Icon(Icons.place), 'Manage clustering');
 
   @override
   Widget build(BuildContext context) {
-    return const ClusteringBody();
+    return const _ClusteringBody();
   }
 }
 
 /// Body of the clustering page.
-class ClusteringBody extends StatefulWidget {
+class _ClusteringBody extends StatefulWidget {
   /// Default Constructor.
-  const ClusteringBody({super.key});
+  const _ClusteringBody();
 
   @override
-  State<StatefulWidget> createState() => ClusteringBodyState();
+  State<StatefulWidget> createState() => _ClusteringBodyState();
 }
 
 /// State of the clustering page.
-class ClusteringBodyState extends State<ClusteringBody> {
+class _ClusteringBodyState extends State<_ClusteringBody> {
   /// Default Constructor.
-  ClusteringBodyState();
+  _ClusteringBodyState();
 
   /// Starting point from where markers are added.
   static const LatLng center = LatLng(-33.86, 151.1547171);
@@ -60,8 +59,7 @@ class ClusteringBodyState extends State<ClusteringBody> {
   GoogleMapController? controller;
 
   /// Map of clusterManagers with identifier as the key.
-  Map<ClusterManagerId, ClusterManager> clusterManagers =
-      <ClusterManagerId, ClusterManager>{};
+  Map<ClusterManagerId, ClusterManager> clusterManagers = <ClusterManagerId, ClusterManager>{};
 
   /// Map of markers with identifier as the key.
   Map<MarkerId, Marker> markers = <MarkerId, Marker>{};
@@ -89,23 +87,26 @@ class ClusteringBodyState extends State<ClusteringBody> {
     super.dispose();
   }
 
+  /// Returns selected or unselected state of the given [marker].
+  Marker copyWithSelectedState(Marker marker, bool isSelected) {
+    return marker.copyWith(
+      iconParam: isSelected
+          ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen)
+          : BitmapDescriptor.defaultMarker,
+    );
+  }
+
   void _onMarkerTapped(MarkerId markerId) {
     final Marker? tappedMarker = markers[markerId];
     if (tappedMarker != null) {
       setState(() {
         final MarkerId? previousMarkerId = selectedMarker;
         if (previousMarkerId != null && markers.containsKey(previousMarkerId)) {
-          final Marker resetOld = markers[previousMarkerId]!.copyWith(
-            iconParam: BitmapDescriptor.defaultMarker,
-          );
+          final Marker resetOld = copyWithSelectedState(markers[previousMarkerId]!, false);
           markers[previousMarkerId] = resetOld;
         }
         selectedMarker = markerId;
-        final Marker newMarker = tappedMarker.copyWith(
-          iconParam: BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueGreen,
-          ),
-        );
+        final Marker newMarker = copyWithSelectedState(tappedMarker, true);
         markers[markerId] = newMarker;
       });
     }
@@ -137,8 +138,7 @@ class ClusteringBodyState extends State<ClusteringBody> {
     setState(() {
       // Remove markers managed by cluster manager to be removed.
       markers.removeWhere(
-        (MarkerId key, Marker marker) =>
-            marker.clusterManagerId == clusterManager.clusterManagerId,
+        (MarkerId key, Marker marker) => marker.clusterManagerId == clusterManager.clusterManagerId,
       );
       // Remove cluster manager.
       clusterManagers.remove(clusterManager.clusterManagerId);
@@ -147,14 +147,11 @@ class ClusteringBodyState extends State<ClusteringBody> {
 
   void _addMarkersToCluster(ClusterManager clusterManager) {
     for (var i = 0; i < _markersToAddToClusterManagerCount; i++) {
-      final markerIdVal =
-          '${clusterManager.clusterManagerId.value}_marker_id_$_markerIdCounter';
+      final markerIdVal = '${clusterManager.clusterManagerId.value}_marker_id_$_markerIdCounter';
       _markerIdCounter++;
       final markerId = MarkerId(markerIdVal);
 
-      final int clusterManagerIndex = clusterManagers.values.toList().indexOf(
-        clusterManager,
-      );
+      final int clusterManagerIndex = clusterManagers.values.toList().indexOf(clusterManager);
 
       // Add additional offset to longitude for each cluster manager to space
       // out markers in different cluster managers.
@@ -162,8 +159,8 @@ class ClusteringBodyState extends State<ClusteringBody> {
           clusterManagerIndex * _clusterManagerLongitudeOffset;
 
       final marker = Marker(
-        clusterManagerId: clusterManager.clusterManagerId,
         markerId: markerId,
+        clusterManagerId: clusterManager.clusterManagerId,
         position: LatLng(
           center.latitude + _getRandomOffset(),
           center.longitude + _getRandomOffset() + clusterManagerLongitudeOffset,
@@ -193,9 +190,7 @@ class ClusteringBodyState extends State<ClusteringBody> {
       final Marker marker = markers[markerId]!;
       final double current = marker.alpha;
       markers[markerId] = marker.copyWith(
-        alphaParam: current == _fullyVisibleAlpha
-            ? _halfVisibleAlpha
-            : _fullyVisibleAlpha,
+        alphaParam: current == _fullyVisibleAlpha ? _halfVisibleAlpha : _fullyVisibleAlpha,
       );
     }
     setState(() {});
@@ -233,8 +228,7 @@ class ClusteringBodyState extends State<ClusteringBody> {
                 TextButton(
                   onPressed: clusterManagers.isEmpty
                       ? null
-                      : () =>
-                            _removeClusterManager(clusterManagers.values.last),
+                      : () => _removeClusterManager(clusterManagers.values.last),
                   child: const Text('Remove cluster manager'),
                 ),
               ],
@@ -242,8 +236,7 @@ class ClusteringBodyState extends State<ClusteringBody> {
             Wrap(
               alignment: WrapAlignment.spaceEvenly,
               children: <Widget>[
-                for (final MapEntry<ClusterManagerId, ClusterManager>
-                    clusterEntry
+                for (final MapEntry<ClusterManagerId, ClusterManager> clusterEntry
                     in clusterManagers.entries)
                   TextButton(
                     onPressed: () => _addMarkersToCluster(clusterEntry.value),
@@ -266,9 +259,7 @@ class ClusteringBodyState extends State<ClusteringBody> {
                   child: const Text('Remove selected marker'),
                 ),
                 TextButton(
-                  onPressed: markers.isEmpty
-                      ? null
-                      : () => _changeMarkersAlpha(),
+                  onPressed: markers.isEmpty ? null : () => _changeMarkersAlpha(),
                   child: const Text('Change all markers alpha'),
                 ),
               ],

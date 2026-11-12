@@ -3,18 +3,8 @@
 ## Description
 
 Pigeon is a code generation tool that adds type safety to Flutter’s Platform
-Channels.  This document serves as an overview of how it functions to help
+Channels. This document serves as an overview of how it functions to help
 people who would like to contribute to the project.
-
-## State Diagram
-
-Pigeon generates a temporary file in its _LaunchIsolate_, the isolate that is
-spawned to run `main()`, then launches another isolate, _PigeonIsolate_, that
-uses `dart:mirrors` to parse the generated file, creating an
-[AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree), then running code
-generators with that AST.
-
-![State Diagram](./doc/pigeon_state.png)
 
 ## Source Index
 
@@ -37,20 +27,20 @@ generators with that AST.
 
 ## Testing Overview
 
-Pigeon has 3 types of tests, you'll find them all in
+Pigeon has 3 types of tests; you'll find them all in
 [test.dart](./tool/test.dart).
 
 * Unit tests - These are the fastest tests that are just typical unit tests,
   they may be generating code and checking it against a regular expression to
-  see if it's correct.  Example:
+  see if it's correct. Example:
   [dart_generator_test.dart](./test/dart_generator_test.dart)
 * Compilation tests -  These tests generate code, then attempt to compile that
-  code.  These are tests are much slower than unit tests, but not as slow as
-  integration tests.  These tests are typically run against the Pigeon files in
+  code. These are tests are much slower than unit tests, but not as slow as
+  integration tests. These tests are typically run against the Pigeon files in
   [pigeons](./pigeons).
 * Integration tests - These tests generate code, then compile the generated
-  code, then execute the generated code.  It can be thought of as unit-tests run
-  against the generated code.  Examples: [platform_tests](./platform_tests)
+  code, then execute the generated code. It can be thought of as unit-tests run
+  against the generated code. Examples: [platform_tests](./platform_tests)
 
 For local testing, always use `test.dart` rather than `run_tests.dart`, as
 `run_tests.dart` is specifically a CI entrypoint. When iterating on a specific
@@ -73,11 +63,3 @@ void main(List<String> args, SendPort sendPort) async {
 ```
 
 This is how `dart:mirrors` gets access to the supplied Pigeon file.
-
-## Imminent Plans
-
-* Migrate to Dart Analyzer for AST generation ([issue
-  78818](https://github.com/flutter/flutter/issues/78818)) - We might have
-  reached the limitations of using dart:mirrors for parsing the Dart files.
-  That package has been deprecated and it doesn't support null-safe annotations.
-  We should migrate to using the Dart Analyzer as the front-end parser.

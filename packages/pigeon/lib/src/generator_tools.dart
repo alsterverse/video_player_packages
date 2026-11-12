@@ -7,6 +7,8 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:mirrors';
 
+import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart' as yaml;
 
 import 'ast.dart';
@@ -15,7 +17,119 @@ import 'generator.dart';
 /// The current version of pigeon.
 ///
 /// This must match the version in pubspec.yaml.
-const String pigeonVersion = '26.1.6';
+const String pigeonVersion = '30.0.2';
+
+/// Default plugin package name.
+const String defaultPluginPackageName = 'dev.flutter.pigeon';
+
+/// The default instance name string for native interop generated APIs.
+const String defaultNativeInteropInstanceName =
+    'PigeonDefaultClassName32uh4ui3lh445uh4h3l2l455g4y34u';
+
+/// How native interop (`KotlinOptions.useJni` and `SwiftOptions.useFfi`) moves
+/// values between Dart and the host platform.
+///
+/// This option is temporary. It exists so that the [hybrid] transport can be
+/// adopted and benchmarked before it becomes the only transport.
+@internal
+enum NativeInteropTransport {
+  /// Converts every value to a graph of native objects.
+  ///
+  /// Each non-scalar field and each collection element costs at least one
+  /// call across the language boundary, so large data classes and collections
+  /// are slow.
+  objects,
+
+  /// Passes scalars, strings, enums and typed data directly, and encodes all
+  /// data class, `List`, `Map` and `Object` arguments of a call into one
+  /// buffer.
+  ///
+  /// Each API call makes exactly one call across the language boundary,
+  /// however large its arguments are.
+  hybrid;
+
+  /// Returns the transport named [name], or `null` if [name] is `null`.
+  static NativeInteropTransport? fromName(String? name) {
+    if (name == null) {
+      return null;
+    }
+    return NativeInteropTransport.values.firstWhere(
+      (NativeInteropTransport transport) => transport.name == name,
+      orElse: () => throw ArgumentError.value(
+        name,
+        'nativeInteropTransport',
+        'Must be one of ${NativeInteropTransport.values.map((NativeInteropTransport t) => t.name).join(', ')}',
+      ),
+    );
+  }
+}
+
+/// Converts any path containing Windows backslashes into a POSIX-style path.
+String posixPath(String inputPath) => inputPath.replaceAll(r'\', '/');
+
+/// Returns the filename for generated FFIgen config files based on [inputPath].
+String getFfigenConfigFileName([String? inputPath]) {
+  if (inputPath == null || inputPath.isEmpty) {
+    return 'ffigen_config.dart';
+  }
+  final String baseName = path.posix.basenameWithoutExtension(posixPath(inputPath));
+  return '${baseName}_ffigen_config.dart';
+}
+
+/// Returns the filename for generated JNIgen config files based on [inputPath].
+String getJnigenConfigFileName([String? inputPath]) {
+  if (inputPath == null || inputPath.isEmpty) {
+    return 'jnigen_config.dart';
+  }
+  final String baseName = path.posix.basenameWithoutExtension(posixPath(inputPath));
+  return '${baseName}_jnigen_config.dart';
+}
+
+/// Default relative path for generated FFIgen config files.
+final String ffigenConfigPath = path.posix.join('tool', 'pigeon', getFfigenConfigFileName());
+
+/// Default relative path for generated JNIgen config files.
+final String jnigenConfigPath = path.posix.join('tool', 'pigeon', getJnigenConfigFileName());
+
+/// Returns the path to the FFIgen config file in [appDirectory] and optional [inputPath].
+String getFfigenConfigPath(String appDirectory, [String? inputPath]) {
+  return path.posix.join(
+    posixPath(appDirectory),
+    'tool',
+    'pigeon',
+    getFfigenConfigFileName(inputPath),
+  );
+}
+
+/// Returns the path to the JNIgen config file in [appDirectory] and optional [inputPath].
+String getJnigenConfigPath(String appDirectory, [String? inputPath]) {
+  return path.posix.join(
+    posixPath(appDirectory),
+    'tool',
+    'pigeon',
+    getJnigenConfigFileName(inputPath),
+  );
+}
+
+/// Computes a posix relative path from [fromPath] to [targetPath], safely
+/// handling empty strings, unnormalized paths, and cross-directory steps.
+String makeRelative(String targetPath, String fromPath) {
+  final String absTarget = path.isAbsolute(targetPath)
+      ? posixPath(path.normalize(targetPath))
+      : posixPath(path.normalize(path.absolute(targetPath)));
+  final String absFrom = path.isAbsolute(fromPath)
+      ? posixPath(path.normalize(fromPath))
+      : posixPath(path.normalize(path.absolute(fromPath)));
+  return path.posix.relative(absTarget, from: absFrom);
+}
+
+/// Returns true if [child] is the same path as or inside [parent].
+bool isWithinOrEquals(String parent, String child) {
+  final String normalizedParent = posixPath(parent);
+  final String normalizedChild = posixPath(child);
+  return path.posix.equals(normalizedParent, normalizedChild) ||
+      path.posix.isWithin(normalizedParent, normalizedChild);
+}
 
 /// Read all the content from [stdin] to a String.
 String readStdin() {
@@ -31,13 +145,13 @@ String readStdin() {
 /// True if the generator line number should be printed out at the end of newlines.
 bool debugGenerators = false;
 
-/// A helper class for managing indentation, wrapping a [StringSink].
+/// A helper class for managing indentation, wrapping a [StringBuffer].
 class Indent {
-  /// Constructor which takes a [StringSink] [Indent] will wrap.
-  Indent(this._sink);
-
   int _count = 0;
-  final StringSink _sink;
+  final StringBuffer _buffer = StringBuffer();
+
+  @override
+  String toString() => _buffer.toString();
 
   /// String used for newlines (ex "\n").
   String get newline {
@@ -71,10 +185,12 @@ class Indent {
     return result;
   }
 
-  /// Replaces the newlines and tabs of input and adds it to the stream.
+  /// Replaces the newlines and tabs of [input] and adds the result to the
+  /// stream.
   ///
-  /// [trimIndentation] flag finds the line with the fewest leading empty
-  /// spaces and trims the beginning of all lines by this number.
+  /// If the [trimIndentation] parameter is true, this function also finds the
+  /// smallest leading space count and trims the beginning of all lines by this
+  /// number.
   void format(
     String input, {
     bool leadingSpace = true,
@@ -112,27 +228,27 @@ class Indent {
   void addScoped(
     String? begin,
     String? end,
-    Function func, {
+    void Function() func, {
     bool addTrailingNewline = true,
     int nestCount = 1,
   }) {
     if (begin != null) {
-      _sink.write(begin + newline);
+      _buffer.write(begin + newline);
     }
     nest(nestCount, func);
     if (end != null && end.isNotEmpty) {
-      _sink.write(str() + end);
+      _buffer.write(str() + end);
       if (addTrailingNewline) {
-        _sink.write(newline);
+        _buffer.write(newline);
       }
     }
   }
 
-  /// Like `addScoped` but writes the current indentation level.
+  /// Like [addScoped] but writes the current indentation.
   void writeScoped(
     String? begin,
     String? end,
-    Function func, {
+    void Function() func, {
     int nestCount = 1,
     bool addTrailingNewline = true,
   }) {
@@ -148,40 +264,40 @@ class Indent {
   /// Scoped increase of the indent level.
   ///
   /// For the execution of [func] the indentation will be incremented by the given amount.
-  void nest(int count, Function func) {
+  void nest(int count, void Function() func) {
     inc(count);
-    func(); // ignore: avoid_dynamic_calls
+    func();
     dec(count);
   }
 
   /// Add [text] with indentation and a newline.
   void writeln(String text) {
     if (text.isEmpty) {
-      _sink.write(newline);
+      _buffer.write(newline);
     } else {
-      _sink.write(str() + text + newline);
+      _buffer.write(str() + text + newline);
     }
   }
 
   /// Add [text] with indentation.
   void write(String text) {
-    _sink.write(str() + text);
+    _buffer.write(str() + text);
   }
 
   /// Add [text] with a newline.
   void addln(String text) {
-    _sink.write(text + newline);
+    _buffer.write(text + newline);
   }
 
   /// Just adds [text].
   void add(String text) {
-    _sink.write(text);
+    _buffer.write(text);
   }
 
   /// Adds [lines] number of newlines.
   void newln([int lines = 1]) {
     for (; lines > 0; lines--) {
-      _sink.write(newline);
+      _buffer.write(newline);
     }
   }
 }
@@ -261,11 +377,7 @@ HostDatatype getHostDatatype(
   String? Function(TypeDeclaration) builtinResolver, {
   String Function(String)? customResolver,
 }) {
-  return _getHostDatatype(
-    type,
-    builtinResolver,
-    customResolver: customResolver,
-  );
+  return _getHostDatatype(type, builtinResolver, customResolver: customResolver);
 }
 
 HostDatatype _getHostDatatype(
@@ -324,9 +436,7 @@ const String generatedCodeWarning =
 
 /// Warning printed at the top of all generated code.
 String getGeneratedCodeWarning() {
-  final versionString = includeVersionInGeneratedWarning
-      ? ' (v$pigeonVersion)'
-      : '';
+  final versionString = includeVersionInGeneratedWarning ? ' (v$pigeonVersion)' : '';
   return 'Autogenerated from Pigeon$versionString, do not edit directly.';
 }
 
@@ -370,6 +480,47 @@ const List<String> disallowedPrefixes = <String>[
   'pigeonChannelCodec',
 ];
 
+/// Whether a value of [type] crosses the language boundary directly, as its
+/// own argument or return value, under [NativeInteropTransport.hybrid].
+///
+/// Values of every other type (data classes, `List`, `Map` and `Object`) are
+/// encoded with the standard message codec, and all of them in one call share
+/// one buffer.
+bool isNativeInteropDirectType(TypeDeclaration type) {
+  if (type.isEnum) {
+    return true;
+  }
+  return const <String>{
+    'bool',
+    'int',
+    'double',
+    'String',
+    'Uint8List',
+    'Int32List',
+    'Int64List',
+    'Float64List',
+  }.contains(type.baseName);
+}
+
+/// The parameters of a method that the hybrid transport encodes into the
+/// method's argument buffer, in declaration order.
+List<Parameter> nativeInteropEncodedParameters(Iterable<Parameter> parameters) {
+  return parameters
+      .where((Parameter parameter) => !isNativeInteropDirectType(parameter.type))
+      .toList();
+}
+
+/// Whether the hybrid transport returns a value of [type] in a buffer.
+bool nativeInteropReturnsBuffer(TypeDeclaration type) {
+  return !type.isVoid && !isNativeInteropDirectType(type);
+}
+
+/// The name of the buffer parameter of hybrid transport entry points.
+const String nativeInteropArgsParameterName = '${varNamePrefix}args';
+
+/// The raw index that the hybrid transport passes for a null enum.
+const int nativeInteropNullEnumIndex = -1;
+
 /// Collection of keys used in dictionaries across generators.
 class Keys {
   /// The key in the result hash for the 'result' value.
@@ -405,20 +556,14 @@ void addLines(Indent indent, Iterable<String> lines, {String? linePrefix}) {
 ///
 /// In other words, whenever there is a conflict over the value of a key path,
 /// [modification]'s value for that key path is selected.
-Map<String, Object> mergeMaps(
-  Map<String, Object> base,
-  Map<String, Object> modification,
-) {
+Map<String, Object> mergePigeonMaps(Map<String, Object> base, Map<String, Object> modification) {
   final result = <String, Object>{};
   for (final MapEntry<String, Object> entry in modification.entries) {
     if (base.containsKey(entry.key)) {
       final Object entryValue = entry.value;
       if (entryValue is Map<String, Object>) {
         assert(base[entry.key] is Map<String, Object>);
-        result[entry.key] = mergeMaps(
-          (base[entry.key] as Map<String, Object>?)!,
-          entryValue,
-        );
+        result[entry.key] = mergePigeonMaps((base[entry.key] as Map<String, Object>?)!, entryValue);
       } else {
         result[entry.key] = entry.value;
       }
@@ -498,8 +643,7 @@ const int minimumCodecFieldKey = proxyApiCodecInstanceManagerKey + 1;
 const int maximumCodecFieldKey = 255;
 
 /// The total number of keys allowed in the custom codec.
-const int totalCustomCodecKeysAllowed =
-    maximumCodecFieldKey - minimumCodecFieldKey;
+const int totalCustomCodecKeysAllowed = maximumCodecFieldKey - minimumCodecFieldKey;
 
 Iterable<TypeDeclaration> _getTypeArguments(TypeDeclaration type) sync* {
   for (final TypeDeclaration typeArg in type.typeArguments) {
@@ -508,12 +652,8 @@ Iterable<TypeDeclaration> _getTypeArguments(TypeDeclaration type) sync* {
   yield type;
 }
 
-bool _isUnseenCustomType(
-  TypeDeclaration type,
-  Set<String> referencedTypeNames,
-) {
-  return !referencedTypeNames.contains(type.baseName) &&
-      !validTypes.contains(type.baseName);
+bool _isUnseenCustomType(TypeDeclaration type, Set<String> referencedTypeNames) {
+  return !referencedTypeNames.contains(type.baseName) && !validTypes.contains(type.baseName);
 }
 
 class _Bag<Key, Value> {
@@ -537,10 +677,7 @@ class _Bag<Key, Value> {
 
 /// Recurses into a list of [Api]s and produces a list of all referenced types
 /// and an associated [List] of the offsets where they are found.
-Map<TypeDeclaration, List<int>> getReferencedTypes(
-  List<Api> apis,
-  List<Class> classes,
-) {
+Map<TypeDeclaration, List<int>> getReferencedTypes(List<Api> apis, List<Class> classes) {
   final references = _Bag<TypeDeclaration, int>();
   for (final api in apis) {
     for (final Method method in api.methods) {
@@ -552,10 +689,7 @@ Map<TypeDeclaration, List<int>> getReferencedTypes(
     if (api is AstProxyApi) {
       for (final Constructor constructor in api.constructors) {
         for (final NamedType parameter in constructor.parameters) {
-          references.addMany(
-            _getTypeArguments(parameter.type),
-            parameter.offset,
-          );
+          references.addMany(_getTypeArguments(parameter.type), parameter.offset);
         }
       }
       for (final ApiField field in api.fields) {
@@ -567,25 +701,26 @@ Map<TypeDeclaration, List<int>> getReferencedTypes(
   final Set<String> referencedTypeNames = references.map.keys
       .map((TypeDeclaration e) => e.baseName)
       .toSet();
-  final classesToCheck = List<String>.from(referencedTypeNames);
+  final classesToCheck = Set<String>.from(referencedTypeNames);
   while (classesToCheck.isNotEmpty) {
-    final String next = classesToCheck.removeLast();
+    final String next = classesToCheck.last;
     final Class aClass = classes.firstWhere(
       (Class x) => x.name == next,
       orElse: () => Class(name: '', fields: <NamedType>[]),
     );
     for (final NamedType field in aClass.fields) {
+      references.add(field.type, field.offset);
       if (_isUnseenCustomType(field.type, referencedTypeNames)) {
-        references.add(field.type, field.offset);
         classesToCheck.add(field.type.baseName);
       }
       for (final TypeDeclaration typeArg in field.type.typeArguments) {
+        references.add(typeArg, field.offset);
         if (_isUnseenCustomType(typeArg, referencedTypeNames)) {
-          references.add(typeArg, field.offset);
           classesToCheck.add(typeArg.baseName);
         }
       }
     }
+    classesToCheck.remove(next);
   }
   return references.map;
 }
@@ -595,8 +730,7 @@ Map<TypeDeclaration, List<int>> getReferencedTypes(
 ///
 /// [T] depends on the language. For example, Android uses an int while iOS uses
 /// semantic versioning.
-({TypeDeclaration type, T version})?
-findHighestApiRequirement<T extends Object>(
+({TypeDeclaration type, T version})? findHighestApiRequirement<T extends Object>(
   Iterable<TypeDeclaration> types, {
   required T? Function(TypeDeclaration) onGetApiRequirement,
   required Comparator<T> onCompare,
@@ -622,9 +756,7 @@ findHighestApiRequirement<T extends Object>(
     TypeDeclaration one,
     TypeDeclaration two,
   ) {
-    return onCompare(onGetApiRequirement(one)!, onGetApiRequirement(two)!) > 0
-        ? one
-        : two;
+    return onCompare(onGetApiRequirement(one)!, onGetApiRequirement(two)!) > 0 ? one : two;
   });
 
   return (
@@ -644,10 +776,7 @@ enum CustomTypes {
 
 /// Return the enumerated types that must exist in the codec
 /// where the enumeration should be the key used in the buffer.
-Iterable<EnumeratedType> getEnumeratedTypes(
-  Root root, {
-  bool excludeSealedClasses = false,
-}) sync* {
+Iterable<EnumeratedType> getEnumeratedTypes(Root root, {bool excludeSealedClasses = false}) sync* {
   var index = 0;
 
   for (final Enum customEnum in root.enums) {
@@ -675,8 +804,7 @@ Iterable<EnumeratedType> getEnumeratedTypes(
 
 /// Checks if [root] contains enough custom types to require overflow codec tools.
 bool customTypeOverflowCheck(Root root) {
-  return root.classes.length + root.enums.length >
-      maximumCodecFieldKey - minimumCodecFieldKey;
+  return root.classes.length + root.enums.length > maximumCodecFieldKey - minimumCodecFieldKey;
 }
 
 /// Describes how to format a document comment.
@@ -757,28 +885,24 @@ Iterable<NamedType> getFieldsInSerializationOrder(Class classDefinition) {
   return classDefinition.fields;
 }
 
-/// Crawls up the path of [dartFilePath] until it finds a pubspec.yaml in a
-/// parent directory and returns its path.
-String? _findPubspecPath(String dartFilePath) {
+/// Crawls up the path starting from [startDirectory] until it finds a pubspec.yaml
+/// in [startDirectory] or one of its parent directories, and returns its path.
+String? findPubspecPath(Directory startDirectory) {
   try {
-    Directory dir = File(dartFilePath).parent;
-    String? pubspecPath;
-    while (pubspecPath == null) {
+    var dir = startDirectory;
+    while (true) {
       if (dir.existsSync()) {
-        final Iterable<String> pubspecPaths = dir
-            .listSync()
-            .map((FileSystemEntity e) => e.path)
-            .where((String path) => path.endsWith('pubspec.yaml'));
-        if (pubspecPaths.isNotEmpty) {
-          pubspecPath = pubspecPaths.first;
-        } else {
-          dir = dir.parent;
+        final pubspecFile = File(path.join(dir.path, 'pubspec.yaml'));
+        if (pubspecFile.existsSync()) {
+          return pubspecFile.path;
         }
-      } else {
+      }
+      if (dir.path == dir.parent.path) {
         break;
       }
+      dir = dir.parent;
     }
-    return pubspecPath;
+    return null;
   } catch (ex) {
     return null;
   }
@@ -787,7 +911,7 @@ String? _findPubspecPath(String dartFilePath) {
 /// Given the path of a Dart file, [mainDartFile], the name of the package will
 /// be deduced by locating and parsing its associated pubspec.yaml.
 String? deducePackageName(String mainDartFile) {
-  final String? pubspecPath = _findPubspecPath(mainDartFile);
+  final String? pubspecPath = findPubspecPath(File(mainDartFile).parent);
   if (pubspecPath == null) {
     return null;
   }
@@ -798,6 +922,16 @@ String? deducePackageName(String mainDartFile) {
   } catch (_) {
     return null;
   }
+}
+
+/// Extracts the base class name component from an output file path.
+///
+/// For example, extracts 'messages' from 'ios/Classes/messages.g.swift'.
+String deduceClassNameComponent(String? filePath) {
+  if (filePath == null || filePath.isEmpty) {
+    return '';
+  }
+  return path.basename(filePath).split('.').first;
 }
 
 /// Enum to specify api type when generating code.
@@ -839,9 +973,7 @@ class OutputFileOptions<T extends InternalOptions> extends InternalOptions {
 String toUpperCamelCase(String text) {
   final separatorPattern = RegExp(r'[ _-]');
   return text.split(separatorPattern).map((String word) {
-    return word.isEmpty
-        ? ''
-        : word.substring(0, 1).toUpperCase() + word.substring(1);
+    return word.isEmpty ? '' : word.substring(0, 1).toUpperCase() + word.substring(1);
   }).join();
 }
 
@@ -864,10 +996,7 @@ String toLowerCamelCase(String text) {
 /// Converts string to SCREAMING_SNAKE_CASE.
 String toScreamingSnakeCase(String string) {
   return string
-      .replaceAllMapped(
-        RegExp(r'(?<=[a-z])[A-Z]'),
-        (Match m) => '_${m.group(0)}',
-      )
+      .replaceAllMapped(RegExp(r'(?<=[a-z])[A-Z]'), (Match m) => '_${m.group(0)}')
       .toUpperCase();
 }
 
@@ -900,4 +1029,86 @@ bool isCollectionType(TypeDeclaration type) {
       !type.isEnum &&
       !type.isProxyApi &&
       (type.baseName.contains('List') || type.baseName == 'Map');
+}
+
+/// Whether the type is a primitive scalar type (bool, int, or double).
+bool isPrimitiveType(TypeDeclaration type) {
+  return type.baseName == 'bool' || type.baseName == 'int' || type.baseName == 'double';
+}
+
+/// Wraps provided [toWrap] with [start] and [end] if [wrap] is true.
+String wrapConditionally(String toWrap, String start, String end, bool wrap) {
+  return wrap ? '$start$toWrap$end' : toWrap;
+}
+
+/// Returns '?' if [nullable] is true, otherwise empty string.
+String getNullabilitySymbol(bool nullable) => nullable ? '?' : '';
+
+/// Returns '!' if [force] is true, otherwise empty string.
+String getForceNonNullSymbol(bool force) => force ? '!' : '';
+
+/// A comparator that orders [TypeDeclaration]s from most specific to most generic.
+///
+/// This is used when generating code where more specific types (e.g., `List<int>`)
+/// need to be handled before broader fallback types (e.g., `List<Object?>`).
+///
+/// Generic-ness is calculated recursively by scoring type components based on depth,
+/// where occurrences of `Object` are heavily weighted, nullability is lightly weighted,
+/// and nested type arguments are scored with decreasing weight by depth.
+///
+/// For example:
+/// * `int` is more specific (lower score) than `Object?` (higher score).
+/// * `List<int>` is more specific than `List<Object?>`.
+/// * `Map<String, int>` is more specific than `Map<Object?, Object?>`.
+int compareTypeDeclarationGenericness(TypeDeclaration a, TypeDeclaration b) {
+  return _calculateGenericScore(a, 0).compareTo(_calculateGenericScore(b, 0));
+}
+
+int _calculateGenericScore(TypeDeclaration type, int depth) {
+  var score = 0;
+
+  if (type.baseName == 'Object') {
+    score += 10000 >> depth;
+  }
+  if (type.isNullable) {
+    score += 1000 >> depth;
+  }
+
+  // Handle untyped collections by scoring their implicit 'Object?' arguments
+  if (type.typeArguments.isEmpty) {
+    if (type.baseName == 'List') {
+      score += 11000 >> (depth + 1);
+    }
+    if (type.baseName == 'Map') {
+      score += 22000 >> (depth + 1);
+    }
+  }
+
+  for (final TypeDeclaration arg in type.typeArguments) {
+    score += _calculateGenericScore(arg, depth + 1);
+  }
+  return score;
+}
+
+/// Alias for [compareTypeDeclarationGenericness] to maintain compatibility.
+const int Function(TypeDeclaration, TypeDeclaration) sortByObjectCount =
+    compareTypeDeclarationGenericness;
+
+/// Escapes special characters in a string for use in double-quoted string literals.
+String escapeStringDoubleQuotes(String value) {
+  return value
+      .replaceAll(r'\', r'\\')
+      .replaceAll('"', r'\"')
+      .replaceAll('\n', r'\n')
+      .replaceAll('\r', r'\r');
+}
+
+/// Escapes special characters in a string for use in single-quoted string literals.
+String escapeStringSingleQuotes(String value) {
+  return value
+      .replaceAll(r'\', r'\\')
+      .replaceAll("'", r"\'")
+      .replaceAll('\n', r'\n')
+      .replaceAll('\r', r'\r')
+      .replaceAll(r'$', r'\$');
 }

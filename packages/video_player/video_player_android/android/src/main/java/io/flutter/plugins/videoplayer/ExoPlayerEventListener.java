@@ -5,19 +5,33 @@
 package io.flutter.plugins.videoplayer;
 
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Player.PositionInfo;
+import androidx.media3.common.Timeline;
 import androidx.media3.common.Tracks;
 import androidx.media3.exoplayer.ExoPlayer;
 
 public abstract class ExoPlayerEventListener implements Player.Listener {
+  static final long DURATION_UNSET_INITIALIZATION_TIMEOUT_MS = 2000;
   private boolean isInitialized = false;
   private boolean isLoadingNewAsset = false;
   private CountDownTimer timeoutCountdown;
+  private boolean isWaitingForValidDuration = false;
+  private final Handler mainHandler = new Handler(Looper.getMainLooper());
+  private final Runnable initializationFallback =
+      () -> {
+        if (!isInitialized && isWaitingForValidDuration) {
+          isWaitingForValidDuration = false;
+          isInitialized = true;
+          sendInitialized();
+        }
+      };
   protected final ExoPlayer exoPlayer;
   protected final VideoPlayerCallbacks events;
   @Nullable private Runnable onLoopCallback;
@@ -62,6 +76,39 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
 
   protected abstract void sendReloadingEnd();
 
+  /** Cancels pending initialization callbacks when the player is disposed. */
+  public void dispose() {
+    isWaitingForValidDuration = false;
+    mainHandler.removeCallbacks(initializationFallback);
+  }
+
+  private boolean hasValidDuration() {
+    return exoPlayer.getDuration() != C.TIME_UNSET;
+  }
+
+  private boolean shouldWaitForValidDuration() {
+    return !exoPlayer.isCurrentMediaItemLive() && !exoPlayer.isCurrentMediaItemDynamic();
+  }
+
+  private void maybeSendInitialized() {
+    if (isInitialized) {
+      return;
+    }
+
+    if (!hasValidDuration() && shouldWaitForValidDuration()) {
+      if (!isWaitingForValidDuration) {
+        isWaitingForValidDuration = true;
+        mainHandler.postDelayed(initializationFallback, DURATION_UNSET_INITIALIZATION_TIMEOUT_MS);
+      }
+      return;
+    }
+
+    isWaitingForValidDuration = false;
+    isInitialized = true;
+    mainHandler.removeCallbacks(initializationFallback);
+    sendInitialized();
+  }
+
   @Override
   public void onPlaybackStateChanged(final int playbackState) {
     PlatformPlaybackState platformState = PlatformPlaybackState.UNKNOWN;
@@ -75,8 +122,7 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
         }
         platformState = PlatformPlaybackState.READY;
         if (!isInitialized) {
-          isInitialized = true;
-          sendInitialized();
+          maybeSendInitialized();
         } else if (isLoadingNewAsset) {
           isLoadingNewAsset = false;
           sendReloadingEnd();
@@ -90,6 +136,13 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
         break;
     }
     events.onPlaybackStateChanged(platformState);
+  }
+
+  @Override
+  public void onTimelineChanged(@NonNull Timeline timeline, int reason) {
+    if (isWaitingForValidDuration && exoPlayer.getPlaybackState() == Player.STATE_READY) {
+      maybeSendInitialized();
+    }
   }
 
   @Override
@@ -118,9 +171,7 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
 
   @Override
   public void onPositionDiscontinuity(
-      @NonNull PositionInfo oldPosition,
-      @NonNull PositionInfo newPosition,
-      int reason) {
+      @NonNull PositionInfo oldPosition, @NonNull PositionInfo newPosition, int reason) {
     if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION && onLoopCallback != null) {
       onLoopCallback.run();
     }
@@ -129,8 +180,12 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
   @Override
   public void onTracksChanged(@NonNull Tracks tracks) {
     // Find the currently selected audio track and notify
-    String selectedTrackId = findSelectedAudioTrackId(tracks);
-    events.onAudioTrackChanged(selectedTrackId);
+    String selectedAudioTrackId = findSelectedAudioTrackId(tracks);
+    events.onAudioTrackChanged(selectedAudioTrackId);
+
+    // Find the currently selected video track and notify
+    String selectedVideoTrackId = findSelectedVideoTrackId(tracks);
+    events.onVideoTrackChanged(selectedVideoTrackId);
   }
 
   /**
@@ -141,6 +196,7 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
    */
   @Nullable
   private String findSelectedAudioTrackId(@NonNull Tracks tracks) {
+    // Keep this ID format in sync with android_video_player.dart::_parseAndroidTrackId.
     int groupIndex = 0;
     for (Tracks.Group group : tracks.getGroups()) {
       if (group.getType() == C.TRACK_TYPE_AUDIO && group.isSelected()) {
@@ -163,16 +219,41 @@ public abstract class ExoPlayerEventListener implements Player.Listener {
   }
 
   private void startTimeoutCountdown() {
-      if (timeoutCountdown != null) {
-          timeoutCountdown.cancel();
-      }
-      timeoutCountdown = new CountDownTimer(8000, 8000) {
+    if (timeoutCountdown != null) {
+      timeoutCountdown.cancel();
+    }
+    timeoutCountdown =
+        new CountDownTimer(8000, 8000) {
 
           public void onTick(long millisUntilFinished) {}
 
           public void onFinish() {
-              events.onError("VideoError", "Video player timed out, no events", null);
+            events.onError("VideoError", "Video player timed out, no events", null);
           }
-      }.start();
+        }.start();
+  }
+
+  /**
+   * Finds the ID of the currently selected video track.
+   *
+   * @param tracks The current tracks
+   * @return The track ID in format "groupIndex_trackIndex", or null if no video track is selected
+   */
+  @Nullable
+  private String findSelectedVideoTrackId(@NonNull Tracks tracks) {
+    // Keep this ID format in sync with android_video_player.dart::_parseAndroidTrackId.
+    int groupIndex = 0;
+    for (Tracks.Group group : tracks.getGroups()) {
+      if (group.getType() == C.TRACK_TYPE_VIDEO && group.isSelected()) {
+        // Find the selected track within this group
+        for (int i = 0; i < group.length; i++) {
+          if (group.isTrackSelected(i)) {
+            return groupIndex + "_" + i;
+          }
+        }
+      }
+      groupIndex++;
+    }
+    return null;
   }
 }

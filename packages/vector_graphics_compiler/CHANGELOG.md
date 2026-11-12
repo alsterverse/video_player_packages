@@ -1,5 +1,83 @@
 ## NEXT
 
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 1.3.6
+
+* Adds support for SVG filters (`feGaussianBlur`, `feOffset`, `feMerge`, and `feMergeNode`).
+
+## 1.3.5
+
+* Resolves the Flutter artifact cache using `package:cli_util` when running as a
+  standalone AOT-compiled executable (such as via `dart install` or
+  `dart run vector_graphics_compiler@`).
+
+## 1.3.4
+
+* Fixes `em` units in text `x`, `y`, `dx` and `dy` being treated as pixels.
+
+## 1.3.3
+
+* Throws an `UnimplementedError` instead of a `FormatException` when `text` or
+  `tspan` has a list of `x`, `y`, `dx` or `dy` values, which isn't supported.
+
+## 1.3.2
+
+* Fixes a `tspan` without its own position being drawn with its parent group
+  transform applied twice.
+
+## 1.3.1
+
+* Adds support for SVG alpha masks (`mask-type="alpha"`).
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 1.3.0
+
+* An unrecognized `font-weight` value is now ignored with a warning (and still
+  throws when `warningsAsErrors` is set) instead of always throwing. This
+  preserves an inherited weight, or the initial normal weight at the root, and
+  lets the compiler tolerate non-standard values such as `regular` emitted by
+  some SVG generators.
+
+## 1.2.6
+
+* Fixes `linux-arm64` host support by selecting the Flutter engine
+  artifact directory from `Abi.current()` instead of a hardcoded
+  `linux-x64`.
+
+## 1.2.5
+
+* Updates allowed version range of `xml` to include up to 7.0.1.
+
+## 1.2.4
+
+* Fix Stack Overflow crashes caused by circular references (masks, patterns, deferred nodes, and clip paths).
+* Prevent CPU/Memory Denial of Service (DoS) resource exhaustion from exponential DAG reference expansions (Billion Laughs SVG exploits) by enforcing a strict, cumulative reference expansion safety limit of 1,000.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 1.2.3
+
+* Fixes the SVG parser injecting a spurious space between adjacent
+  `<tspan>` elements that have no whitespace between them in the source.
+  Previously `<tspan>A</tspan><tspan>B</tspan>` was emitted as `"A"` +
+  `" B"`, producing a visible gap; it now emits `"A"` + `"B"` to match
+  every browser.
+
+## 1.2.2
+
+* Adds support for modern space-separated HSL and HSLA color syntax.
+
+## 1.2.1
+
+* Fixes HSL/HSLA color parsing for decimal percentage components (e.g. `hsl(270, 100%, 76.27%)`).
+
+## 1.2.0
+
+* Adds support for percentage units in SVG shape attributes (rect, circle, ellipse, line).
+
+## 1.1.20
+
+* Fixes color parsing for modern rgb and rgba CSS syntax.
 * Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
 
 ## 1.1.19

@@ -9,6 +9,9 @@ Future<int> runProcess(
   String command,
   List<String> arguments, {
   String? workingDirectory,
+  Map<String, String>? environment,
+  bool includeParentEnvironment = true,
+  bool runInShell = false,
   bool streamOutput = true,
   bool logFailure = false,
 }) async {
@@ -16,9 +19,10 @@ Future<int> runProcess(
     command,
     arguments,
     workingDirectory: workingDirectory,
-    mode: streamOutput
-        ? ProcessStartMode.inheritStdio
-        : ProcessStartMode.normal,
+    environment: environment,
+    includeParentEnvironment: includeParentEnvironment,
+    runInShell: runInShell,
+    mode: streamOutput ? ProcessStartMode.inheritStdio : ProcessStartMode.normal,
   );
 
   if (streamOutput) {

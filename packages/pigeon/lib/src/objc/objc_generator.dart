@@ -14,8 +14,9 @@ import '../pigeon_lib.dart';
 const String _docCommentPrefix = '///';
 
 /// Documentation comment spec.
-const DocumentCommentSpecification _docCommentSpec =
-    DocumentCommentSpecification(_docCommentPrefix);
+const DocumentCommentSpecification _docCommentSpec = DocumentCommentSpecification(
+  _docCommentPrefix,
+);
 
 const String _overflowClassName = '${classNamePrefix}CodecOverflow';
 
@@ -27,14 +28,8 @@ final NamedType _overflowObject = NamedType(
   name: 'wrapped',
   type: const TypeDeclaration(baseName: 'Object', isNullable: true),
 );
-final List<NamedType> _overflowFields = <NamedType>[
-  _overflowInt,
-  _overflowObject,
-];
-final Class _overflowClass = Class(
-  name: _overflowClassName,
-  fields: _overflowFields,
-);
+final List<NamedType> _overflowFields = <NamedType>[_overflowInt, _overflowObject];
+final Class _overflowClass = Class(name: _overflowClassName, fields: _overflowFields);
 final EnumeratedType _enumeratedOverflow = EnumeratedType(
   _overflowClassName,
   maximumCodecFieldKey,
@@ -73,8 +68,7 @@ class ObjcOptions {
       headerIncludePath: map['headerIncludePath'] as String?,
       prefix: map['prefix'] as String?,
       copyrightHeader: copyrightHeader?.cast<String>(),
-      fileSpecificClassNameComponent:
-          map['fileSpecificClassNameComponent'] as String?,
+      fileSpecificClassNameComponent: map['fileSpecificClassNameComponent'] as String?,
     );
   }
 
@@ -94,7 +88,7 @@ class ObjcOptions {
   /// Overrides any non-null parameters from [options] into this to make a new
   /// [ObjcOptions].
   ObjcOptions merge(ObjcOptions options) {
-    return ObjcOptions.fromMap(mergeMaps(toMap(), options.toMap()));
+    return ObjcOptions.fromMap(mergePigeonMaps(toMap(), options.toMap()));
   }
 }
 
@@ -117,13 +111,11 @@ class InternalObjcOptions extends InternalOptions {
     required this.objcSourceOut,
     String? fileSpecificClassNameComponent,
     Iterable<String>? copyrightHeader,
-  }) : headerIncludePath =
-           options.headerIncludePath ?? path.basename(objcHeaderOut),
+  }) : headerIncludePath = options.headerIncludePath ?? path.basename(objcHeaderOut),
        prefix = options.prefix,
        copyrightHeader = options.copyrightHeader ?? copyrightHeader,
        fileSpecificClassNameComponent =
-           options.fileSpecificClassNameComponent ??
-           fileSpecificClassNameComponent;
+           options.fileSpecificClassNameComponent ?? fileSpecificClassNameComponent;
 
   /// The path to the header that will get placed in the source file (example:
   /// "foo.h").
@@ -203,7 +195,7 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
     Indent indent, {
     required String dartPackageName,
   }) {
-    indent.writeln('#import <Foundation/Foundation.h>');
+    indent.writeln('@import Foundation;');
     indent.newln();
 
     indent.writeln('@protocol FlutterBinaryMessenger;');
@@ -215,6 +207,32 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
   }
 
   @override
+  void writeConstants(
+    InternalObjcOptions generatorOptions,
+    Root root,
+    Indent indent, {
+    required String dartPackageName,
+  }) {
+    if (root.constants.isEmpty) {
+      return;
+    }
+    indent.newln();
+    for (final Constant constant in root.constants) {
+      addDocumentationComments(indent, constant.documentationComments, _docCommentSpec);
+      final String constantName = _constantName(generatorOptions.prefix, constant.name);
+      final String type = constant.type.baseName;
+      if (type == 'String') {
+        indent.writeln('extern NSString *const $constantName;');
+      } else if (type == 'bool') {
+        indent.writeln('extern const BOOL $constantName;');
+      } else {
+        final _ObjcType objcType = _objcTypeForDartType(generatorOptions.prefix, constant.type);
+        indent.writeln('extern const $objcType $constantName;');
+      }
+    }
+  }
+
+  @override
   void writeEnum(
     InternalObjcOptions generatorOptions,
     Root root,
@@ -222,25 +240,14 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
     Enum anEnum, {
     required String dartPackageName,
   }) {
-    final String enumName = _enumName(
-      anEnum.name,
-      prefix: generatorOptions.prefix,
-    );
+    final String enumName = _enumName(anEnum.name, prefix: generatorOptions.prefix);
     indent.newln();
-    addDocumentationComments(
-      indent,
-      anEnum.documentationComments,
-      _docCommentSpec,
-    );
+    addDocumentationComments(indent, anEnum.documentationComments, _docCommentSpec);
 
     indent.write('typedef NS_ENUM(NSUInteger, $enumName) ');
     indent.addScoped('{', '};', () {
-      enumerate(anEnum.members, (int index, final EnumMember member) {
-        addDocumentationComments(
-          indent,
-          member.documentationComments,
-          _docCommentSpec,
-        );
+      enumerate(anEnum.members, (int index, EnumMember member) {
+        addDocumentationComments(indent, member.documentationComments, _docCommentSpec);
         // Capitalized first letter to ensure Swift compatibility
         indent.writeln(
           '$enumName${member.name[0].toUpperCase()}${member.name.substring(1)} = $index,',
@@ -253,9 +260,7 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
   void _writeEnumWrapper(Indent indent, String enumName) {
     indent.newln();
     indent.writeln('/// Wrapper for $enumName to allow for nullability.');
-    indent.writeln(
-      '@interface ${_enumName(enumName, prefix: '', box: true)} : NSObject',
-    );
+    indent.writeln('@interface ${_enumName(enumName, prefix: '', box: true)} : NSObject');
     indent.writeln('@property(nonatomic, assign) $enumName value;');
     indent.writeln('- (instancetype)initWithValue:($enumName)value;');
     indent.writeln('@end');
@@ -270,17 +275,10 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
   }) {
     indent.newln();
     for (final Class classDefinition in root.classes) {
-      indent.writeln(
-        '@class ${_className(generatorOptions.prefix, classDefinition.name)};',
-      );
+      indent.writeln('@class ${_className(generatorOptions.prefix, classDefinition.name)};');
     }
     indent.newln();
-    super.writeDataClasses(
-      generatorOptions,
-      root,
-      indent,
-      dartPackageName: dartPackageName,
-    );
+    super.writeDataClasses(generatorOptions, root, indent, dartPackageName: dartPackageName);
   }
 
   @override
@@ -332,12 +330,7 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
     Indent indent, {
     required String dartPackageName,
   }) {
-    super.writeApis(
-      generatorOptions,
-      root,
-      indent,
-      dartPackageName: dartPackageName,
-    );
+    super.writeApis(generatorOptions, root, indent, dartPackageName: dartPackageName);
     indent.writeln('NS_ASSUME_NONNULL_END');
   }
 
@@ -351,11 +344,7 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
   }) {
     indent.newln();
     final String apiName = _className(generatorOptions.prefix, api.name);
-    addDocumentationComments(
-      indent,
-      api.documentationComments,
-      _docCommentSpec,
-    );
+    addDocumentationComments(indent, api.documentationComments, _docCommentSpec);
 
     indent.writeln('@interface $apiName : NSObject');
     indent.writeln(
@@ -371,16 +360,8 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
         // Nullability is required since the return must be nil if NSError is set.
         forceBox: true,
       );
-      final String callbackType = _callbackForType(
-        func.returnType,
-        returnType,
-        generatorOptions,
-      );
-      addDocumentationComments(
-        indent,
-        func.documentationComments,
-        _docCommentSpec,
-      );
+      final String callbackType = _callbackForType(func.returnType, returnType, generatorOptions);
+      addDocumentationComments(indent, func.documentationComments, _docCommentSpec);
 
       indent.writeln(
         '${_makeObjcSignature(func: func, options: generatorOptions, returnType: 'void', lastArgName: 'completion', lastArgType: callbackType)};',
@@ -400,11 +381,7 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
   }) {
     indent.newln();
     final String apiName = _className(generatorOptions.prefix, api.name);
-    addDocumentationComments(
-      indent,
-      api.documentationComments,
-      _docCommentSpec,
-    );
+    addDocumentationComments(indent, api.documentationComments, _docCommentSpec);
 
     indent.writeln('@protocol $apiName');
     for (final Method func in api.methods) {
@@ -449,9 +426,7 @@ class ObjcHeaderGenerator extends StructuredGenerator<InternalObjcOptions> {
         lastArgName = 'error';
       }
       final generatorComments = <String>[];
-      if (!func.returnType.isNullable &&
-          !func.returnType.isVoid &&
-          !func.isAsynchronous) {
+      if (!func.returnType.isNullable && !func.returnType.isVoid && !func.isAsynchronous) {
         generatorComments.add(' @return `nil` only when `error != nil`.');
       }
       addDocumentationComments(
@@ -513,16 +488,38 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
     indent.writeln('#import "${generatorOptions.headerIncludePath}"');
     indent.newln();
     indent.writeln('#if TARGET_OS_OSX');
-    indent.writeln('#import <FlutterMacOS/FlutterMacOS.h>');
+    indent.writeln('@import FlutterMacOS;');
     indent.writeln('#else');
-    indent.writeln('#import <Flutter/Flutter.h>');
+    indent.writeln('@import Flutter;');
     indent.writeln('#endif');
     indent.newln();
+  }
 
-    indent.writeln('#if !__has_feature(objc_arc)');
-    indent.writeln('#error File requires ARC to be enabled.');
-    indent.writeln('#endif');
+  @override
+  void writeConstants(
+    InternalObjcOptions generatorOptions,
+    Root root,
+    Indent indent, {
+    required String dartPackageName,
+  }) {
+    if (root.constants.isEmpty) {
+      return;
+    }
     indent.newln();
+    for (final Constant constant in root.constants) {
+      final String constantName = _constantName(generatorOptions.prefix, constant.name);
+      final String type = constant.type.baseName;
+      if (type == 'String') {
+        final String escaped = escapeStringDoubleQuotes(constant.value.toString());
+        indent.writeln('NSString *const $constantName = @"$escaped";');
+      } else if (type == 'bool') {
+        final boolVal = (constant.value as bool) ? 'YES' : 'NO';
+        indent.writeln('const BOOL $constantName = $boolVal;');
+      } else {
+        final _ObjcType objcType = _objcTypeForDartType(generatorOptions.prefix, constant.type);
+        indent.writeln('const $objcType $constantName = ${constant.value};');
+      }
+    }
   }
 
   @override
@@ -533,31 +530,18 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
     Enum anEnum, {
     required String dartPackageName,
   }) {
-    final String enumName = _enumName(
-      anEnum.name,
-      prefix: generatorOptions.prefix,
-    );
+    final String enumName = _enumName(anEnum.name, prefix: generatorOptions.prefix);
     indent.newln();
-    addDocumentationComments(
-      indent,
-      anEnum.documentationComments,
-      _docCommentSpec,
-    );
-    indent.writeln(
-      '@implementation ${_enumName(enumName, prefix: '', box: true)}',
-    );
-    indent.writeScoped(
-      '- (instancetype)initWithValue:($enumName)value {',
-      '}',
-      () {
-        indent.writeln('self = [super init];');
-        indent.writeScoped('if (self) {', '}', () {
-          indent.writeln('_value = value;');
-        });
+    addDocumentationComments(indent, anEnum.documentationComments, _docCommentSpec);
+    indent.writeln('@implementation ${_enumName(enumName, prefix: '', box: true)}');
+    indent.writeScoped('- (instancetype)initWithValue:($enumName)value {', '}', () {
+      indent.writeln('self = [super init];');
+      indent.writeScoped('if (self) {', '}', () {
+        indent.writeln('_value = value;');
+      });
 
-        indent.writeln('return self;');
-      },
-    );
+      indent.writeln('return self;');
+    });
     indent.writeln('@end');
   }
 
@@ -569,19 +553,10 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
     required String dartPackageName,
   }) {
     for (final Class classDefinition in root.classes) {
-      _writeObjcSourceDataClassExtension(
-        generatorOptions,
-        indent,
-        classDefinition,
-      );
+      _writeObjcSourceDataClassExtension(generatorOptions, indent, classDefinition);
     }
     indent.newln();
-    super.writeDataClasses(
-      generatorOptions,
-      root,
-      indent,
-      dartPackageName: dartPackageName,
-    );
+    super.writeDataClasses(generatorOptions, root, indent, dartPackageName: dartPackageName);
   }
 
   @override
@@ -592,19 +567,12 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
     Class classDefinition, {
     required String dartPackageName,
   }) {
-    final String className = _className(
-      generatorOptions.prefix,
-      classDefinition.name,
-    );
+    final String className = _className(generatorOptions.prefix, classDefinition.name);
 
     indent.writeln('@implementation $className');
-    _writeObjcSourceClassInitializer(
-      generatorOptions,
-      root,
-      indent,
-      classDefinition,
-      className,
-    );
+    if (classDefinition.fields.isNotEmpty) {
+      _writeObjcSourceClassInitializer(generatorOptions, root, indent, classDefinition, className);
+    }
     writeClassDecode(
       generatorOptions,
       root,
@@ -619,8 +587,111 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
       classDefinition,
       dartPackageName: dartPackageName,
     );
+    _writeObjcEquality(generatorOptions, indent, classDefinition);
+    _writeObjcDescription(generatorOptions, indent, classDefinition);
     indent.writeln('@end');
     indent.newln();
+  }
+
+  void _writeObjcEquality(
+    InternalObjcOptions generatorOptions,
+    Indent indent,
+    Class classDefinition,
+  ) {
+    final String className = _className(generatorOptions.prefix, classDefinition.name);
+    indent.write('- (BOOL)isEqual:(id)object ');
+    indent.addScoped('{', '}', () {
+      indent.writeScoped('if (self == object) {', '}', () {
+        indent.writeln('return YES;');
+      });
+      indent.writeScoped('if (![object isKindOfClass:[self class]]) {', '}', () {
+        indent.writeln('return NO;');
+      });
+      if (classDefinition.fields.isEmpty) {
+        indent.writeln('return YES;');
+      } else {
+        indent.writeln('$className *other = ($className *)object;');
+        final Iterable<String> checks = classDefinition.fields.map((NamedType field) {
+          final String name = field.name;
+          if (_usesPrimitive(field.type)) {
+            if (field.type.baseName == 'double') {
+              return '(self.$name == other.$name || (isnan(self.$name) && isnan(other.$name)))';
+            }
+            return 'self.$name == other.$name';
+          } else {
+            return 'FLTPigeonDeepEquals(self.$name, other.$name)';
+          }
+        });
+        indent.writeln('return ${checks.join(' && ')};');
+      }
+    });
+    indent.newln();
+    indent.write('- (NSUInteger)hash ');
+    indent.addScoped('{', '}', () {
+      indent.writeln('NSUInteger result = [self class].hash;');
+      for (final NamedType field in classDefinition.fields) {
+        final String name = field.name;
+        if (_usesPrimitive(field.type)) {
+          if (field.type.baseName == 'double') {
+            indent.writeln(
+              'result = result * 31 + (isnan(self.$name) ? (NSUInteger)0x7FF8000000000000 : @(self.$name).hash);',
+            );
+          } else {
+            indent.writeln('result = result * 31 + @(self.$name).hash;');
+          }
+        } else {
+          indent.writeln('result = result * 31 + FLTPigeonDeepHash(self.$name);');
+        }
+      }
+      indent.writeln('return result;');
+    });
+  }
+
+  void _writeObjcDescription(
+    InternalObjcOptions languageOptions,
+    Indent indent,
+    Class classDefinition,
+  ) {
+    final String className = _className(languageOptions.prefix, classDefinition.name);
+    indent.writeScoped('- (NSString *)description {', '}', () {
+      final Iterable<String> fieldLabels = classDefinition.fields.map((NamedType field) {
+        if (_usesPrimitive(field.type)) {
+          if (field.type.isEnum) {
+            return '${field.name}: %ld';
+          }
+          switch (field.type.baseName) {
+            case 'bool':
+              return '${field.name}: %@';
+            case 'int':
+              return '${field.name}: %ld';
+            case 'double':
+              return '${field.name}: %f';
+          }
+        }
+        return '${field.name}: %@';
+      });
+      final formatString = '$className(${fieldLabels.join(', ')})';
+
+      final Iterable<String> fieldValues = classDefinition.fields.map((NamedType field) {
+        if (_usesPrimitive(field.type)) {
+          if (field.type.isEnum) {
+            return '(long)self.${field.name}';
+          }
+          switch (field.type.baseName) {
+            case 'bool':
+              return 'self.${field.name} ? @"true" : @"false"';
+            case 'int':
+              return '(long)self.${field.name}';
+            case 'double':
+              return 'self.${field.name}';
+          }
+        }
+        return 'self.${field.name}';
+      });
+
+      final String args = <String>['@"$formatString"', ...fieldValues].join(', ');
+      indent.writeln('return [NSString stringWithFormat:$args];');
+    });
   }
 
   @override
@@ -650,33 +721,18 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
     Class classDefinition, {
     required String dartPackageName,
   }) {
-    final String className = _className(
-      generatorOptions.prefix,
-      classDefinition.name,
-    );
+    final String className = _className(generatorOptions.prefix, classDefinition.name);
     indent.write('+ ($className *)fromList:(NSArray<id> *)list ');
     indent.addScoped('{', '}', () {
       const resultName = 'pigeonResult';
       indent.writeln('$className *$resultName = [[$className alloc] init];');
-      enumerate(getFieldsInSerializationOrder(classDefinition), (
-        int index,
-        final NamedType field,
-      ) {
+      enumerate(getFieldsInSerializationOrder(classDefinition), (int index, NamedType field) {
         final valueGetter = 'GetNullableObjectAtIndex(list, $index)';
-        final String? primitiveExtractionMethod = _nsnumberExtractionMethod(
-          field.type,
-        );
+        final String? primitiveExtractionMethod = _nsnumberExtractionMethod(field.type);
         final String ivarValueExpression;
         if (field.type.isEnum && !field.type.isNullable) {
-          final varName =
-              'boxed${_enumName(field.type.baseName, prefix: generatorOptions.prefix)}';
-          _writeEnumBoxToEnum(
-            indent,
-            field,
-            varName,
-            valueGetter,
-            prefix: generatorOptions.prefix,
-          );
+          final varName = 'boxed${_enumName(field.type.baseName, prefix: generatorOptions.prefix)}';
+          _writeEnumBoxToEnum(indent, field, varName, valueGetter, prefix: generatorOptions.prefix);
           ivarValueExpression = '$varName.value';
         } else if (primitiveExtractionMethod != null) {
           ivarValueExpression = '[$valueGetter $primitiveExtractionMethod]';
@@ -688,9 +744,7 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
       indent.writeln('return $resultName;');
     });
 
-    indent.write(
-      '+ (nullable $className *)nullableFromList:(NSArray<id> *)list ',
-    );
+    indent.write('+ (nullable $className *)nullableFromList:(NSArray<id> *)list ');
     indent.addScoped('{', '}', () {
       indent.writeln('return (list) ? [$className fromList:list] : nil;');
     });
@@ -711,9 +765,7 @@ class ObjcSourceGenerator extends StructuredGenerator<InternalObjcOptions> {
       isOverflowClass: true,
     );
     indent.newln();
-    indent.writeln(
-      '@implementation ${_className(generatorOptions.prefix, _overflowClassName)}',
-    );
+    indent.writeln('@implementation ${_className(generatorOptions.prefix, _overflowClassName)}');
 
     _writeObjcSourceClassInitializer(
       generatorOptions,
@@ -748,12 +800,7 @@ if (self.wrapped == nil) {
       indent.writeScoped('switch (self.type) {', '}', () {
         for (int i = totalCustomCodecKeysAllowed; i < types.length; i++) {
           indent.write('case ${i - totalCustomCodecKeysAllowed}:');
-          _writeCodecDecode(
-            indent,
-            types[i],
-            generatorOptions.prefix ?? '',
-            isOverflowClass: true,
-          );
+          _writeCodecDecode(indent, types[i], generatorOptions.prefix ?? '', isOverflowClass: true);
         }
         indent.writeScoped('default: ', '', () {
           indent.writeln('return nil;');
@@ -775,29 +822,22 @@ if (self.wrapped == nil) {
     }
     if (customType.type == CustomTypes.customClass) {
       indent.addScoped('', null, () {
-        indent.writeln(
-          'return [${_className(prefix, customType.name)} fromList:$readValue];',
-        );
+        indent.writeln('return [${_className(prefix, customType.name)} fromList:$readValue];');
       }, addTrailingNewline: false);
     } else if (customType.type == CustomTypes.customEnum) {
-      indent.addScoped(
-        !isOverflowClass ? '{' : '',
-        !isOverflowClass ? '}' : null,
-        () {
-          var enumAsNumber = 'enumAsNumber';
-          if (!isOverflowClass) {
-            indent.writeln('NSNumber *$enumAsNumber = $readValue;');
-            indent.write('return $enumAsNumber == nil ? nil : ');
-          } else {
-            enumAsNumber = 'self.wrapped';
-            indent.write('return ');
-          }
-          indent.addln(
-            '[[${_enumName(customType.name, prefix: prefix, box: true)} alloc] initWithValue:[$enumAsNumber integerValue]];',
-          );
-        },
-        addTrailingNewline: !isOverflowClass,
-      );
+      indent.addScoped(!isOverflowClass ? '{' : '', !isOverflowClass ? '}' : null, () {
+        var enumAsNumber = 'enumAsNumber';
+        if (!isOverflowClass) {
+          indent.writeln('NSNumber *$enumAsNumber = $readValue;');
+          indent.write('return $enumAsNumber == nil ? nil : ');
+        } else {
+          enumAsNumber = 'self.wrapped';
+          indent.write('return ');
+        }
+        indent.addln(
+          '[[${_enumName(customType.name, prefix: prefix, box: true)} alloc] initWithValue:[$enumAsNumber integerValue]];',
+        );
+      }, addTrailingNewline: !isOverflowClass);
     }
   }
 
@@ -839,20 +879,12 @@ if (self.wrapped == nil) {
         for (final customType in enumeratedTypes) {
           if (customType.enumeration < maximumCodecFieldKey) {
             indent.write('case ${customType.enumeration}: ');
-            _writeCodecDecode(
-              indent,
-              customType,
-              generatorOptions.prefix ?? '',
-            );
+            _writeCodecDecode(indent, customType, generatorOptions.prefix ?? '');
           }
         }
         if (root.requiresOverflowClass) {
           indent.write('case $maximumCodecFieldKey: ');
-          _writeCodecDecode(
-            indent,
-            _enumeratedOverflow,
-            generatorOptions.prefix,
-          );
+          _writeCodecDecode(indent, _enumeratedOverflow, generatorOptions.prefix);
         }
         indent.writeln('default:');
         indent.nest(1, () {
@@ -877,32 +909,22 @@ if (self.wrapped == nil) {
             : '[wrap toList]';
         final String className = customType.type == CustomTypes.customClass
             ? _className(generatorOptions.prefix, customType.name)
-            : _enumName(
-                customType.name,
-                prefix: generatorOptions.prefix,
-                box: true,
-              );
-        indent.addScoped(
-          'if ([value isKindOfClass:[$className class]]) {',
-          '} else ',
-          () {
-            if (customType.type == CustomTypes.customEnum) {
-              indent.writeln('$className *box = ($className *)value;');
-            }
-            final int enumeration =
-                customType.enumeration < maximumCodecFieldKey
-                ? customType.enumeration
-                : maximumCodecFieldKey;
-            if (customType.enumeration >= maximumCodecFieldKey) {
-              indent.writeln(
-                '${_className(generatorOptions.prefix, _overflowClassName)} *wrap = [${_className(generatorOptions.prefix, _overflowClassName)} makeWithType:${customType.enumeration - maximumCodecFieldKey} wrapped:$encodeString];',
-              );
-            }
-            indent.writeln('[self writeByte:$enumeration];');
-            indent.writeln('[self writeValue:$valueString];');
-          },
-          addTrailingNewline: false,
-        );
+            : _enumName(customType.name, prefix: generatorOptions.prefix, box: true);
+        indent.addScoped('if ([value isKindOfClass:[$className class]]) {', '} else ', () {
+          if (customType.type == CustomTypes.customEnum) {
+            indent.writeln('$className *box = ($className *)value;');
+          }
+          final int enumeration = customType.enumeration < maximumCodecFieldKey
+              ? customType.enumeration
+              : maximumCodecFieldKey;
+          if (customType.enumeration >= maximumCodecFieldKey) {
+            indent.writeln(
+              '${_className(generatorOptions.prefix, _overflowClassName)} *wrap = [${_className(generatorOptions.prefix, _overflowClassName)} makeWithType:${customType.enumeration - maximumCodecFieldKey} wrapped:$encodeString];',
+            );
+          }
+          indent.writeln('[self writeByte:$enumeration];');
+          indent.writeln('[self writeValue:$valueString];');
+        }, addTrailingNewline: false);
       }
       indent.addScoped('{', '}', () {
         indent.writeln('[super writeValue:value];');
@@ -927,16 +949,12 @@ if (self.wrapped == nil) {
       'NSObject<FlutterMessageCodec> *${generatorOptions.prefix}Get${toUpperCamelCase(generatorOptions.fileSpecificClassNameComponent ?? '')}Codec(void) ',
     );
     indent.addScoped('{', '}', () {
-      indent.writeln(
-        'static FlutterStandardMessageCodec *sSharedObject = nil;',
-      );
+      indent.writeln('static FlutterStandardMessageCodec *sSharedObject = nil;');
 
       indent.writeln('static dispatch_once_t sPred = 0;');
       indent.write('dispatch_once(&sPred, ^');
       indent.addScoped('{', '});', () {
-        indent.writeln(
-          '$readerWriterName *readerWriter = [[$readerWriterName alloc] init];',
-        );
+        indent.writeln('$readerWriterName *readerWriter = [[$readerWriterName alloc] init];');
         indent.writeln(
           'sSharedObject = [FlutterStandardMessageCodec codecWithReaderWriter:readerWriter];',
         );
@@ -962,14 +980,7 @@ if (self.wrapped == nil) {
     indent.newln();
     _writeInitializers(indent);
     for (final Method func in api.methods) {
-      _writeMethod(
-        generatorOptions,
-        root,
-        indent,
-        api,
-        func,
-        dartPackageName: dartPackageName,
-      );
+      _writeMethod(generatorOptions, root, indent, api, func, dartPackageName: dartPackageName);
     }
     indent.writeln('@end');
     indent.newln();
@@ -1001,9 +1012,7 @@ if (self.wrapped == nil) {
         'messageChannelSuffix = messageChannelSuffix.length > 0 ? [NSString stringWithFormat: @".%@", messageChannelSuffix] : @"";',
       );
       String? serialBackgroundQueue;
-      if (api.methods.any(
-        (Method m) => m.taskQueueType == TaskQueueType.serialBackgroundThread,
-      )) {
+      if (api.methods.any((Method m) => m.taskQueueType == TaskQueueType.serialBackgroundThread)) {
         serialBackgroundQueue = 'taskQueue';
         // See https://github.com/flutter/flutter/issues/162613 for why this
         // is an ifdef instead of just a respondsToSelector: check.
@@ -1015,11 +1024,7 @@ if (self.wrapped == nil) {
 #endif''');
       }
       for (final Method func in api.methods) {
-        addDocumentationComments(
-          indent,
-          func.documentationComments,
-          _docCommentSpec,
-        );
+        addDocumentationComments(indent, func.documentationComments, _docCommentSpec);
 
         indent.writeScoped('{', '}', () {
           _writeChannelAllocation(
@@ -1035,14 +1040,7 @@ if (self.wrapped == nil) {
           );
           indent.write('if (api) ');
           indent.addScoped('{', '}', () {
-            _writeChannelApiBinding(
-              generatorOptions,
-              root,
-              indent,
-              apiName,
-              func,
-              channelName,
-            );
+            _writeChannelApiBinding(generatorOptions, root, indent, apiName, func, channelName);
           }, addTrailingNewline: false);
           indent.add(' else ');
           indent.addScoped('{', '}', () {
@@ -1060,6 +1058,9 @@ if (self.wrapped == nil) {
     Indent indent, {
     required String dartPackageName,
   }) {
+    _writeDeepEquals(indent);
+    _writeDeepHash(indent);
+    indent.newln();
     if (root.containsHostApi) {
       _writeWrapError(indent);
       indent.newln();
@@ -1074,12 +1075,7 @@ if (self.wrapped == nil) {
     }
 
     if (root.requiresOverflowClass) {
-      _writeDataClassDeclaration(
-        generatorOptions,
-        root,
-        indent,
-        _overflowClass,
-      );
+      _writeDataClassDeclaration(generatorOptions, root, indent, _overflowClass);
     }
   }
 
@@ -1124,25 +1120,13 @@ static FlutterError *createConnectionError(NSString *channelName) {
       for (final NamedType arg in func.parameters) {
         final String argName = _getSafeArgName(count, arg);
         final valueGetter = 'GetNullableObjectAtIndex(args, $count)';
-        final String? primitiveExtractionMethod = _nsnumberExtractionMethod(
-          arg.type,
-        );
-        final _ObjcType objcArgType = _objcTypeForDartType(
-          generatorOptions.prefix,
-          arg.type,
-        );
+        final String? primitiveExtractionMethod = _nsnumberExtractionMethod(arg.type);
+        final _ObjcType objcArgType = _objcTypeForDartType(generatorOptions.prefix, arg.type);
         final String ivarValueExpression;
         String beforeString = objcArgType.beforeString;
         if (arg.type.isEnum && !arg.type.isNullable) {
-          final varName =
-              'boxed${_enumName(arg.type.baseName, prefix: generatorOptions.prefix)}';
-          _writeEnumBoxToEnum(
-            indent,
-            arg,
-            varName,
-            valueGetter,
-            prefix: generatorOptions.prefix,
-          );
+          final varName = 'boxed${_enumName(arg.type.baseName, prefix: generatorOptions.prefix)}';
+          _writeEnumBoxToEnum(indent, arg, varName, valueGetter, prefix: generatorOptions.prefix);
           ivarValueExpression = '$varName.value';
         } else if (primitiveExtractionMethod != null) {
           ivarValueExpression = '[$valueGetter $primitiveExtractionMethod]';
@@ -1237,9 +1221,7 @@ static FlutterError *createConnectionError(NSString *channelName) {
     indent.writeln(
       'NSCAssert([api respondsToSelector:@selector($selector)], @"$apiName api (%@) doesn\'t respond to @selector($selector)", api);',
     );
-    indent.write(
-      '[$channel setMessageHandler:^(id _Nullable message, FlutterReply callback) ',
-    );
+    indent.write('[$channel setMessageHandler:^(id _Nullable message, FlutterReply callback) ');
     indent.addScoped('{', '}];', () {
       final _ObjcType returnType = _objcTypeForDartType(
         generatorOptions.prefix,
@@ -1251,17 +1233,13 @@ static FlutterError *createConnectionError(NSString *channelName) {
         func,
         lastSelectorComponent,
       );
-      final Iterable<String> argNames = indexMap(
-        func.parameters,
-        _getSafeArgName,
-      );
-      final String callSignature = map2(
-        selectorComponents.take(argNames.length),
-        argNames,
-        (String selectorComponent, String argName) {
-          return '$selectorComponent:$argName';
-        },
-      ).join(' ');
+      final Iterable<String> argNames = indexMap(func.parameters, _getSafeArgName);
+      final String callSignature = map2(selectorComponents.take(argNames.length), argNames, (
+        String selectorComponent,
+        String argName,
+      ) {
+        return '$selectorComponent:$argName';
+      }).join(' ');
       if (func.parameters.isNotEmpty) {
         unpackArgs('message');
       }
@@ -1323,20 +1301,13 @@ taskQueue:$taskQueue
     String? returnType,
     bool isOverflowClass = false,
   }) {
-    final String className = _className(
-      languageOptions.prefix,
-      classDefinition.name,
-    );
+    final String className = _className(languageOptions.prefix, classDefinition.name);
     returnType = returnType ?? className;
     indent.newln();
     indent.writeln('@interface $className ()');
-    indent.writeln(
-      '+ ($returnType${isOverflowClass ? '' : ' *'})fromList:(NSArray<id> *)list;',
-    );
+    indent.writeln('+ ($returnType${isOverflowClass ? '' : ' *'})fromList:(NSArray<id> *)list;');
     if (!isOverflowClass) {
-      indent.writeln(
-        '+ (nullable $returnType *)nullableFromList:(NSArray<id> *)list;',
-      );
+      indent.writeln('+ (nullable $returnType *)nullableFromList:(NSArray<id> *)list;');
     }
     indent.writeln('- (NSArray<id> *)toList;');
     indent.writeln('@end');
@@ -1359,9 +1330,7 @@ taskQueue:$taskQueue
     indent.writeScoped(' {', '}', () {
       const result = 'pigeonResult';
       indent.writeln('$className* $result = [[$className alloc] init];');
-      for (final NamedType field in getFieldsInSerializationOrder(
-        classDefinition,
-      )) {
+      for (final NamedType field in getFieldsInSerializationOrder(classDefinition)) {
         indent.writeln('$result.${field.name} = ${field.name};');
       }
       indent.writeln('return $result;');
@@ -1383,11 +1352,7 @@ void _writeMethod(
     // Nullability is required since the return must be nil if NSError is set.
     forceBox: true,
   );
-  final String callbackType = _callbackForType(
-    func.returnType,
-    returnType,
-    languageOptions,
-  );
+  final String callbackType = _callbackForType(func.returnType, returnType, languageOptions);
 
   String argNameFunc(int count, NamedType arg) => _getSafeArgName(count, arg);
   String sendArgument;
@@ -1400,8 +1365,7 @@ void _writeMethod(
       String varExpression = _collectionSafeExpression(argName, arg.type);
       if (arg.type.isEnum) {
         if (arg.type.isNullable) {
-          varExpression =
-              '${argNameFunc(count, arg)} == nil ? [NSNull null] : $argName';
+          varExpression = '${argNameFunc(count, arg)} == nil ? [NSNull null] : $argName';
         } else {
           varExpression = _getEnumToEnumBox(
             arg,
@@ -1414,8 +1378,7 @@ void _writeMethod(
       return varExpression;
     }
 
-    sendArgument =
-        '@[${func.parameters.map(makeVarOrNSNullExpression).join(', ')}]';
+    sendArgument = '@[${func.parameters.map(makeVarOrNSNullExpression).join(', ')}]';
   }
   indent.write(
     _makeObjcSignature(
@@ -1445,9 +1408,7 @@ void _writeMethod(
       });
     });
     final valueOnErrorResponse = func.returnType.isVoid ? '' : 'nil, ';
-    indent.write(
-      '[channel sendMessage:$sendArgument reply:^(NSArray<id> *reply) ',
-    );
+    indent.write('[channel sendMessage:$sendArgument reply:^(NSArray<id> *reply) ');
     indent.addScoped('{', '}];', () {
       indent.writeScoped('if (reply != nil) {', '} ', () {
         indent.writeScoped('if (reply.count > 1) {', '} ', () {
@@ -1475,9 +1436,7 @@ void _writeMethod(
         });
       }, addTrailingNewline: false);
       indent.addScoped('else {', '} ', () {
-        indent.writeln(
-          'completion(${valueOnErrorResponse}createConnectionError(channelName));',
-        );
+        indent.writeln('completion(${valueOnErrorResponse}createConnectionError(channelName));');
       });
     });
   });
@@ -1496,9 +1455,7 @@ void _writeObjcSourceClassInitializerDeclaration(
   indent.write('+ (instancetype)makeWith');
   var isFirst = true;
   indent.nest(2, () {
-    for (final NamedType field in getFieldsInSerializationOrder(
-      classDefinition,
-    )) {
+    for (final NamedType field in getFieldsInSerializationOrder(classDefinition)) {
       final String label = isFirst ? _capitalize(field.name) : field.name;
       final void Function(String) printer = isFirst
           ? indent.add
@@ -1509,8 +1466,7 @@ void _writeObjcSourceClassInitializerDeclaration(
       isFirst = false;
       final HostDatatype hostDatatype = getFieldHostDatatype(
         field,
-        (TypeDeclaration x) =>
-            _objcTypeStringForPrimitiveDartType(prefix, x, beforeString: true),
+        (TypeDeclaration x) => _objcTypeStringForPrimitiveDartType(prefix, x, beforeString: true),
         customResolver: field.type.isEnum
             ? (String x) => field.type.isNullable
                   ? _enumName(x, suffix: ' *', prefix: prefix, box: true)
@@ -1523,12 +1479,8 @@ void _writeObjcSourceClassInitializerDeclaration(
   });
 }
 
-String _enumName(
-  String name, {
-  required String? prefix,
-  String suffix = '',
-  bool box = false,
-}) => '${prefix ?? ''}$name${box ? 'Box' : ''}$suffix';
+String _enumName(String name, {required String? prefix, String suffix = '', bool box = false}) =>
+    '${prefix ?? ''}$name${box ? 'Box' : ''}$suffix';
 
 /// Calculates the ObjC class name, possibly prefixed.
 String _className(String? prefix, String className) {
@@ -1539,12 +1491,17 @@ String _className(String? prefix, String className) {
   }
 }
 
+/// Calculates the ObjC constant name, converting to UpperCamelCase when prefixed.
+String _constantName(String? prefix, String constantName) {
+  if (prefix != null && prefix.isNotEmpty) {
+    return '$prefix${toUpperCamelCase(constantName)}';
+  } else {
+    return constantName;
+  }
+}
+
 /// Calculates callback block signature for async methods.
-String _callbackForType(
-  TypeDeclaration type,
-  _ObjcType objcType,
-  InternalObjcOptions options,
-) {
+String _callbackForType(TypeDeclaration type, _ObjcType objcType, InternalObjcOptions options) {
   if (type.isVoid) {
     return 'void (^)(FlutterError *_Nullable)';
   } else if (type.isEnum) {
@@ -1563,8 +1520,7 @@ class _ObjcType {
   final bool hasAsterisk;
 
   @override
-  String toString() =>
-      hasAsterisk ? '$baseName$listGenericTag *' : '$baseName$listGenericTag';
+  String toString() => hasAsterisk ? '$baseName$listGenericTag *' : '$baseName$listGenericTag';
 
   String get listGenericTag => baseName == 'NSArray' ? '<id>' : '';
 
@@ -1575,36 +1531,132 @@ class _ObjcType {
 }
 
 /// Maps between Dart types to ObjC pointer types (ex 'String' => 'NSString *').
-const Map<String, _ObjcType> _objcTypeForNullableDartTypeMap =
-    <String, _ObjcType>{
-      'bool': _ObjcType(baseName: 'NSNumber'),
-      'int': _ObjcType(baseName: 'NSNumber'),
-      'String': _ObjcType(baseName: 'NSString'),
-      'double': _ObjcType(baseName: 'NSNumber'),
-      'Uint8List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'Int32List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'Int64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'Float64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'List': _ObjcType(baseName: 'NSArray'),
-      'Map': _ObjcType(baseName: 'NSDictionary'),
-      'Object': _ObjcType(baseName: 'id'),
-    };
+const Map<String, _ObjcType> _objcTypeForNullableDartTypeMap = <String, _ObjcType>{
+  'bool': _ObjcType(baseName: 'NSNumber'),
+  'int': _ObjcType(baseName: 'NSNumber'),
+  'String': _ObjcType(baseName: 'NSString'),
+  'double': _ObjcType(baseName: 'NSNumber'),
+  'Uint8List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'Int32List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'Int64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'Float64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'List': _ObjcType(baseName: 'NSArray'),
+  'Map': _ObjcType(baseName: 'NSDictionary'),
+  'Object': _ObjcType(baseName: 'id'),
+};
 
 /// Maps between Dart types to ObjC pointer types (ex 'String' => 'NSString *').
-const Map<String, _ObjcType> _objcTypeForNonNullableDartTypeMap =
-    <String, _ObjcType>{
-      'bool': _ObjcType(baseName: 'BOOL', isPointer: false),
-      'int': _ObjcType(baseName: 'NSInteger', isPointer: false),
-      'String': _ObjcType(baseName: 'NSString'),
-      'double': _ObjcType(baseName: 'double', isPointer: false),
-      'Uint8List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'Int32List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'Int64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'Float64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
-      'List': _ObjcType(baseName: 'NSArray'),
-      'Map': _ObjcType(baseName: 'NSDictionary'),
-      'Object': _ObjcType(baseName: 'id'),
-    };
+const Map<String, _ObjcType> _objcTypeForNonNullableDartTypeMap = <String, _ObjcType>{
+  'bool': _ObjcType(baseName: 'BOOL', isPointer: false),
+  'int': _ObjcType(baseName: 'NSInteger', isPointer: false),
+  'String': _ObjcType(baseName: 'NSString'),
+  'double': _ObjcType(baseName: 'double', isPointer: false),
+  'Uint8List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'Int32List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'Int64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'Float64List': _ObjcType(baseName: 'FlutterStandardTypedData'),
+  'List': _ObjcType(baseName: 'NSArray'),
+  'Map': _ObjcType(baseName: 'NSDictionary'),
+  'Object': _ObjcType(baseName: 'id'),
+};
+
+void _writeDeepEquals(Indent indent) {
+  indent.format('''
+static BOOL __attribute__((unused)) FLTPigeonDeepEquals(id _Nullable a, id _Nullable b) {
+  if (a == b) {
+    return YES;
+  }
+  if (a == nil) {
+    return b == [NSNull null];
+  }
+  if (b == nil) {
+    return a == [NSNull null];
+  }
+  if ([a isKindOfClass:[NSNumber class]] && [b isKindOfClass:[NSNumber class]]) {
+    return [a isEqual:b] || (isnan([(NSNumber *)a doubleValue]) && isnan([(NSNumber *)b doubleValue]));
+  }
+  if ([a isKindOfClass:[NSArray class]] && [b isKindOfClass:[NSArray class]]) {
+    NSArray *arrayA = (NSArray *)a;
+    NSArray *arrayB = (NSArray *)b;
+    if (arrayA.count != arrayB.count) {
+      return NO;
+    }
+    for (NSUInteger i = 0; i < arrayA.count; i++) {
+      if (!FLTPigeonDeepEquals(arrayA[i], arrayB[i])) {
+        return NO;
+      }
+    }
+    return YES;
+  }
+  if ([a isKindOfClass:[NSDictionary class]] && [b isKindOfClass:[NSDictionary class]]) {
+    NSDictionary *dictA = (NSDictionary *)a;
+    NSDictionary *dictB = (NSDictionary *)b;
+    if (dictA.count != dictB.count) {
+      return NO;
+    }
+    for (id keyA in dictA) {
+      id valueA = dictA[keyA];
+      BOOL found = NO;
+      for (id keyB in dictB) {
+        if (FLTPigeonDeepEquals(keyA, keyB)) {
+          id valueB = dictB[keyB];
+          if (FLTPigeonDeepEquals(valueA, valueB)) {
+            found = YES;
+            break;
+          } else {
+            return NO;
+          }
+        }
+      }
+      if (!found) {
+        return NO;
+      }
+    }
+    return YES;
+  }
+  return [a isEqual:b];
+}
+''');
+}
+
+void _writeDeepHash(Indent indent) {
+  indent.format('''
+static NSUInteger __attribute__((unused)) FLTPigeonDeepHash(id _Nullable value) {
+  if (value == nil || value == (id)[NSNull null]) {
+    return 0;
+  }
+  if ([value isKindOfClass:[NSNumber class]]) {
+    NSNumber *n = (NSNumber *)value;
+    double d = n.doubleValue;
+    if (isnan(d)) {
+      // Normalize NaN to a consistent hash.
+      return (NSUInteger)0x7FF8000000000000;
+    }
+    if (d == 0.0) {
+      // Normalize -0.0 to 0.0 so they have the same hash code.
+      d = 0.0;
+    }
+    return @(d).hash;
+  }
+  if ([value isKindOfClass:[NSArray class]]) {
+    NSUInteger result = 1;
+    for (id item in (NSArray *)value) {
+      result = result * 31 + FLTPigeonDeepHash(item);
+    }
+    return result;
+  }
+  if ([value isKindOfClass:[NSDictionary class]]) {
+    NSUInteger result = 0;
+    NSDictionary *dict = (NSDictionary *)value;
+    for (id key in dict) {
+      result += ((FLTPigeonDeepHash(key) * 31) ^ FLTPigeonDeepHash(dict[key]));
+    }
+    return result;
+  }
+  return [value hash];
+}
+''');
+}
 
 bool _usesPrimitive(TypeDeclaration type) {
   // Only non-nullable types are unboxed.
@@ -1623,9 +1675,7 @@ bool _usesPrimitive(TypeDeclaration type) {
 }
 
 String _collectionSafeExpression(String expression, TypeDeclaration type) {
-  return _usesPrimitive(type)
-      ? '@($expression)'
-      : '$expression ?: [NSNull null]';
+  return _usesPrimitive(type) ? '@($expression)' : '$expression ?: [NSNull null]';
 }
 
 /// Returns the method to convert [type] from a boxed NSNumber to its
@@ -1655,12 +1705,7 @@ String _flattenTypeArguments(String? classPrefix, List<TypeDeclaration> args) {
   final String result = args
       .map<String>((TypeDeclaration e) {
         if (e.isEnum) {
-          return _enumName(
-            e.baseName,
-            prefix: classPrefix,
-            box: true,
-            suffix: ' *',
-          );
+          return _enumName(e.baseName, prefix: classPrefix, box: true, suffix: ' *');
         }
         return _objcTypeForDartType(classPrefix, e, forceBox: true).toString();
       })
@@ -1668,10 +1713,7 @@ String _flattenTypeArguments(String? classPrefix, List<TypeDeclaration> args) {
   return result;
 }
 
-_ObjcType? _objcTypeForPrimitiveDartType(
-  TypeDeclaration type, {
-  bool forceBox = false,
-}) {
+_ObjcType? _objcTypeForPrimitiveDartType(TypeDeclaration type, {bool forceBox = false}) {
   return forceBox || type.isNullable
       ? _objcTypeForNullableDartTypeMap[type.baseName]
       : _objcTypeForNonNullableDartTypeMap[type.baseName];
@@ -1703,10 +1745,7 @@ _ObjcType _objcTypeForDartType(
   TypeDeclaration field, {
   bool forceBox = false,
 }) {
-  final _ObjcType? primitiveType = _objcTypeForPrimitiveDartType(
-    field,
-    forceBox: forceBox,
-  );
+  final _ObjcType? primitiveType = _objcTypeForPrimitiveDartType(field, forceBox: forceBox);
   return primitiveType == null
       ? _ObjcType(
           baseName: _className(classPrefix, field.baseName),
@@ -1748,24 +1787,19 @@ String _propertyTypeForDartType(
   return 'strong';
 }
 
-String _capitalize(String str) =>
-    str.isEmpty ? '' : str[0].toUpperCase() + str.substring(1);
+String _capitalize(String str) => str.isEmpty ? '' : str[0].toUpperCase() + str.substring(1);
 
 /// Returns the components of the objc selector that will be generated from
-/// [func], ie the strings between the semicolons.  [lastSelectorComponent] is
+/// [func], ie the strings between the semicolons. [lastSelectorComponent] is
 /// the last component of the selector aka the label of the last parameter which
 /// isn't included in [func].
 /// Example:
 ///   f('void add(int x, int y)', 'count') -> ['addX', 'y', 'count']
-Iterable<String> _getSelectorComponents(
-  Method func,
-  String lastSelectorComponent,
-) sync* {
+Iterable<String> _getSelectorComponents(Method func, String lastSelectorComponent) sync* {
   if (func.objcSelector.isEmpty) {
     final Iterator<NamedType> it = func.parameters.iterator;
     final bool hasArguments = it.moveNext();
-    final namePostfix =
-        (lastSelectorComponent.isNotEmpty && func.parameters.isEmpty)
+    final namePostfix = (lastSelectorComponent.isNotEmpty && func.parameters.isEmpty)
         ? 'With${_capitalize(lastSelectorComponent)}'
         : '';
     yield '${func.name}${hasArguments ? _capitalize(func.parameters[0].name) : namePostfix}';
@@ -1784,13 +1818,13 @@ Iterable<String> _getSelectorComponents(
   }
 }
 
-/// Generates the objc source code method signature for [func].  [returnType] is
+/// Generates the objc source code method signature for [func]. [returnType] is
 /// the return value of method, this may not match the return value in [func]
-/// since [func] may be asynchronous.  The function requires you specify a
+/// since [func] may be asynchronous. The function requires you specify a
 /// [lastArgType] and [lastArgName] for arguments that aren't represented in
-/// [func].  This is typically used for passing in 'error' or 'completion'
+/// [func]. This is typically used for passing in 'error' or 'completion'
 /// arguments that don't exist in the pigeon file but are required in the objc
-/// output.  [argNameFunc] is the function used to generate the argument name
+/// output. [argNameFunc] is the function used to generate the argument name
 /// [func.parameters].
 String _makeObjcSignature({
   required Method func,
@@ -1802,26 +1836,19 @@ String _makeObjcSignature({
 }) {
   argNameFunc =
       argNameFunc ??
-      (int _, NamedType e) =>
-          e.type.isNullable && e.type.isEnum ? '${e.name}Boxed' : e.name;
+      (int _, NamedType e) => e.type.isNullable && e.type.isEnum ? '${e.name}Boxed' : e.name;
   final Iterable<String> argNames = followedByOne(
     indexMap(func.parameters, argNameFunc),
     lastArgName,
   );
-  final Iterable<String> selectorComponents = _getSelectorComponents(
-    func,
-    lastArgName,
-  );
+  final Iterable<String> selectorComponents = _getSelectorComponents(func, lastArgName);
   final Iterable<String> argTypes = followedByOne(
     func.parameters.map((NamedType arg) {
       if (arg.type.isEnum) {
         return '${arg.type.isNullable ? 'nullable ' : ''}${_enumName(arg.type.baseName, suffix: arg.type.isNullable ? ' *' : '', prefix: options.prefix, box: arg.type.isNullable)}';
       } else {
         final nullable = arg.type.isNullable ? 'nullable ' : '';
-        final _ObjcType argType = _objcTypeForDartType(
-          options.prefix,
-          arg.type,
-        );
+        final _ObjcType argType = _objcTypeForDartType(options.prefix, arg.type);
         return '$nullable$argType';
       }
     }),
@@ -1832,19 +1859,14 @@ String _makeObjcSignature({
     selectorComponents,
     argTypes,
     argNames,
-    (String component, String argType, String argName) =>
-        '$component:($argType)$argName',
+    (String component, String argType, String argName) => '$component:($argType)$argName',
   ).join(' ');
   return '- ($returnType)$argSignature';
 }
 
 /// Generates the ".h" file for the AST represented by [root] to [sink] with the
 /// provided [options].
-void generateObjcHeader(
-  InternalObjcOptions options,
-  Root root,
-  Indent indent,
-) {}
+void generateObjcHeader(InternalObjcOptions options, Root root, Indent indent) {}
 
 String _arrayValue(NamedType field, String? prefix) {
   if (field.type.isEnum && !field.type.isNullable) {
@@ -1863,12 +1885,8 @@ String _getSafeArgName(int count, NamedType arg) =>
 
 void _writeExtension(Indent indent, String apiName) {
   indent.writeln('@interface $apiName ()');
-  indent.writeln(
-    '@property(nonatomic, strong) NSObject<FlutterBinaryMessenger> *binaryMessenger;',
-  );
-  indent.writeln(
-    '@property(nonatomic, strong) NSString *messageChannelSuffix;',
-  );
+  indent.writeln('@property(nonatomic, strong) NSObject<FlutterBinaryMessenger> *binaryMessenger;');
+  indent.writeln('@property(nonatomic, strong) NSString *messageChannelSuffix;');
   indent.writeln('@end');
 }
 
@@ -1932,11 +1950,7 @@ void _writeEnumBoxToEnum(
   );
 }
 
-String _getEnumToEnumBox(
-  NamedType field,
-  String valueSetter, {
-  String? prefix = '',
-}) {
+String _getEnumToEnumBox(NamedType field, String valueSetter, {String? prefix = ''}) {
   return '[[${_enumName(field.type.baseName, prefix: prefix, box: true)} alloc] initWithValue:$valueSetter]';
 }
 
@@ -1948,19 +1962,11 @@ void _writeDataClassDeclaration(
 ) {
   final String? prefix = generatorOptions.prefix;
 
-  addDocumentationComments(
-    indent,
-    classDefinition.documentationComments,
-    _docCommentSpec,
-  );
+  addDocumentationComments(indent, classDefinition.documentationComments, _docCommentSpec);
 
-  indent.writeln(
-    '@interface ${_className(prefix, classDefinition.name)} : NSObject',
-  );
-  if (getFieldsInSerializationOrder(classDefinition).isNotEmpty) {
-    if (getFieldsInSerializationOrder(
-      classDefinition,
-    ).map((NamedType e) => !e.type.isNullable).any((bool e) => e)) {
+  indent.writeln('@interface ${_className(prefix, classDefinition.name)} : NSObject');
+  if (classDefinition.fields.isNotEmpty) {
+    if (classDefinition.fields.any((NamedType e) => !e.type.isNullable)) {
       indent.writeln(
         '$_docCommentPrefix `init` unavailable to enforce nonnull fields, see the `make` class method.',
       );
@@ -1975,23 +1981,16 @@ void _writeDataClassDeclaration(
     );
     indent.addln(';');
   }
-  for (final NamedType field in getFieldsInSerializationOrder(
-    classDefinition,
-  )) {
+  for (final NamedType field in getFieldsInSerializationOrder(classDefinition)) {
     final HostDatatype hostDatatype = getFieldHostDatatype(
       field,
-      (TypeDeclaration x) =>
-          _objcTypeStringForPrimitiveDartType(prefix, x, beforeString: true),
+      (TypeDeclaration x) => _objcTypeStringForPrimitiveDartType(prefix, x, beforeString: true),
       customResolver: field.type.isEnum
           ? (String x) => _enumName(x, prefix: prefix)
           : (String x) => '${_className(prefix, x)} *',
     );
     late final String propertyType;
-    addDocumentationComments(
-      indent,
-      field.documentationComments,
-      _docCommentSpec,
-    );
+    addDocumentationComments(indent, field.documentationComments, _docCommentSpec);
     propertyType = _propertyTypeForDartType(
       field.type,
       isNullable: field.type.isNullable,
@@ -2006,9 +2005,7 @@ void _writeDataClassDeclaration(
             box: field.type.isNullable,
           )
         : hostDatatype.datatype;
-    indent.writeln(
-      '@property(nonatomic, $propertyType$nullability) $fieldType ${field.name};',
-    );
+    indent.writeln('@property(nonatomic, $propertyType$nullability) $fieldType ${field.name};');
   }
   indent.writeln('@end');
   indent.newln();

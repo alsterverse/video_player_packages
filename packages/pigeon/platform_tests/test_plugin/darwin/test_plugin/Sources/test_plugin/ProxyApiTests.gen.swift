@@ -29,7 +29,7 @@ final class ProxyApiTestsError: Error {
 
   var localizedDescription: String {
     return
-      "ProxyApiTestsError(code: \(code), message: \(message ?? "<nil>"), details: \(details ?? "<nil>")"
+      "ProxyApiTestsError(code: \(code), message: \(message ?? "<nil>"), details: \(details ?? "<nil>"))"
   }
 }
 
@@ -54,7 +54,7 @@ private func wrapError(_ error: Any) -> [Any?] {
   }
   return [
     "\(error)",
-    "\(type(of: error))",
+    "\(Swift.type(of: error))",
     "Stacktrace: \(Thread.callStackSymbols)",
   ]
 }
@@ -65,8 +65,18 @@ private func createConnectionError(withChannelName channelName: String) -> Proxy
     details: "")
 }
 
-private func isNullish(_ value: Any?) -> Bool {
-  return value is NSNull || value == nil
+enum ProxyApiTestsPigeonInternal {
+  static func isNullish(_ value: Any?) -> Bool {
+    guard let innerValue = value else {
+      return true
+    }
+
+    if case Optional<Any>.some(Optional<Any>.none) = value {
+      return true
+    }
+
+    return innerValue is NSNull
+  }
 }
 
 private func nilOrValue<T>(_ value: Any?) -> T? {
@@ -580,7 +590,7 @@ private class ProxyApiTestsPigeonInternalProxyApiCodecReaderWriter: FlutterStand
   }
 }
 
-enum ProxyApiTestEnum: Int {
+enum ProxyApiTestEnum: Int, CaseIterable {
   case one = 0
   case two = 1
   case three = 2
@@ -3009,7 +3019,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3060,7 +3070,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3111,7 +3121,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3162,7 +3172,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3213,7 +3223,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3264,7 +3274,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3316,7 +3326,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3367,7 +3377,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3420,7 +3430,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3471,7 +3481,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -3522,7 +3532,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(
@@ -4024,7 +4034,7 @@ final class PigeonApiProxyApiTestClass: PigeonApiProtocolProxyApiTestClass {
         let message: String? = nilOrValue(listResponse[1])
         let details: String? = nilOrValue(listResponse[2])
         completion(.failure(ProxyApiTestsError(code: code, message: message, details: details)))
-      } else if listResponse[0] == nil {
+      } else if ProxyApiTestsPigeonInternal.isNullish(listResponse[0]) {
         completion(
           .failure(
             ProxyApiTestsError(

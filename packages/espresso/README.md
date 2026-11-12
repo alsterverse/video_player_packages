@@ -1,4 +1,5 @@
 # espresso
+<?code-excerpt path-base="example"?>
 
 Provides bindings for Espresso tests of Flutter Android apps.
 
@@ -10,19 +11,43 @@ Provides bindings for Espresso tests of Flutter Android apps.
 
 Add the `espresso` package as a `dev_dependency` in your app's pubspec.yaml. If you're testing the example app of a package, add it as a dev_dependency of the main package as well.
 
-Add ```android:usesCleartextTraffic="true"``` in the ```<application>``` in the AndroidManifest.xml
-of the Android app used for testing. It's best to put this in a debug or androidTest
+Since Espresso uses cleartext traffic via a websocket to coordinate
+testing, cleartext traffic will need to be enabled for testing. Please
+only do this for testing (in debug or androidTest).
+
+Add ```android:networkSecurityConfig="@xml/network_security_config"``` in the ```<application>``` in the AndroidManifest.xml of the Android app used for testing.
+
+Then you will need to create a `network_security_config.xml` in the `res/xml/` directory.  
+
+<?code-excerpt "android/app/src/debug/res/xml/network_security_config.xml (network_security_config)"?>
+```xml
+<network-security-config>
+    <!-- Cleartext is needed for Espresso testing. -->
+    <base-config cleartextTrafficPermitted="true">
+    </base-config>
+</network-security-config>
+```
+
+For example, the Espresso example app has this file in the location `example/android/app/src/debug/res/xml/network_security_config.xml`.
+
+It is best to put this in a debug or androidTest
 AndroidManifest.xml so that you don't ship it to end users. (See the example app of this package.)
 
-Add the following dependencies in android/app/build.gradle:
+Add the following dependencies in android/app/build.gradle.kts:
 
-```groovy
+<?code-excerpt "android/app/build.gradle.kts (test_dependencies)"?>
+```kotlin
 dependencies {
     testImplementation("junit:junit:4.13.2")
-    testImplementation("com.google.truth:truth:1.1.3")
+    // ···
+    api("androidx.test:core:1.6.1")
+    // ···
     androidTestImplementation("androidx.test:runner:1.6.1")
+    // ···
+    androidTestImplementation("com.google.truth:truth:1.1.3")
+    // ···
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    api("androidx.test:core:1.2.0")
+    // ···
 }
 ```
 
@@ -68,25 +93,22 @@ public class MainActivityTest {
     }
  ```
 
-You'll need to create a test app that enables the Flutter driver extension.
-You can put this in your test_driver/ folder, e.g. test_driver/example.dart.
-Replace `<app_package_name>` with the package name of your app. If you're
-developing a plugin, this will be the package name of the example app.
+You'll need to create a driver script that hands off to the
+[`integration_test`](https://pub.dev/packages/integration_test) package so
+`flutter drive`/Espresso can run your Dart integration tests. Put this in your
+`test_driver/` folder, e.g. `test_driver/integration_test.dart`:
 
+<?code-excerpt "test_driver/integration_test.dart (Driver)"?>
 ```dart
-import 'package:flutter_driver/driver_extension.dart';
-import 'package:<app_package_name>/main.dart' as app;
+import 'package:integration_test/integration_test_driver.dart';
 
-void main() {
-  enableFlutterDriverExtension();
-  app.main();
-}
+Future<void> main() => integrationDriver();
 ```
 
 The following command line command runs the test locally:
 
 ```sh
-./gradlew app:connectedAndroidTest -Ptarget=`pwd`/../test_driver/example.dart
+./gradlew app:connectedAndroidTest -Ptarget=`pwd`/../test_driver/integration_test.dart
 ```
 
 Espresso tests can also be run on [Firebase Test Lab](https://firebase.google.com/docs/test-lab):

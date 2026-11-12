@@ -7,22 +7,24 @@ import 'package:file/file.dart';
 import 'package:flutter_plugin_tools/src/common/core.dart';
 import 'package:flutter_plugin_tools/src/fix_command.dart';
 import 'package:git/git.dart';
+import 'package:platform/platform.dart';
 import 'package:test/test.dart';
 
 import 'mocks.dart';
 import 'util.dart';
 
 void main() {
-  late MockPlatform mockPlatform;
+  late NativePlatform mockPlatform;
   late Directory packagesDir;
   late RecordingProcessRunner processRunner;
   late CommandRunner<void> runner;
 
   setUp(() {
-    mockPlatform = MockPlatform();
+    mockPlatform = createMockPlatform();
     final GitDir gitDir;
-    (:packagesDir, :processRunner, gitProcessRunner: _, :gitDir) =
-        configureBaseCommandMocks(platform: mockPlatform);
+    (:packagesDir, :processRunner, gitProcessRunner: _, :gitDir) = configureBaseCommandMocks(
+      platform: mockPlatform,
+    );
     final command = FixCommand(
       packagesDir,
       processRunner: processRunner,
@@ -44,15 +46,9 @@ void main() {
       processRunner.recordedCalls,
       orderedEquals(<ProcessCall>[
         ProcessCall('dart', const <String>['fix', '--apply'], package.path),
-        ProcessCall('dart', const <String>[
-          'fix',
-          '--apply',
-        ], package.getExamples().first.path),
+        ProcessCall('dart', const <String>['fix', '--apply'], package.getExamples().first.path),
         ProcessCall('dart', const <String>['fix', '--apply'], plugin.path),
-        ProcessCall('dart', const <String>[
-          'fix',
-          '--apply',
-        ], plugin.getExamples().first.path),
+        ProcessCall('dart', const <String>['fix', '--apply'], plugin.getExamples().first.path),
       ]),
     );
   });
@@ -74,11 +70,6 @@ void main() {
     );
 
     expect(commandError, isA<ToolExit>());
-    expect(
-      output,
-      containsAllInOrder(<Matcher>[
-        contains('Unable to automatically fix package.'),
-      ]),
-    );
+    expect(output, containsAllInOrder(<Matcher>[contains('Unable to automatically fix package.')]));
   });
 }

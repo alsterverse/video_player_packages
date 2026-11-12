@@ -28,11 +28,7 @@ enum SK2ProductTypeMessage {
 
 enum SK2SubscriptionOfferTypeMessage { introductory, promotional, winBack }
 
-enum SK2SubscriptionOfferPaymentModeMessage {
-  payAsYouGo,
-  payUpFront,
-  freeTrial,
-}
+enum SK2SubscriptionOfferPaymentModeMessage { payAsYouGo, payUpFront, freeTrial }
 
 class SK2SubscriptionOfferMessage {
   const SK2SubscriptionOfferMessage({
@@ -84,14 +80,14 @@ class SK2SubscriptionInfoMessage {
 /// https://developer.apple.com/documentation/storekit/product
 class SK2ProductMessage {
   const SK2ProductMessage({
-    required this.id,
     required this.displayName,
     required this.displayPrice,
-    required this.description,
+    required this.id,
+    required this.localizedDescription,
     required this.price,
+    required this.priceLocale,
     required this.type,
     this.subscription,
-    required this.priceLocale,
   });
 
   /// The unique product identifier.
@@ -101,7 +97,7 @@ class SK2ProductMessage {
   final String displayName;
 
   /// The localized description of the product.
-  final String description;
+  final String localizedDescription;
 
   /// The localized string representation of the product price, suitable for display.
   final double price;
@@ -120,10 +116,7 @@ class SK2ProductMessage {
 }
 
 class SK2PriceLocaleMessage {
-  SK2PriceLocaleMessage({
-    required this.currencyCode,
-    required this.currencySymbol,
-  });
+  SK2PriceLocaleMessage({required this.currencyCode, required this.currencySymbol});
 
   final String currencyCode;
   final String currencySymbol;
@@ -161,12 +154,20 @@ class SK2ProductPurchaseOptionsMessage {
     this.quantity = 1,
     this.promotionalOffer,
     this.winBackOfferId,
+    this.introductoryOfferEligibilityCompactJWS,
   });
 
   final String? appAccountToken;
   final int? quantity;
   final SK2SubscriptionOfferPurchaseMessage? promotionalOffer;
   final String? winBackOfferId;
+
+  /// A compact JWS, signed by the developer's server, that sets the customer's
+  /// eligibility for an introductory offer on this purchase.
+  ///
+  /// This is passed to StoreKit verbatim; it is never parsed or validated
+  /// client-side.
+  final String? introductoryOfferEligibilityCompactJWS;
 }
 
 class SK2TransactionMessage {
@@ -174,45 +175,55 @@ class SK2TransactionMessage {
     required this.id,
     required this.originalId,
     required this.productId,
-    required this.purchaseDate,
+    this.purchaseDate,
     this.expirationDate,
     this.purchasedQuantity = 1,
     this.appAccountToken,
     this.error,
     this.receiptData,
     this.jsonRepresentation,
-    this.restoring = false,
+    required this.status,
   });
   final int id;
   final int originalId;
   final String productId;
-  final String purchaseDate;
-  final String? expirationDate;
+  final double? purchaseDate;
+  final double? expirationDate;
   final int purchasedQuantity;
   final String? appAccountToken;
-  final bool restoring;
   final String? receiptData;
   final SK2ErrorMessage? error;
   final String? jsonRepresentation;
+
+  /// The status of this purchase transaction.
+  /// Set by native side to communicate the result state to Dart layer.
+  final SK2PurchaseStatusMessage status;
 }
 
 class SK2ErrorMessage {
-  const SK2ErrorMessage({
-    required this.code,
-    required this.domain,
-    required this.userInfo,
-  });
+  const SK2ErrorMessage({required this.code, required this.domain, required this.userInfo});
 
   final int code;
   final String domain;
   final Map<String, Object>? userInfo;
 }
 
-enum SK2ProductPurchaseResultMessage {
-  success,
-  unverified,
-  userCancelled,
+enum SK2ProductPurchaseResultMessage { success, unverified, userCancelled, pending }
+
+/// The status of a purchase transaction.
+/// Used to communicate the result state to Dart layer via purchaseStream.
+enum SK2PurchaseStatusMessage {
+  /// Purchase completed successfully.
+  purchased,
+
+  /// Purchase is pending (e.g., Ask to Buy).
   pending,
+
+  /// Purchase was cancelled by the user.
+  cancelled,
+
+  /// Purchase was restored.
+  restored,
 }
 
 @HostApi()
@@ -226,10 +237,7 @@ abstract class InAppPurchase2API {
 
   // https://developer.apple.com/documentation/storekit/product/3791971-purchase
   @async
-  SK2ProductPurchaseResultMessage purchase(
-    String id, {
-    SK2ProductPurchaseOptionsMessage? options,
-  });
+  SK2ProductPurchaseResultMessage purchase(String id, {SK2ProductPurchaseOptionsMessage? options});
 
   @async
   bool isWinBackOfferEligible(String productId, String offerId);
@@ -242,6 +250,9 @@ abstract class InAppPurchase2API {
 
   @async
   List<SK2TransactionMessage> unfinishedTransactions();
+
+  @async
+  List<SK2TransactionMessage> currentEntitlements();
 
   @async
   void finish(int id);
@@ -258,6 +269,12 @@ abstract class InAppPurchase2API {
 
   @async
   void sync();
+
+  @async
+  void presentOfferCodeRedeemSheet();
+
+  @async
+  void showManageSubscriptions();
 }
 
 @FlutterApi()

@@ -85,14 +85,43 @@ extension InAppPurchasePlugin: InAppPurchase2API {
           }
         }
 
-        let result = try await product.purchase(options: purchaseOptions)
+        // No availability check is needed: `introductoryOfferEligibility` is
+        // back deployed, so it is available on the same iOS 15 / macOS 12
+        // floor as the rest of this StoreKit 2 extension.
+        if let compactJWS = options?.introductoryOfferEligibilityCompactJWS {
+          purchaseOptions.insert(.introductoryOfferEligibility(compactJWS: compactJWS))
+        }
+
+        for await verificationResult in Transaction.unfinished {
+          switch verificationResult {
+          case .verified(let transaction):
+            if transaction.productID == id {
+              let error = PigeonError(
+                code: "storekit_duplicate_product_object",
+                message:
+                  "There is a pending transaction for the same product identifier. Please either wait for it to be finished or finish it manually using `completePurchase` to avoid edge cases.",
+                details: id)
+              return completion(.failure(error))
+            }
+          case .unverified:
+            break
+          }
+        }
+
+        let result = try await confirmPurchase(of: product, options: purchaseOptions)
 
         switch result {
         case .success(let verification):
           sendTransactionUpdate(
-            transaction: verification.unsafePayloadValue, receipt: verification.jwsRepresentation)
-        case .pending, .userCancelled:
-          break
+            productId: id,
+            transaction: verification.unsafePayloadValue,
+            receipt: verification.jwsRepresentation,
+            status: .purchased
+          )
+        case .pending:
+          sendTransactionUpdate(productId: id, status: .pending)
+        case .userCancelled:
+          sendTransactionUpdate(productId: id, status: .cancelled)
         @unknown default:
           fatalError("An unknown StoreKit PurchaseResult has been encountered.")
         }
@@ -223,7 +252,7 @@ extension InAppPurchasePlugin: InAppPurchase2API {
       @MainActor in
       do {
         let transactionsMsgs = await rawTransactions().map {
-          $0.convertToPigeon(receipt: nil)
+          $0.convertToPigeon(receipt: nil, status: .purchased)
         }
         completion(.success(transactionsMsgs))
       }
@@ -242,7 +271,31 @@ extension InAppPurchasePlugin: InAppPurchase2API {
         switch verificationResult {
         case .verified(let transaction):
           transactionsMsgs.append(
-            transaction.convertToPigeon(receipt: verificationResult.jwsRepresentation)
+            transaction.convertToPigeon(
+              receipt: verificationResult.jwsRepresentation, status: .purchased)
+          )
+        case .unverified:
+          break
+        }
+      }
+      completion(.success(transactionsMsgs))
+    }
+  }
+
+  /// Wrapper method around StoreKit2's Transaction.currentEntitlements
+  /// https://developer.apple.com/documentation/storekit/transaction/currententitlements
+  func currentEntitlements(
+    completion: @escaping (Result<[SK2TransactionMessage], Error>) -> Void
+  ) {
+    Task {
+      @MainActor in
+      var transactionsMsgs: [SK2TransactionMessage] = []
+      for await verificationResult in Transaction.currentEntitlements {
+        switch verificationResult {
+        case .verified(let transaction):
+          transactionsMsgs.append(
+            transaction.convertToPigeon(
+              receipt: verificationResult.jwsRepresentation, status: .purchased)
           )
         case .unverified:
           break
@@ -256,18 +309,24 @@ extension InAppPurchasePlugin: InAppPurchase2API {
     Task { [weak self] in
       guard let self = self else { return }
       do {
+        var restoredTransactions: [SK2TransactionMessage] = []
         var unverifiedPurchases: [UInt64: (receipt: String, error: Error?)] = [:]
         for await completedPurchase in Transaction.currentEntitlements {
           switch completedPurchase {
           case .verified(let purchase):
-            self.sendTransactionUpdate(
-              transaction: purchase, receipt: "\(completedPurchase.jwsRepresentation)")
+            restoredTransactions.append(
+              purchase.convertToPigeon(
+                receipt: "\(completedPurchase.jwsRepresentation)",
+                status: .restored
+              )
+            )
           case .unverified(let failedPurchase, let error):
             unverifiedPurchases[failedPurchase.id] = (
               receipt: completedPurchase.jwsRepresentation, error: error
             )
           }
         }
+        self.sendTransactionUpdates(restoredTransactions)
         if !unverifiedPurchases.isEmpty {
           completion(
             .failure(
@@ -276,6 +335,7 @@ extension InAppPurchasePlugin: InAppPurchase2API {
                 message:
                   "This purchase could not be restored.",
                 details: unverifiedPurchases)))
+          return
         }
         completion(.success(Void()))
       }
@@ -285,11 +345,12 @@ extension InAppPurchasePlugin: InAppPurchase2API {
   /// Wrapper method around StoreKit2's finish() method https://developer.apple.com/documentation/storekit/transaction/3749694-finish
   func finish(id: Int64, completion: @escaping (Result<Void, Error>) -> Void) {
     Task {
-      let transaction = try await fetchTransaction(by: UInt64(id))
-      if let transaction = transaction {
+      // Report success when no verified transaction matches, as StoreKit 1
+      // does; a finished consumable is no longer in Transaction.all.
+      if let transaction = await fetchTransaction(by: UInt64(id)) {
         await transaction.finish()
-        completion(.success(Void()))
       }
+      completion(.success(Void()))
     }
   }
 
@@ -308,6 +369,102 @@ extension InAppPurchasePlugin: InAppPurchase2API {
       completion(.success(currentStorefront.countryCode))
       return
     }
+  }
+
+  func presentOfferCodeRedeemSheet(completion: @escaping (Result<Void, Error>) -> Void) {
+    #if os(iOS)
+      if #available(iOS 16.0, *) {
+        guard let windowScene = self.registrar?.viewController?.view.window?.windowScene else {
+          let error = PigeonError(
+            code: "storekit2_missing_key_window_scene",
+            message: "Failed to fetch key window scene",
+            details: "registrar.viewController.view.window.windowScene returned nil."
+          )
+          completion(.failure(error))
+          return
+        }
+        Task { @MainActor in
+          do {
+            try await AppStore.presentOfferCodeRedeemSheet(in: windowScene)
+            completion(.success(()))
+          } catch {
+            completion(.failure(error))
+          }
+        }
+      } else {
+        completion(
+          .failure(
+            PigeonError(
+              code: "storekit2_unsupported_platform_version",
+              message: "Offer code redemption requires iOS 16+",
+              details: nil
+            )))
+      }
+    #elseif os(macOS)
+      if #available(macOS 15.0, *) {
+        guard let viewController = self.registrar?.viewController else {
+          let error = PigeonError(
+            code: "storekit2_missing_view_controller",
+            message: "Failed to fetch view controller",
+            details: "registrar.viewController returned nil."
+          )
+          completion(.failure(error))
+          return
+        }
+
+        Task { @MainActor in
+          do {
+            try await AppStore.presentOfferCodeRedeemSheet(from: viewController)
+            completion(.success(()))
+          } catch {
+            completion(.failure(error))
+          }
+        }
+      } else {
+        completion(
+          .failure(
+            PigeonError(
+              code: "storekit2_unsupported_platform_version",
+              message: "Offer code redemption requires macOS 15+",
+              details: nil
+            )))
+      }
+    #endif
+  }
+
+  /// Wrapper method around StoreKit2's showManageSubscriptions(in:) method
+  /// https://developer.apple.com/documentation/storekit/appstore/showmanagesubscriptions(in:)
+  /// Presents the App Store sheet that lets the user manage their subscriptions.
+  func showManageSubscriptions(completion: @escaping (Result<Void, Error>) -> Void) {
+    #if os(iOS)
+      Task { @MainActor in
+        guard let windowScene = self.registrar?.viewController?.view.window?.windowScene else {
+          let error = PigeonError(
+            code: "storekit2_missing_key_window_scene",
+            message: "Failed to fetch key window scene",
+            details: "registrar.viewController.view.window.windowScene returned nil."
+          )
+          completion(.failure(error))
+          return
+        }
+        do {
+          try await AppStore.showManageSubscriptions(in: windowScene)
+          completion(.success(()))
+        } catch {
+          completion(.failure(error))
+        }
+      }
+    #elseif os(macOS)
+      // StoreKit does not provide showManageSubscriptions on macOS. Subscriptions are
+      // managed through the App Store app instead.
+      completion(
+        .failure(
+          PigeonError(
+            code: "storekit2_unsupported_platform",
+            message: "Managing subscriptions is not supported on macOS",
+            details: nil
+          )))
+    #endif
   }
 
   /// Wrapper method around StoreKit2's sync() method
@@ -340,7 +497,11 @@ extension InAppPurchasePlugin: InAppPurchase2API {
           switch verificationResult {
           case .verified(let transaction):
             self?.sendTransactionUpdate(
-              transaction: transaction, receipt: verificationResult.jwsRepresentation)
+              productId: transaction.productID,
+              transaction: transaction,
+              receipt: verificationResult.jwsRepresentation,
+              status: .purchased
+            )
           case .unverified:
             break
           }
@@ -353,16 +514,45 @@ extension InAppPurchasePlugin: InAppPurchase2API {
     updateListenerTask.cancel()
   }
 
-  /// Sends an transaction back to Dart. Access these transactions with `purchaseStream`
-  private func sendTransactionUpdate(transaction: Transaction, receipt: String? = nil) {
-    let transactionMessage = transaction.convertToPigeon(receipt: receipt)
+  /// Sends a transaction or status update back to Dart. Access these transactions with `purchaseStream`
+  /// - Parameters:
+  ///   - productId: The product ID (required)
+  ///   - transaction: The transaction object (for success cases, nil for pending/cancelled)
+  ///   - receipt: The JWS receipt data
+  ///   - status: The purchase status
+  private func sendTransactionUpdate(
+    productId: String,
+    transaction: Transaction? = nil,
+    receipt: String? = nil,
+    status: SK2PurchaseStatusMessage
+  ) {
+    let transactionMessage: SK2TransactionMessage
+
+    if let transaction = transaction {
+      // Has real transaction: use transaction info
+      transactionMessage = transaction.convertToPigeon(receipt: receipt, status: status)
+    } else {
+      // No transaction (pending/cancelled): create minimal message without purchaseDate
+      transactionMessage = SK2TransactionMessage(
+        id: 0,
+        originalId: 0,
+        productId: productId,
+        purchasedQuantity: 1,
+        status: status
+      )
+    }
+
+    sendTransactionUpdates([transactionMessage])
+  }
+
+  private func sendTransactionUpdates(_ transactionMessages: [SK2TransactionMessage]) {
     Task { @MainActor in
-      self.transactionCallbackAPI?.onTransactionsUpdated(newTransactions: [transactionMessage]) {
+      self.transactionCallbackAPI?.onTransactionsUpdated(newTransactions: transactionMessages) {
         result in
         switch result {
         case .success: break
         case .failure(let error):
-          print("Failed to send transaction updates: \(error)")
+          print("Failed to send transaction update: \(error)")
         }
       }
     }
@@ -385,7 +575,7 @@ extension InAppPurchasePlugin: InAppPurchase2API {
   }
 
   /// Helper function to fetch specific transaction
-  func fetchTransaction(by id: UInt64) async throws -> Transaction? {
+  func fetchTransaction(by id: UInt64) async -> Transaction? {
     for await result in Transaction.all {
       switch result {
       case .verified(let transaction):
@@ -397,5 +587,34 @@ extension InAppPurchasePlugin: InAppPurchase2API {
       }
     }
     return nil
+  }
+
+  /// Purchases `product`, anchoring the confirmation UI to the Flutter view when possible.
+  ///
+  /// The scene-less `purchase(options:)` leaves StoreKit to find a UI anchor itself, which fails
+  /// on iOS 27 and leaves the purchase pending forever; it remains the fallback for older OS
+  /// versions and for engines whose view is not in a window.
+  @MainActor
+  private func confirmPurchase(
+    of product: Product,
+    options: Set<Product.PurchaseOption>
+  ) async throws -> Product.PurchaseResult {
+    #if os(iOS)
+      if let viewController = self.registrar?.viewController,
+        let windowScene = viewController.view.window?.windowScene
+      {
+        if #available(iOS 18.2, *) {
+          return try await product.purchase(confirmIn: viewController, options: options)
+        }
+        if #available(iOS 17.0, *) {
+          return try await product.purchase(confirmIn: windowScene, options: options)
+        }
+      }
+    #elseif os(macOS)
+      if #available(macOS 15.2, *), let window = self.registrar?.view?.window {
+        return try await product.purchase(confirmIn: window, options: options)
+      }
+    #endif
+    return try await product.purchase(options: options)
   }
 }

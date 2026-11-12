@@ -16,7 +16,36 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
 private object EventChannelTestsPigeonUtils {
+  fun doubleEquals(a: Double, b: Double): Boolean {
+    // Normalize -0.0 to 0.0 and handle NaN equality.
+    return (if (a == 0.0) 0.0 else a) == (if (b == 0.0) 0.0 else b) || (a.isNaN() && b.isNaN())
+  }
+
+  fun floatEquals(a: Float, b: Float): Boolean {
+    // Normalize -0.0 to 0.0 and handle NaN equality.
+    return (if (a == 0.0f) 0.0f else a) == (if (b == 0.0f) 0.0f else b) || (a.isNaN() && b.isNaN())
+  }
+
+  fun doubleHash(d: Double): Int {
+    // Normalize -0.0 to 0.0 and handle NaN to ensure consistent hash codes.
+    val normalized = if (d == 0.0) 0.0 else d
+    val bits = java.lang.Double.doubleToLongBits(normalized)
+    return (bits xor (bits ushr 32)).toInt()
+  }
+
+  fun floatHash(f: Float): Int {
+    // Normalize -0.0 to 0.0 and handle NaN to ensure consistent hash codes.
+    val normalized = if (f == 0.0f) 0.0f else f
+    return java.lang.Float.floatToIntBits(normalized)
+  }
+
   fun deepEquals(a: Any?, b: Any?): Boolean {
+    if (a === b) {
+      return true
+    }
+    if (a == null || b == null) {
+      return false
+    }
     if (a is ByteArray && b is ByteArray) {
       return a.contentEquals(b)
     }
@@ -27,19 +56,108 @@ private object EventChannelTestsPigeonUtils {
       return a.contentEquals(b)
     }
     if (a is DoubleArray && b is DoubleArray) {
-      return a.contentEquals(b)
+      if (a.size != b.size) return false
+      for (i in a.indices) {
+        if (!doubleEquals(a[i], b[i])) return false
+      }
+      return true
+    }
+    if (a is FloatArray && b is FloatArray) {
+      if (a.size != b.size) return false
+      for (i in a.indices) {
+        if (!floatEquals(a[i], b[i])) return false
+      }
+      return true
     }
     if (a is Array<*> && b is Array<*>) {
-      return a.size == b.size && a.indices.all { deepEquals(a[it], b[it]) }
+      if (a.size != b.size) return false
+      for (i in a.indices) {
+        if (!deepEquals(a[i], b[i])) return false
+      }
+      return true
     }
     if (a is List<*> && b is List<*>) {
-      return a.size == b.size && a.indices.all { deepEquals(a[it], b[it]) }
+      if (a.size != b.size) return false
+      val iterA = a.iterator()
+      val iterB = b.iterator()
+      while (iterA.hasNext() && iterB.hasNext()) {
+        if (!deepEquals(iterA.next(), iterB.next())) return false
+      }
+      return true
     }
     if (a is Map<*, *> && b is Map<*, *>) {
-      return a.size == b.size &&
-          a.all { (b as Map<Any?, Any?>).contains(it.key) && deepEquals(it.value, b[it.key]) }
+      if (a.size != b.size) return false
+      for (entry in a) {
+        val key = entry.key
+        var found = false
+        for (bEntry in b) {
+          if (deepEquals(key, bEntry.key)) {
+            if (deepEquals(entry.value, bEntry.value)) {
+              found = true
+              break
+            } else {
+              return false
+            }
+          }
+        }
+        if (!found) return false
+      }
+      return true
+    }
+    if (a is Double && b is Double) {
+      return doubleEquals(a, b)
+    }
+    if (a is Float && b is Float) {
+      return floatEquals(a, b)
     }
     return a == b
+  }
+
+  fun deepHash(value: Any?): Int {
+    return when (value) {
+      null -> 0
+      is ByteArray -> value.contentHashCode()
+      is IntArray -> value.contentHashCode()
+      is LongArray -> value.contentHashCode()
+      is DoubleArray -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + doubleHash(item)
+        }
+        result
+      }
+      is FloatArray -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + floatHash(item)
+        }
+        result
+      }
+      is Array<*> -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + deepHash(item)
+        }
+        result
+      }
+      is List<*> -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + deepHash(item)
+        }
+        result
+      }
+      is Map<*, *> -> {
+        var result = 0
+        for (entry in value) {
+          result += ((deepHash(entry.key) * 31) xor deepHash(entry.value))
+        }
+        result
+      }
+      is Double -> doubleHash(value)
+      is Float -> floatHash(value)
+      else -> value.hashCode()
+    }
   }
 }
 
@@ -54,7 +172,7 @@ class EventChannelTestsError(
     val code: String,
     override val message: String? = null,
     val details: Any? = null
-) : Throwable()
+) : RuntimeException()
 
 enum class EventEnum(val raw: Int) {
   ONE(0),
@@ -64,8 +182,10 @@ enum class EventEnum(val raw: Int) {
   FOUR_HUNDRED_TWENTY_TWO(4);
 
   companion object {
+    private val pigeonValues = values()
+
     fun ofRaw(raw: Int): EventEnum? {
-      return values().firstOrNull { it.raw == raw }
+      return pigeonValues.getOrNull(raw)
     }
   }
 }
@@ -74,8 +194,10 @@ enum class AnotherEventEnum(val raw: Int) {
   JUST_IN_CASE(0);
 
   companion object {
+    private val pigeonValues = values()
+
     fun ofRaw(raw: Int): AnotherEventEnum? {
-      return values().firstOrNull { it.raw == raw }
+      return pigeonValues.getOrNull(raw)
     }
   }
 }
@@ -223,16 +345,91 @@ data class EventAllNullableTypes(
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is EventAllNullableTypes) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as EventAllNullableTypes
+    return EventChannelTestsPigeonUtils.deepEquals(this.aNullableBool, other.aNullableBool) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.aNullableInt, other.aNullableInt) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.aNullableInt64, other.aNullableInt64) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.aNullableDouble, other.aNullableDouble) &&
+        EventChannelTestsPigeonUtils.deepEquals(
+            this.aNullableByteArray, other.aNullableByteArray) &&
+        EventChannelTestsPigeonUtils.deepEquals(
+            this.aNullable4ByteArray, other.aNullable4ByteArray) &&
+        EventChannelTestsPigeonUtils.deepEquals(
+            this.aNullable8ByteArray, other.aNullable8ByteArray) &&
+        EventChannelTestsPigeonUtils.deepEquals(
+            this.aNullableFloatArray, other.aNullableFloatArray) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.aNullableEnum, other.aNullableEnum) &&
+        EventChannelTestsPigeonUtils.deepEquals(
+            this.anotherNullableEnum, other.anotherNullableEnum) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.aNullableString, other.aNullableString) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.aNullableObject, other.aNullableObject) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.allNullableTypes, other.allNullableTypes) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.list, other.list) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.stringList, other.stringList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.intList, other.intList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.doubleList, other.doubleList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.boolList, other.boolList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.enumList, other.enumList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.objectList, other.objectList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.listList, other.listList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.mapList, other.mapList) &&
+        EventChannelTestsPigeonUtils.deepEquals(
+            this.recursiveClassList, other.recursiveClassList) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.map, other.map) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.stringMap, other.stringMap) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.intMap, other.intMap) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.enumMap, other.enumMap) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.objectMap, other.objectMap) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.listMap, other.listMap) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.mapMap, other.mapMap) &&
+        EventChannelTestsPigeonUtils.deepEquals(this.recursiveClassMap, other.recursiveClassMap)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableBool)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableInt)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableInt64)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableDouble)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableByteArray)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullable4ByteArray)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullable8ByteArray)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableFloatArray)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableEnum)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.anotherNullableEnum)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableString)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.aNullableObject)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.allNullableTypes)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.list)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.stringList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.intList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.doubleList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.boolList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.enumList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.objectList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.listList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.mapList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.recursiveClassList)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.map)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.stringMap)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.intMap)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.enumMap)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.objectMap)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.listMap)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.mapMap)
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.recursiveClassMap)
+    return result
+  }
+
+  override fun toString(): String {
+    return "EventAllNullableTypes(aNullableBool=$aNullableBool, aNullableInt=$aNullableInt, aNullableInt64=$aNullableInt64, aNullableDouble=$aNullableDouble, aNullableByteArray=${aNullableByteArray?.contentToString()}, aNullable4ByteArray=${aNullable4ByteArray?.contentToString()}, aNullable8ByteArray=${aNullable8ByteArray?.contentToString()}, aNullableFloatArray=${aNullableFloatArray?.contentToString()}, aNullableEnum=$aNullableEnum, anotherNullableEnum=$anotherNullableEnum, aNullableString=$aNullableString, aNullableObject=$aNullableObject, allNullableTypes=$allNullableTypes, list=$list, stringList=$stringList, intList=$intList, doubleList=$doubleList, boolList=$boolList, enumList=$enumList, objectList=$objectList, listList=$listList, mapList=$mapList, recursiveClassList=$recursiveClassList, map=$map, stringMap=$stringMap, intMap=$intMap, enumMap=$enumMap, objectMap=$objectMap, listMap=$listMap, mapMap=$mapMap, recursiveClassMap=$recursiveClassMap)"
+  }
 }
 
 /**
@@ -256,16 +453,25 @@ data class IntEvent(val value: Long) : PlatformEvent() {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is IntEvent) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as IntEvent
+    return EventChannelTestsPigeonUtils.deepEquals(this.value, other.value)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.value)
+    return result
+  }
+
+  override fun toString(): String {
+    return "IntEvent(value=$value)"
+  }
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
@@ -284,16 +490,25 @@ data class StringEvent(val value: String) : PlatformEvent() {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is StringEvent) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as StringEvent
+    return EventChannelTestsPigeonUtils.deepEquals(this.value, other.value)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.value)
+    return result
+  }
+
+  override fun toString(): String {
+    return "StringEvent(value=$value)"
+  }
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
@@ -312,16 +527,25 @@ data class BoolEvent(val value: Boolean) : PlatformEvent() {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is BoolEvent) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as BoolEvent
+    return EventChannelTestsPigeonUtils.deepEquals(this.value, other.value)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.value)
+    return result
+  }
+
+  override fun toString(): String {
+    return "BoolEvent(value=$value)"
+  }
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
@@ -340,16 +564,25 @@ data class DoubleEvent(val value: Double) : PlatformEvent() {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is DoubleEvent) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as DoubleEvent
+    return EventChannelTestsPigeonUtils.deepEquals(this.value, other.value)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.value)
+    return result
+  }
+
+  override fun toString(): String {
+    return "DoubleEvent(value=$value)"
+  }
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
@@ -368,16 +601,25 @@ data class ObjectsEvent(val value: Any) : PlatformEvent() {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is ObjectsEvent) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as ObjectsEvent
+    return EventChannelTestsPigeonUtils.deepEquals(this.value, other.value)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.value)
+    return result
+  }
+
+  override fun toString(): String {
+    return "ObjectsEvent(value=$value)"
+  }
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
@@ -396,16 +638,25 @@ data class EnumEvent(val value: EventEnum) : PlatformEvent() {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is EnumEvent) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as EnumEvent
+    return EventChannelTestsPigeonUtils.deepEquals(this.value, other.value)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.value)
+    return result
+  }
+
+  override fun toString(): String {
+    return "EnumEvent(value=$value)"
+  }
 }
 
 /** Generated class from Pigeon that represents data sent in messages. */
@@ -424,50 +675,94 @@ data class ClassEvent(val value: EventAllNullableTypes) : PlatformEvent() {
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is ClassEvent) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return EventChannelTestsPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as ClassEvent
+    return EventChannelTestsPigeonUtils.deepEquals(this.value, other.value)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + EventChannelTestsPigeonUtils.deepHash(this.value)
+    return result
+  }
+
+  override fun toString(): String {
+    return "ClassEvent(value=$value)"
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+class EmptyEvent : PlatformEvent() {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): EmptyEvent {
+      return EmptyEvent()
+    }
+  }
+
+  fun toList(): List<Any?> {
+    return listOf()
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    return result
+  }
+
+  override fun toString(): String {
+    return "EmptyEvent()"
+  }
 }
 
 private open class EventChannelTestsPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as Long?)?.let { EventEnum.ofRaw(it.toInt()) }
+        (readValue(buffer) as Long?)?.let { EventEnum.ofRaw(it.toInt()) }
       }
       130.toByte() -> {
-        return (readValue(buffer) as Long?)?.let { AnotherEventEnum.ofRaw(it.toInt()) }
+        (readValue(buffer) as Long?)?.let { AnotherEventEnum.ofRaw(it.toInt()) }
       }
       131.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { EventAllNullableTypes.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { EventAllNullableTypes.fromList(it) }
       }
       132.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { IntEvent.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { IntEvent.fromList(it) }
       }
       133.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { StringEvent.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { StringEvent.fromList(it) }
       }
       134.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { BoolEvent.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { BoolEvent.fromList(it) }
       }
       135.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { DoubleEvent.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { DoubleEvent.fromList(it) }
       }
       136.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { ObjectsEvent.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { ObjectsEvent.fromList(it) }
       }
       137.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { EnumEvent.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { EnumEvent.fromList(it) }
       }
       138.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { ClassEvent.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { ClassEvent.fromList(it) }
+      }
+      139.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let { EmptyEvent.fromList(it) }
       }
       else -> super.readValueOfType(type, buffer)
     }
@@ -515,6 +810,10 @@ private open class EventChannelTestsPigeonCodec : StandardMessageCodec() {
         stream.write(138)
         writeValue(stream, value.toList())
       }
+      is EmptyEvent -> {
+        stream.write(139)
+        writeValue(stream, value.toList())
+      }
       else -> super.writeValue(stream, value)
     }
   }
@@ -539,9 +838,9 @@ private class EventChannelTestsPigeonStreamHandler<T>(
 }
 
 interface EventChannelTestsPigeonEventChannelWrapper<T> {
-  open fun onListen(p0: Any?, sink: PigeonEventSink<T>) {}
+  fun onListen(p0: Any?, sink: PigeonEventSink<T>) {}
 
-  open fun onCancel(p0: Any?) {}
+  fun onCancel(p0: Any?) {}
 }
 
 class PigeonEventSink<T>(private val sink: EventChannel.EventSink) {
@@ -558,71 +857,157 @@ class PigeonEventSink<T>(private val sink: EventChannel.EventSink) {
   }
 }
 
+/**
+ * A typed channel for communicating with the Flutter application using asynchronous event streams.
+ */
+class StreamIntsEventChannel(messenger: BinaryMessenger, instanceName: String = "") {
+  private val channel: EventChannel
+
+  init {
+    var channelName = "dev.flutter.pigeon.pigeon_integration_tests.EventChannelMethods.streamInts"
+    if (instanceName.isNotEmpty()) {
+      channelName += ".$instanceName"
+    }
+    channel = EventChannel(messenger, channelName, EventChannelTestsPigeonMethodCodec)
+  }
+
+  /**
+   * Sets the stream handler for this channel, replacing any previous handler.
+   *
+   * Pass `null` to remove the event channel registration.
+   */
+  fun setStreamHandler(streamHandler: StreamIntsStreamHandler?) {
+    val internalHandler = streamHandler?.let { EventChannelTestsPigeonStreamHandler<Long>(it) }
+    channel.setStreamHandler(internalHandler)
+  }
+}
+
 abstract class StreamIntsStreamHandler : EventChannelTestsPigeonEventChannelWrapper<Long> {
   companion object {
+    /**
+     * Creates and returns a new event channel that calls the provided stream handler.
+     *
+     * The returned channel can be stored to allow changing or removing the stream handler. If the
+     * handler will not be changed for the lifetime of the engine associated with the messenger, the
+     * return value can be ignored.
+     */
     fun register(
         messenger: BinaryMessenger,
         streamHandler: StreamIntsStreamHandler,
         instanceName: String = ""
-    ) {
-      var channelName: String =
-          "dev.flutter.pigeon.pigeon_integration_tests.EventChannelMethods.streamInts"
-      if (instanceName.isNotEmpty()) {
-        channelName += ".$instanceName"
-      }
-      val internalStreamHandler = EventChannelTestsPigeonStreamHandler<Long>(streamHandler)
-      EventChannel(messenger, channelName, EventChannelTestsPigeonMethodCodec)
-          .setStreamHandler(internalStreamHandler)
+    ): StreamIntsEventChannel {
+      val channel = StreamIntsEventChannel(messenger, instanceName)
+      channel.setStreamHandler(streamHandler)
+      return channel
     }
   }
+
   // Implement methods from EventChannelTestsPigeonEventChannelWrapper
   override fun onListen(p0: Any?, sink: PigeonEventSink<Long>) {}
 
   override fun onCancel(p0: Any?) {}
 }
 
+/**
+ * A typed channel for communicating with the Flutter application using asynchronous event streams.
+ */
+class StreamEventsEventChannel(messenger: BinaryMessenger, instanceName: String = "") {
+  private val channel: EventChannel
+
+  init {
+    var channelName = "dev.flutter.pigeon.pigeon_integration_tests.EventChannelMethods.streamEvents"
+    if (instanceName.isNotEmpty()) {
+      channelName += ".$instanceName"
+    }
+    channel = EventChannel(messenger, channelName, EventChannelTestsPigeonMethodCodec)
+  }
+
+  /**
+   * Sets the stream handler for this channel, replacing any previous handler.
+   *
+   * Pass `null` to remove the event channel registration.
+   */
+  fun setStreamHandler(streamHandler: StreamEventsStreamHandler?) {
+    val internalHandler =
+        streamHandler?.let { EventChannelTestsPigeonStreamHandler<PlatformEvent>(it) }
+    channel.setStreamHandler(internalHandler)
+  }
+}
+
 abstract class StreamEventsStreamHandler :
     EventChannelTestsPigeonEventChannelWrapper<PlatformEvent> {
   companion object {
+    /**
+     * Creates and returns a new event channel that calls the provided stream handler.
+     *
+     * The returned channel can be stored to allow changing or removing the stream handler. If the
+     * handler will not be changed for the lifetime of the engine associated with the messenger, the
+     * return value can be ignored.
+     */
     fun register(
         messenger: BinaryMessenger,
         streamHandler: StreamEventsStreamHandler,
         instanceName: String = ""
-    ) {
-      var channelName: String =
-          "dev.flutter.pigeon.pigeon_integration_tests.EventChannelMethods.streamEvents"
-      if (instanceName.isNotEmpty()) {
-        channelName += ".$instanceName"
-      }
-      val internalStreamHandler = EventChannelTestsPigeonStreamHandler<PlatformEvent>(streamHandler)
-      EventChannel(messenger, channelName, EventChannelTestsPigeonMethodCodec)
-          .setStreamHandler(internalStreamHandler)
+    ): StreamEventsEventChannel {
+      val channel = StreamEventsEventChannel(messenger, instanceName)
+      channel.setStreamHandler(streamHandler)
+      return channel
     }
   }
+
   // Implement methods from EventChannelTestsPigeonEventChannelWrapper
   override fun onListen(p0: Any?, sink: PigeonEventSink<PlatformEvent>) {}
 
   override fun onCancel(p0: Any?) {}
 }
 
+/**
+ * A typed channel for communicating with the Flutter application using asynchronous event streams.
+ */
+class StreamConsistentNumbersEventChannel(messenger: BinaryMessenger, instanceName: String = "") {
+  private val channel: EventChannel
+
+  init {
+    var channelName =
+        "dev.flutter.pigeon.pigeon_integration_tests.EventChannelMethods.streamConsistentNumbers"
+    if (instanceName.isNotEmpty()) {
+      channelName += ".$instanceName"
+    }
+    channel = EventChannel(messenger, channelName, EventChannelTestsPigeonMethodCodec)
+  }
+
+  /**
+   * Sets the stream handler for this channel, replacing any previous handler.
+   *
+   * Pass `null` to remove the event channel registration.
+   */
+  fun setStreamHandler(streamHandler: StreamConsistentNumbersStreamHandler?) {
+    val internalHandler = streamHandler?.let { EventChannelTestsPigeonStreamHandler<Long>(it) }
+    channel.setStreamHandler(internalHandler)
+  }
+}
+
 abstract class StreamConsistentNumbersStreamHandler :
     EventChannelTestsPigeonEventChannelWrapper<Long> {
   companion object {
+    /**
+     * Creates and returns a new event channel that calls the provided stream handler.
+     *
+     * The returned channel can be stored to allow changing or removing the stream handler. If the
+     * handler will not be changed for the lifetime of the engine associated with the messenger, the
+     * return value can be ignored.
+     */
     fun register(
         messenger: BinaryMessenger,
         streamHandler: StreamConsistentNumbersStreamHandler,
         instanceName: String = ""
-    ) {
-      var channelName: String =
-          "dev.flutter.pigeon.pigeon_integration_tests.EventChannelMethods.streamConsistentNumbers"
-      if (instanceName.isNotEmpty()) {
-        channelName += ".$instanceName"
-      }
-      val internalStreamHandler = EventChannelTestsPigeonStreamHandler<Long>(streamHandler)
-      EventChannel(messenger, channelName, EventChannelTestsPigeonMethodCodec)
-          .setStreamHandler(internalStreamHandler)
+    ): StreamConsistentNumbersEventChannel {
+      val channel = StreamConsistentNumbersEventChannel(messenger, instanceName)
+      channel.setStreamHandler(streamHandler)
+      return channel
     }
   }
+
   // Implement methods from EventChannelTestsPigeonEventChannelWrapper
   override fun onListen(p0: Any?, sink: PigeonEventSink<Long>) {}
 

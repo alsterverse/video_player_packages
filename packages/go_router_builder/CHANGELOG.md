@@ -1,3 +1,54 @@
+## 4.5.3
+
+* Widens `package:build` dependency constraint to `>=3.0.0 <6.0.0`.
+
+## 4.5.2
+
+- Adopts shared analyzer helpers from `package:source_helper` `^1.4.0`.
+
+## 4.5.1
+
+- Migrates examples to `material_ui` package (1.4.0).
+- Updates minimum supported SDK version to Flutter 3.47/Dart 3.13.
+
+## 4.5.0
+
+- Detects routes that resolve to the same URL pattern. Routes are compared by
+  the whole URL each one resolves to, so a collision is caught wherever the two
+  routes sit in the route tree, including across shell routes and
+  `StatefulShellRoute` branches, between relative routes, and between separate
+  annotations in one library. Paths that differ only in a parameter name, or
+  only in casing where the earlier route sets `caseSensitive: false`, count as
+  the same pattern. These are reported as build warnings by default. The new
+  `duplicate_route_paths` builder option raises them to build errors with
+  `error`, or silences them with `ignore`.
+
+## 4.4.1
+
+* Adds support for analyzer 14.
+
+## 4.4.0
+
+- Adds `hasOverriddenOnExit` parameter to `GoRouteData.$route` and `RelativeGoRouteData.$route` helper methods for type-safe routes. When set to `true`, enables custom `onExit` callback invocation from route data classes extending `GoRouteData` or `RelativeGoRouteData` when the route is removed from the navigation stack.
+
+## 4.3.1
+
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+* Adds support for analyzer 13.
+
+## 4.3.0
+
+- Adds support for custom types through `TypedQueryParameter` annotation. The `encoder`, `decoder` and `compare` parameters allow specifying custom functions for encoding, decoding and comparing query parameters in `TypedGoRoute` constructors. For example, you can use a `DateTime` parameter with a custom encoder and decoder to convert it to and from a string representation in the URL.
+
+## 4.2.1
+
+* Adds support for analyzer 11 and 12.
+
+## 4.2.0
+
+- Adds supports for `TypedQueryParameter` annotation.
+  Its `name` parameter allows specifying a different name for the query parameter than the field name. The name is escaped to be URL-safe. For example `@TypedQueryParameter(name: 'field with space')` will generate a query parameter named `field+with+space`.
+
 ## 4.1.3
 
 * Requires `analyzer` 8.2 or higher, to avoid experimental APIs.

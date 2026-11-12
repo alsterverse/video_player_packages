@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/src/google_fonts_family_with_variant.dart';
 import 'package:google_fonts/src/google_fonts_variant.dart';
@@ -32,9 +32,7 @@ void main() {
     expect(familyWithVariant.toString(), equals('Foo_100italic'));
   });
 
-  testWidgets('toApiFilenamePrefix() works for italic w100', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('toApiFilenamePrefix() works for italic w100', (WidgetTester tester) async {
     const familyWithVariant = GoogleFontsFamilyWithVariant(
       family: 'Foo',
       googleFontsVariant: GoogleFontsVariant(
@@ -46,9 +44,7 @@ void main() {
     expect(familyWithVariant.toApiFilenamePrefix(), equals('Foo-ThinItalic'));
   });
 
-  testWidgets('toApiFilenamePrefix() works for regular', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('toApiFilenamePrefix() works for regular', (WidgetTester tester) async {
     const familyWithVariant = GoogleFontsFamilyWithVariant(
       family: 'Foo',
       googleFontsVariant: GoogleFontsVariant(

@@ -5,6 +5,7 @@
 import 'package:flutter/services.dart';
 import 'package:meta/meta.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
+
 import 'common/web_kit.g.dart';
 
 /// An implementation of [PlatformSslAuthError] with the WebKit api.
@@ -14,16 +15,11 @@ class WebKitSslAuthError extends PlatformSslAuthError {
   WebKitSslAuthError({
     required super.certificate,
     required super.description,
-    required SecTrust trust,
+    required this._trust,
     required this.host,
     required this.port,
-    required Future<void> Function(
-      UrlSessionAuthChallengeDisposition disposition,
-      URLCredential? credential,
-    )
-    onResponse,
-  }) : _trust = trust,
-       _onResponse = onResponse;
+    required this._onResponse,
+  });
 
   final SecTrust _trust;
 
@@ -41,10 +37,7 @@ class WebKitSslAuthError extends PlatformSslAuthError {
 
   @override
   Future<void> cancel() async {
-    await _onResponse(
-      UrlSessionAuthChallengeDisposition.cancelAuthenticationChallenge,
-      null,
-    );
+    await _onResponse(UrlSessionAuthChallengeDisposition.cancelAuthenticationChallenge, null);
   }
 
   @override

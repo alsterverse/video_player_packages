@@ -7,9 +7,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
-class MockUrlLauncher extends Fake
-    with MockPlatformInterfaceMixin
-    implements UrlLauncherPlatform {
+class MockUrlLauncher extends Fake with MockPlatformInterfaceMixin implements UrlLauncherPlatform {
   String? url;
   PreferredLaunchMode? launchMode;
   bool? useSafariVC;
@@ -21,7 +19,8 @@ class MockUrlLauncher extends Fake
   Map<String, String>? headers;
   String? webOnlyWindowName;
 
-  bool? response;
+  bool? launchResponse;
+  bool? closeResponse;
 
   bool closeWebViewCalled = false;
   bool canLaunchCalled = false;
@@ -57,8 +56,13 @@ class MockUrlLauncher extends Fake
   }
 
   // ignore: use_setters_to_change_properties
-  void setResponse(bool response) {
-    this.response = response;
+  void setLaunchResponse(bool response) {
+    launchResponse = response;
+  }
+
+  // ignore: use_setters_to_change_properties
+  void setCloseResponse(bool response) {
+    closeResponse = response;
   }
 
   @override
@@ -68,7 +72,7 @@ class MockUrlLauncher extends Fake
   Future<bool> canLaunch(String url) async {
     expect(url, this.url);
     canLaunchCalled = true;
-    return response!;
+    return launchResponse!;
   }
 
   @override
@@ -92,7 +96,7 @@ class MockUrlLauncher extends Fake
     expect(webOnlyWindowName, this.webOnlyWindowName);
     expect(webOnlyWindowName, this.webOnlyWindowName);
     launchCalled = true;
-    return response!;
+    return launchResponse!;
   }
 
   @override
@@ -105,7 +109,7 @@ class MockUrlLauncher extends Fake
     expect(options.browserConfiguration.showTitle, showTitle);
     expect(options.webOnlyWindowName, webOnlyWindowName);
     launchCalled = true;
-    return response!;
+    return launchResponse!;
   }
 
   @override
@@ -116,12 +120,12 @@ class MockUrlLauncher extends Fake
   @override
   Future<bool> supportsMode(PreferredLaunchMode mode) async {
     launchMode = mode;
-    return response!;
+    return launchResponse!;
   }
 
   @override
   Future<bool> supportsCloseForMode(PreferredLaunchMode mode) async {
     launchMode = mode;
-    return response!;
+    return closeResponse!;
   }
 }

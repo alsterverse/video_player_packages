@@ -6,12 +6,14 @@ package io.flutter.plugins.camerax;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.OptIn;
+import androidx.camera.core.ExperimentalZeroShutterLag;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.core.content.ContextCompat;
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Executors;
 import kotlin.Result;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
@@ -37,13 +39,19 @@ class ImageCaptureProxyApi extends PigeonApiImageCapture {
 
   @NonNull
   @Override
+  @OptIn(markerClass = ExperimentalZeroShutterLag.class)
   public ImageCapture pigeon_defaultConstructor(
       @Nullable ResolutionSelector resolutionSelector,
       @Nullable Long targetRotation,
-      @Nullable CameraXFlashMode flashMode) {
+      @Nullable CameraXFlashMode flashMode,
+      @Nullable Long jpegQuality,
+      @Nullable Boolean zeroShutterLagEnabled) {
     final ImageCapture.Builder builder = new ImageCapture.Builder();
     if (targetRotation != null) {
       builder.setTargetRotation(targetRotation.intValue());
+    }
+    if (Boolean.TRUE.equals(zeroShutterLagEnabled)) {
+      builder.setCaptureMode(ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG);
     }
     if (flashMode != null) {
       // This sets the requested flash mode, but may fail silently.
@@ -61,6 +69,9 @@ class ImageCaptureProxyApi extends PigeonApiImageCapture {
     }
     if (resolutionSelector != null) {
       builder.setResolutionSelector(resolutionSelector);
+    }
+    if (jpegQuality != null) {
+      builder.setJpegQuality(jpegQuality.intValue());
     }
     return builder.build();
   }
@@ -85,6 +96,7 @@ class ImageCaptureProxyApi extends PigeonApiImageCapture {
   @Override
   public void takePicture(
       @NonNull ImageCapture pigeonInstance,
+      @NonNull SystemServicesManager systemServicesManager,
       @NonNull Function1<? super Result<String>, Unit> callback) {
     final File outputDir = getPigeonRegistrar().getContext().getCacheDir();
     File temporaryCaptureFile;
@@ -98,10 +110,12 @@ class ImageCaptureProxyApi extends PigeonApiImageCapture {
     final ImageCapture.OutputFileOptions outputFileOptions =
         createImageCaptureOutputFileOptions(temporaryCaptureFile);
     final ImageCapture.OnImageSavedCallback onImageSavedCallback =
-        createOnImageSavedCallback(temporaryCaptureFile, callback);
+        createOnImageSavedCallback(temporaryCaptureFile, systemServicesManager, callback);
 
     pigeonInstance.takePicture(
-        outputFileOptions, Executors.newSingleThreadExecutor(), onImageSavedCallback);
+        outputFileOptions,
+        ContextCompat.getMainExecutor(getPigeonRegistrar().getContext()),
+        onImageSavedCallback);
   }
 
   @Override
@@ -121,7 +135,9 @@ class ImageCaptureProxyApi extends PigeonApiImageCapture {
 
   @NonNull
   ImageCapture.OnImageSavedCallback createOnImageSavedCallback(
-      @NonNull File file, @NonNull Function1<? super Result<String>, Unit> callback) {
+      @NonNull File file,
+      @NonNull SystemServicesManager systemServicesManager,
+      @NonNull Function1<? super Result<String>, Unit> callback) {
     return new ImageCapture.OnImageSavedCallback() {
       @Override
       public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
@@ -130,8 +146,35 @@ class ImageCaptureProxyApi extends PigeonApiImageCapture {
 
       @Override
       public void onError(@NonNull ImageCaptureException exception) {
+        systemServicesManager.onCameraError(
+            getImageCaptureExceptionDescription(exception.getImageCaptureError()));
         ResultCompat.failure(exception, callback);
       }
     };
+  }
+
+  /**
+   * Returns an error description for each {@link ImageCaptureException} error code.
+   *
+   * <p>See
+   * https://developer.android.com/reference/androidx/camera/core/ImageCaptureException#getImageCaptureError()
+   * for details on each error type.
+   */
+  String getImageCaptureExceptionDescription(int imageCaptureErrorCode) {
+    switch (imageCaptureErrorCode) {
+      case ImageCapture.ERROR_FILE_IO:
+        return "An error occurred while attempting to save the captured image to a file.";
+      case ImageCapture.ERROR_CAPTURE_FAILED:
+        return "The camera framework failed to fulfill the image capture request.";
+      case ImageCapture.ERROR_CAMERA_CLOSED:
+        return "Image capture failed due to the camera being closed.";
+      case ImageCapture.ERROR_INVALID_CAMERA:
+        return "The ImageCapture use case was bound to an invalid camera by the Flutter camera"
+            + " plugin. If you see this error, please file an issue if you cannot find one"
+            + " that already exists: https://github.com/flutter/flutter/issues/.";
+      default:
+        return "An unknown error has occurred while attempting to take a picture. Check the logs"
+            + " for more details.";
+    }
   }
 }

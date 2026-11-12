@@ -23,12 +23,8 @@ void main() {
   });
 
   test('SvgTheme updates the cache', () async {
-    const loaderA = TestLoader(
-      theme: SvgTheme(currentColor: Color(0xFFABCDEF)),
-    );
-    const loaderB = TestLoader(
-      theme: SvgTheme(currentColor: Color(0xFFFEDCBA)),
-    );
+    const loaderA = TestLoader(theme: SvgTheme(currentColor: Color(0xFFABCDEF)));
+    const loaderB = TestLoader(theme: SvgTheme(currentColor: Color(0xFFFEDCBA)));
     final ByteData bytesA = await loaderA.loadBytes(null);
     final ByteData bytesB = await loaderB.loadBytes(null);
     expect(identical(bytesA, bytesB), false);
@@ -58,11 +54,7 @@ void main() {
       'packages/packageName/foo': Uint8List(1).buffer.asByteData(),
     });
     final loader = SvgAssetLoader('foo', assetBundle: bundle);
-    final packageLoader = SvgAssetLoader(
-      'foo',
-      assetBundle: bundle,
-      packageName: 'packageName',
-    );
+    final packageLoader = SvgAssetLoader('foo', assetBundle: bundle, packageName: 'packageName');
     expect((await loader.prepareMessage(null))!.lengthInBytes, 0);
     expect((await packageLoader.prepareMessage(null))!.lengthInBytes, 1);
   });
@@ -119,6 +111,60 @@ void main() {
     await loader.prepareMessage(null);
     expect(client.closeCalled, isFalse);
   });
+
+  test('SvgNetworkLoader throws on a non-2xx response and still closes its client', () async {
+    final createdClients = <VerifyCloseClient>[];
+
+    await http.runWithClient(
+      () async {
+        const loader = SvgNetworkLoader('https://example.com/a.svg');
+
+        await expectLater(
+          loader.prepareMessage(null),
+          throwsA(
+            isA<http.ClientException>()
+                .having((http.ClientException e) => e.message, 'message', contains('404'))
+                .having(
+                  (http.ClientException e) => e.uri,
+                  'uri',
+                  Uri.parse('https://example.com/a.svg'),
+                ),
+          ),
+        );
+        expect(createdClients[0].closeCalled, isTrue);
+      },
+      () {
+        final client = VerifyCloseClient(statusCode: 404);
+        createdClients.add(client);
+        return client;
+      },
+    );
+  });
+
+  test('SvgNetworkLoader returns the body of a 200 response', () async {
+    final client = VerifyCloseClient(body: '<svg/>');
+    final loader = SvgNetworkLoader('', httpClient: client as http.Client);
+
+    expect(await loader.prepareMessage(null), utf8.encode('<svg/>'));
+  });
+
+  test('SvgNetworkLoader throws on a malformed URL without creating a client', () async {
+    final createdClients = <VerifyCloseClient>[];
+
+    await http.runWithClient(
+      () async {
+        const loader = SvgNetworkLoader('http://[invalid');
+
+        await expectLater(loader.prepareMessage(null), throwsFormatException);
+        expect(createdClients, isEmpty);
+      },
+      () {
+        final client = VerifyCloseClient();
+        createdClients.add(client);
+        return client;
+      },
+    );
+  });
 }
 
 class TestBundle extends Fake implements AssetBundle {
@@ -144,11 +190,7 @@ class TestLoader extends SvgLoader<void> {
 
   @override
   SvgCacheKey cacheKey(BuildContext? context) {
-    return SvgCacheKey(
-      theme: theme,
-      colorMapper: colorMapper,
-      keyData: keyName,
-    );
+    return SvgCacheKey(theme: theme, colorMapper: colorMapper, keyData: keyName);
   }
 }
 
@@ -156,22 +198,21 @@ class _TestColorMapper extends ColorMapper {
   const _TestColorMapper();
 
   @override
-  Color substitute(
-    String? id,
-    String elementName,
-    String attributeName,
-    Color color,
-  ) {
+  Color substitute(String? id, String elementName, String attributeName, Color color) {
     return color;
   }
 }
 
 class VerifyCloseClient extends Fake implements http.Client {
+  VerifyCloseClient({this.statusCode = 200, this.body = ''});
+
+  final int statusCode;
+  final String body;
   bool closeCalled = false;
 
   @override
   Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    return http.Response('', 200);
+    return http.Response(body, statusCode);
   }
 
   @override

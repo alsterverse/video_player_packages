@@ -1,3 +1,45 @@
+## NEXT
+
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.10.13
+
+* Fixes `stopVideoRecording` returning the JPEG path from `takePicture` when a photo is taken during video recording.
+
+## 0.10.12+1
+
+* Updates Robolectric to 4.17 and adds the JVM arguments it requires for unit tests.
+
+## 0.10.12
+
+* Adds support for custom video output path in video recording.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.10.11+1
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 0.10.11
+
+* Adds `setJpegImageQuality` for controlling JPEG compression quality.
+
+## 0.10.10+18
+
+* Bumps the androidx group across 10 directories with 1 update.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 0.10.10+17
+
+* Reset AE and AF triggers to idle after capture to fix camera flash remaining issue #97501.
+
+## 0.10.10+16
+
+* Updates build files from Groovy to Kotlin.
+
+## 0.10.10+15
+
+* Updates example to demonstrate correct exception handling for async return statements, ensuring exceptions thrown during return within try blocks are properly caught as per [dart-lang/sdk#44395](https://github.com/dart-lang/sdk/issues/44395).
+
 ## 0.10.10+14
 
 * Bumps com.android.tools.build:gradle from 8.12.1 to 8.13.1.

@@ -96,9 +96,7 @@ void _encodeShader(
       fromY: shader.from.y,
       toX: shader.to.x,
       toY: shader.to.y,
-      colors: Int32List.fromList(<int>[
-        for (final Color color in shader.colors!) color.value,
-      ]),
+      colors: Int32List.fromList(<int>[for (final Color color in shader.colors!) color.value]),
       offsets: Float32List.fromList(shader.offsets!),
       tileMode: shader.tileMode!.index,
     );
@@ -110,9 +108,7 @@ void _encodeShader(
       radius: shader.radius,
       focalX: shader.focalPoint?.x,
       focalY: shader.focalPoint?.y,
-      colors: Int32List.fromList(<int>[
-        for (final Color color in shader.colors!) color.value,
-      ]),
+      colors: Int32List.fromList(<int>[for (final Color color in shader.colors!) color.value]),
       offsets: Float32List.fromList(shader.offsets!),
       tileMode: shader.tileMode!.index,
       transform: _encodeMatrix(shader.transform),
@@ -152,10 +148,7 @@ Uint8List encodeSvg({
   );
 }
 
-Uint8List _encodeInstructions(
-  VectorInstructions instructions,
-  bool useHalfPrecisionControlPoints,
-) {
+Uint8List _encodeInstructions(VectorInstructions instructions, bool useHalfPrecisionControlPoints) {
   const codec = VectorGraphicsCodec();
   final buffer = VectorGraphicsBuffer();
 
@@ -181,13 +174,11 @@ Uint8List _encodeInstructions(
 
     if (fill != null) {
       final int? shaderId = shaderIds[fill.shader];
-      final int fillId = codec.writeFill(
-        buffer,
-        fill.color.value,
-        paint.blendMode.index,
-        shaderId,
-      );
+      final int fillId = codec.writeFill(buffer, fill.color.value, paint.blendMode.index, shaderId);
       fillIds[nextPaintId] = fillId;
+      if (paint.filterBlurX != null || paint.filterBlurY != null) {
+        codec.writePaintBlur(buffer, fillId, paint.filterBlurX ?? 0.0, paint.filterBlurY ?? 0.0);
+      }
     }
     if (stroke != null) {
       final int? shaderId = shaderIds[stroke.shader];
@@ -202,6 +193,9 @@ Uint8List _encodeInstructions(
         shaderId,
       );
       strokeIds[nextPaintId] = strokeId;
+      if (paint.filterBlurX != null || paint.filterBlurY != null) {
+        codec.writePaintBlur(buffer, strokeId, paint.filterBlurX ?? 0.0, paint.filterBlurY ?? 0.0);
+      }
     }
     nextPaintId += 1;
   }
@@ -294,15 +288,9 @@ Uint8List _encodeInstructions(
           );
         }
       case DrawCommandType.vertices:
-        final IndexedVertices vertices =
-            instructions.vertices[command.objectId!];
+        final IndexedVertices vertices = instructions.vertices[command.objectId!];
         final int fillId = fillIds[command.paintId]!;
-        codec.writeDrawVertices(
-          buffer,
-          vertices.vertices,
-          vertices.indices,
-          fillId,
-        );
+        codec.writeDrawVertices(buffer, vertices.vertices, vertices.indices, fillId);
       case DrawCommandType.saveLayer:
         codec.writeSaveLayer(buffer, fillIds[command.paintId]!);
       case DrawCommandType.restore:
@@ -313,8 +301,7 @@ Uint8List _encodeInstructions(
         codec.writeMask(buffer);
 
       case DrawCommandType.pattern:
-        final PatternData patternData =
-            instructions.patternData[command.patternDataId!];
+        final PatternData patternData = instructions.patternData[command.patternDataId!];
         codec.writePattern(
           buffer,
           patternData.x,
@@ -337,8 +324,7 @@ Uint8List _encodeInstructions(
         );
 
       case DrawCommandType.image:
-        final DrawImageData drawImageData =
-            instructions.drawImages[command.objectId!];
+        final DrawImageData drawImageData = instructions.drawImages[command.objectId!];
         codec.writeDrawImage(
           buffer,
           drawImageData.id,

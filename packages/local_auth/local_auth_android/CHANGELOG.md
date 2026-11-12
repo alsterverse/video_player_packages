@@ -1,3 +1,45 @@
+## 2.3.0
+
+* Updates internal platform API from callbacks to `suspend`.
+
+## 2.2.1
+
+* Updates Robolectric to 4.17 and adds the JVM arguments it requires for unit tests.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 2.2.0
+
+* Adjusts visibilty modifiers to support the migration of unit tests to Kotlin.
+
+## 2.1.0
+
+* Converts the implementation to Kotlin.
+
+## 2.0.10
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 2.0.9
+
+* Migrates to Built-in Kotlin to support AGP 9.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 2.0.8
+
+* Updates internal implementation to use Kotlin Pigeon.
+
+## 2.0.7
+
+* Updates build files from Groovy to Kotlin.
+
+## 2.0.6
+
+* Bumps androidx.core:core from 1.17.0 to 1.18.0.
+
+## 2.0.5
+
+* Adds platform-specific setup instructions to README.
+
 ## 2.0.4
 
 * Bumps androidx.core:core from 1.13.1 to 1.17.0.

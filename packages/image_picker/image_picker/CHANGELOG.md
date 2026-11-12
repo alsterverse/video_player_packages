@@ -1,10 +1,32 @@
 ## NEXT
 
-* Updates minimum supported SDK version to Flutter 3.32/Dart 3.8.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+* Updates README to reflect that the latest version of `image_picker_ios`
+  requires iOS 15.
+  * Applications built with older versions of Flutter will continue to use
+    compatible versions of the platform implementation.
+
+## 1.2.4
+
+* Documents that `retrieveLostData` is a one-time operation that clears the
+  stored lost data once it is returned.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 1.2.3
+
+* Fixes `pickMultiImage(limit: 1)` and `pickMultipleMedia(limit: 1)` throwing an `ArgumentError` by delegating to
+  single-item pickers when `limit` is exactly 1, since the platform interface requires `limit >= 2` for multi-selection.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 1.2.2
+
+* Clarifies that `maxDuration` only applies to video recording and not gallery selection.
+* Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
 * Updates README to reflect currently supported OS versions for the latest
   versions of the endorsed platform implementations.
   * Applications built with older versions of Flutter will continue to
     use compatible versions of the platform implementations.
+
 
 ## 1.2.1
 
@@ -129,7 +151,6 @@
 ## 0.8.6+2
 
 * Updates `NSPhotoLibraryUsageDescription` description in README.
-
 * Updates minimum Flutter version to 3.0.
 
 ## 0.8.6+1

@@ -1,7 +1,38 @@
+## NEXT
+
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.3.6
+
+* Adds support for camera image stream on web.
+* Updates minimum `web` package version to 1.0.0.
+
+## 0.3.5+7
+
+* Fixes `availableCameras` failing when a video input device cannot be started, for example
+  a virtual camera without a video source. Such devices are now skipped.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.3.5+6
+
+* Fixes a `TypeError` in `setFlashMode` and `takePicture` caused by browsers reporting the
+  `torch` capability as a `boolean` instead of the `boolean` sequence the Image Capture
+  specification describes.
+
+## 0.3.5+5
+
+* Removes invalid @JS annotation from extension type constructors.
+
+## 0.3.5+4
+
+* Fixes a `TypeError` in `availableCameras()` caused by browsers (e.g. Firefox) returning
+  an invalid `facingMode` capability value instead of the expected `DOMString` sequence.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
 ## 0.3.5+3
 
 * Fixes camera initialization failure on Safari by fixing a null check operator error using
-  a nullable getter and null safe practices.
+  a nullable getter and null-safe practices.
 
 ## 0.3.5+2
 

@@ -1,6 +1,72 @@
+## 0.8.13+25
+
+* Fixes resizing with `maxWidth` or `maxHeight` always decoding the full-size
+  image; large images are now subsampled while decoding.
+
+## 0.8.13+24
+
+* Updates Robolectric to 4.17 and adds the JVM arguments it requires for unit tests.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.8.13+23
+
+* Fixes a crash when the content provider returns no stream for a picked
+  image; the pick now fails with `missing_valid_image_uri` instead.
+
+## 0.8.13+22
+
+* Fixes gallery image/video selection on Android API 36+ returning no paths when
+  `useAndroidPhotoPicker` was false. The plugin now uses the Android Photo Picker on API 36 and
+  above regardless of that flag.
+
+## 0.8.13+21
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 0.8.13+20
+
+* Bumps androidx.activity:activity from 1.12.4 to 1.13.0.
+
+## 0.8.13+19
+
+* Bumps the androidx group across 10 directories with 1 update.
+
+## 0.8.13+18
+
+* Migrates to Built-in Kotlin to support AGP 9.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.8.13+17
+
+* Updates internal implementation to use Kotlin Pigeon.
+
+## 0.8.13+16
+
+* Bumps androidx.core:core from 1.17.0 to 1.18.0.
+
+## 0.8.13+15
+
+* Updates build files from Groovy to Kotlin.
+
+## 0.8.13+14
+
+* Bumps androidx.activity:activity from 1.12.2 to 1.12.4.
+
+## 0.8.13+13
+
+* Bumps androidx.activity:activity from 1.11.0 to 1.12.2.
+
+## 0.8.13+12
+
+* Bump androidx.core:core from 1.13.1 to 1.17.0.
+
+## 0.8.13+11
+
+* Bumps androidx.exifinterface:exifinterface from 1.4.1 to 1.4.2.
+
 ## 0.8.13+10
 
-* Bumps com.android.tools.build:gradle from 8.12.1 to 8.1
+* Bumps com.android.tools.build:gradle from 8.12.1 to 8.1.
 
 ## 0.8.13+9
 

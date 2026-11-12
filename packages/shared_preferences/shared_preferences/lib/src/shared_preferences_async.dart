@@ -18,13 +18,9 @@ import 'shared_preferences_devtools_extension_data.dart';
 @immutable
 class SharedPreferencesAsync {
   /// Creates a new instance with the given [options].
-  SharedPreferencesAsync({
-    SharedPreferencesOptions options = const SharedPreferencesOptions(),
-  }) : _options = options {
+  SharedPreferencesAsync({this._options = const SharedPreferencesOptions()}) {
     if (SharedPreferencesAsyncPlatform.instance == null) {
-      throw StateError(
-        'The SharedPreferencesAsyncPlatform instance must be set.',
-      );
+      throw StateError('The SharedPreferencesAsyncPlatform instance must be set.');
     } else {
       _platform = SharedPreferencesAsyncPlatform.instance!;
     }
@@ -42,9 +38,7 @@ class SharedPreferencesAsync {
   ///
   /// Ignores any keys whose values are types which are incompatible with shared_preferences.
   Future<Set<String>> getKeys({Set<String>? allowList}) async {
-    final parameters = GetPreferencesParameters(
-      filter: PreferencesFilters(allowList: allowList),
-    );
+    final parameters = GetPreferencesParameters(filter: PreferencesFilters(allowList: allowList));
     return _platform.getKeys(parameters, _options);
   }
 
@@ -54,38 +48,36 @@ class SharedPreferencesAsync {
   ///
   /// Ignores any entries of types which are incompatible with shared_preferences.
   Future<Map<String, Object?>> getAll({Set<String>? allowList}) async {
-    final parameters = GetPreferencesParameters(
-      filter: PreferencesFilters(allowList: allowList),
-    );
+    final parameters = GetPreferencesParameters(filter: PreferencesFilters(allowList: allowList));
     return _platform.getPreferences(parameters, _options);
   }
 
   /// Reads a value from the platform, throwing a [TypeError] if the value is
-  /// not a bool.
+  /// not a `bool`.
   Future<bool?> getBool(String key) async {
     return _platform.getBool(key, _options);
   }
 
   /// Reads a value from the platform, throwing a [TypeError] if the value is
-  /// not an int.
+  /// not an `int`.
   Future<int?> getInt(String key) async {
     return _platform.getInt(key, _options);
   }
 
   /// Reads a value from the platform, throwing a [TypeError] if the value is
-  /// not a double.
+  /// not a `double`.
   Future<double?> getDouble(String key) async {
     return _platform.getDouble(key, _options);
   }
 
   /// Reads a value from the platform, throwing a [TypeError] if the value is
-  /// not a String.
+  /// not a `String`.
   Future<String?> getString(String key) async {
     return _platform.getString(key, _options);
   }
 
   /// Reads a list of string values from the platform, throwing a [TypeError]
-  /// if the value not a List<String>.
+  /// if the value is not a `List<String>`.
   Future<List<String>?> getStringList(String key) async {
     return _platform.getStringList(key, _options);
   }
@@ -129,9 +121,7 @@ class SharedPreferencesAsync {
   /// Removes an entry from the platform.
   Future<void> remove(String key) {
     return _platform.clear(
-      ClearPreferencesParameters(
-        filter: PreferencesFilters(allowList: <String>{key}),
-      ),
+      ClearPreferencesParameters(filter: PreferencesFilters(allowList: <String>{key})),
       _options,
     );
   }
@@ -145,9 +135,7 @@ class SharedPreferencesAsync {
   ///
   /// It is highly recommended that an [allowList] be provided to this call.
   Future<void> clear({Set<String>? allowList}) {
-    final parameters = ClearPreferencesParameters(
-      filter: PreferencesFilters(allowList: allowList),
-    );
+    final parameters = ClearPreferencesParameters(filter: PreferencesFilters(allowList: allowList));
     return _platform.clear(parameters, _options);
   }
 }
@@ -181,19 +169,15 @@ class SharedPreferencesWithCache {
   /// Creates a new instance with the given options.
   SharedPreferencesWithCache._create({
     required SharedPreferencesOptions sharedPreferencesOptions,
-    required SharedPreferencesWithCacheOptions cacheOptions,
+    required this._cacheOptions,
     Map<String, Object?>? cache,
-  }) : _cacheOptions = cacheOptions,
-       _platformMethods = SharedPreferencesAsync(
-         options: sharedPreferencesOptions,
-       ),
+  }) : _platformMethods = SharedPreferencesAsync(options: sharedPreferencesOptions),
        _cache = cache ?? <String, Object?>{};
 
   /// Creates a new instance with the given options and reloads the cache from
   /// the platform data.
   static Future<SharedPreferencesWithCache> create({
-    SharedPreferencesOptions sharedPreferencesOptions =
-        const SharedPreferencesOptions(),
+    SharedPreferencesOptions sharedPreferencesOptions = const SharedPreferencesOptions(),
     required SharedPreferencesWithCacheOptions cacheOptions,
     Map<String, Object?>? cache,
   }) async {
@@ -227,9 +211,7 @@ class SharedPreferencesWithCache {
   /// preference storage directly.
   Future<void> reloadCache() async {
     _cache.clear();
-    _cache.addAll(
-      await _platformMethods.getAll(allowList: _cacheOptions.allowList),
-    );
+    _cache.addAll(await _platformMethods.getAll(allowList: _cacheOptions.allowList));
   }
 
   /// Returns true if cache contains the given [key].
@@ -237,9 +219,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   bool containsKey(String key) {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     return _cache.containsKey(key);
   }
@@ -252,9 +232,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   Object? get(String key) {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     return _cache[key];
   }
@@ -265,9 +243,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   bool? getBool(String key) {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     return get(key) as bool?;
   }
@@ -278,9 +254,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   int? getInt(String key) {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     return get(key) as int?;
   }
@@ -291,9 +265,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   double? getDouble(String key) {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     return get(key) as double?;
   }
@@ -304,9 +276,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   String? getString(String key) {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     return get(key) as String?;
   }
@@ -317,9 +287,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   List<String>? getStringList(String key) {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     // Make a copy of the list so that later mutations won't propagate
     return (_cache[key] as List<Object?>?)?.cast<String>().toList();
@@ -330,9 +298,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   Future<void> setBool(String key, bool value) async {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     _cache[key] = value;
     return _platformMethods.setBool(key, value);
@@ -343,9 +309,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   Future<void> setInt(String key, int value) async {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     _cache[key] = value;
     return _platformMethods.setInt(key, value);
@@ -359,9 +323,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   Future<void> setDouble(String key, double value) async {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     _cache[key] = value;
     return _platformMethods.setDouble(key, value);
@@ -377,9 +339,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   Future<void> setString(String key, String value) async {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     _cache[key] = value;
     return _platformMethods.setString(key, value);
@@ -390,9 +350,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   Future<void> setStringList(String key, List<String> value) async {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     _cache[key] = value;
     return _platformMethods.setStringList(key, value);
@@ -403,9 +361,7 @@ class SharedPreferencesWithCache {
   /// Throws an [ArgumentError] if [key] is not in this instance's filter.
   Future<void> remove(String key) async {
     if (!_isValidKey(key)) {
-      throw ArgumentError(
-        '$key is not included in the PreferencesFilter allowlist',
-      );
+      throw ArgumentError('$key is not included in the PreferencesFilter allowlist');
     }
     _cache.remove(key);
     return _platformMethods.remove(key);
@@ -426,5 +382,4 @@ class SharedPreferencesWithCache {
 // when running `flutter run -d chrome`.
 // Check this discussion for more info: https://github.com/flutter/packages/pull/6749/files/6eb1b4fdce1eba107294770d581713658ff971e9#discussion_r1755375409
 // ignore: unused_element
-final bool _fieldToKeepDevtoolsExtensionReachable =
-    fieldToKeepDevtoolsExtensionLibraryAlive;
+final bool _fieldToKeepDevtoolsExtensionReachable = fieldToKeepDevtoolsExtensionLibraryAlive;

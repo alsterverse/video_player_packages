@@ -48,8 +48,11 @@ class Camera {
     required this.textureId,
     required CameraService cameraService,
     this.options = const CameraOptions(),
-    this.recorderOptions = const (audioBitrate: null, videoBitrate: null),
-  }) : _cameraService = cameraService;
+    ({int? audioBitrate, int? videoBitrate})? recorderOptions,
+  }) : recorderOptions = recorderOptions ?? (audioBitrate: null, videoBitrate: null),
+       _cameraService = cameraService,
+       canUseOffscreenCanvas = cameraService.hasPropertyOffScreenCanvas(),
+       canUseMediaStreamTrackProcessor = cameraService.hasMediaStreamTrackProcessor();
 
   /// The texture id used to register the camera view.
   final int textureId;
@@ -97,8 +100,7 @@ class Camera {
   ///
   /// MediaRecorder.error:
   /// https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/error_event
-  Stream<web.ErrorEvent> get onVideoRecordingError =>
-      videoRecordingErrorController.stream;
+  Stream<web.ErrorEvent> get onVideoRecordingError => videoRecordingErrorController.stream;
 
   /// The stream provider for [MediaRecorder] error events.
   @visibleForTesting
@@ -147,26 +149,32 @@ class Camera {
   /// A builder to merge a list of blobs into a single blob.
   @visibleForTesting
   web.Blob Function(List<web.Blob> blobs, String type) blobBuilder =
-      (List<web.Blob> blobs, String type) =>
-          web.Blob(blobs.toJS, web.BlobPropertyBag(type: type));
+      (List<web.Blob> blobs, String type) => web.Blob(blobs.toJS, web.BlobPropertyBag(type: type));
 
   /// The stream that emits a [VideoRecordedEvent] when a video recording is created.
-  Stream<VideoRecordedEvent> get onVideoRecordedEvent =>
-      videoRecorderController.stream;
+  Stream<VideoRecordedEvent> get onVideoRecordedEvent => videoRecorderController.stream;
 
   /// The stream controller for the [onVideoRecordedEvent] stream.
   @visibleForTesting
   final StreamController<VideoRecordedEvent> videoRecorderController =
       StreamController<VideoRecordedEvent>.broadcast();
 
+  /// Used to check if media stream track processor is supported.
+  @visibleForTesting
+  final bool canUseMediaStreamTrackProcessor;
+
+  /// Used to check if allowed to paint canvas off screen
+  @visibleForTesting
+  final bool canUseOffscreenCanvas;
+
+  /// The tolerance for the camera streaming frame time.
+  int get _frameTimeToleranceMs => 1000 / cameraStreamFPS ~/ 2;
+
   /// Initializes the camera stream displayed in the [videoElement].
   /// Registers the camera view with [textureId] under [_getViewType] type.
   /// Emits the camera default video track on the [onEnded] stream when it ends.
   Future<void> initialize() async {
-    stream = await _cameraService.getMediaStreamForOptions(
-      options,
-      cameraId: textureId,
-    );
+    stream = await _cameraService.getMediaStreamForOptions(options, cameraId: textureId);
 
     videoElement = web.HTMLVideoElement();
 
@@ -176,10 +184,7 @@ class Camera {
       ..style.setProperty('width', '100%')
       ..append(videoElement);
 
-    ui_web.platformViewRegistry.registerViewFactory(
-      _getViewType(textureId),
-      (_) => divElement,
-    );
+    ui_web.platformViewRegistry.registerViewFactory(_getViewType(textureId), (_) => divElement);
 
     videoElement
       ..autoplay = false
@@ -189,17 +194,15 @@ class Camera {
 
     _applyDefaultVideoStyles(videoElement);
 
-    final List<web.MediaStreamTrack> videoTracks = stream!
-        .getVideoTracks()
-        .toDart;
+    final List<web.MediaStreamTrack> videoTracks = stream!.getVideoTracks().toDart;
 
     if (videoTracks.isNotEmpty) {
       final web.MediaStreamTrack defaultVideoTrack = videoTracks.first;
-      _onEndedSubscription = EventStreamProviders.endedEvent
-          .forTarget(defaultVideoTrack)
-          .listen((web.Event _) {
-            onEndedController.add(defaultVideoTrack);
-          });
+      _onEndedSubscription = EventStreamProviders.endedEvent.forTarget(defaultVideoTrack).listen((
+        web.Event _,
+      ) {
+        onEndedController.add(defaultVideoTrack);
+      });
     }
   }
 
@@ -208,10 +211,7 @@ class Camera {
   /// Initializes the camera source if the camera was previously stopped.
   Future<void> play() async {
     if (videoElement.srcObject == null) {
-      stream = await _cameraService.getMediaStreamForOptions(
-        options,
-        cameraId: textureId,
-      );
+      stream = await _cameraService.getMediaStreamForOptions(options, cameraId: textureId);
       videoElement.srcObject = stream;
     }
     await videoElement.play().toDart;
@@ -224,9 +224,7 @@ class Camera {
 
   /// Stops the camera stream and resets the camera source.
   void stop() {
-    final List<web.MediaStreamTrack> videoTracks = stream!
-        .getVideoTracks()
-        .toDart;
+    final List<web.MediaStreamTrack> videoTracks = stream!.getVideoTracks().toDart;
     if (videoTracks.isNotEmpty) {
       onEndedController.add(videoTracks.first);
     }
@@ -246,8 +244,7 @@ class Camera {
   /// Enables the camera flash (torch mode) for a period of taking a picture
   /// if the flash mode is either [FlashMode.auto] or [FlashMode.always].
   Future<XFile> takePicture() async {
-    final bool shouldEnableTorchMode =
-        flashMode == FlashMode.auto || flashMode == FlashMode.always;
+    final bool shouldEnableTorchMode = flashMode == FlashMode.auto || flashMode == FlashMode.always;
 
     if (shouldEnableTorchMode) {
       _setTorchMode(enabled: true);
@@ -267,13 +264,7 @@ class Camera {
         ..scale(-1, 1);
     }
 
-    canvas.context2D.drawImage(
-      videoElement,
-      0,
-      0,
-      videoWidth.toDouble(),
-      videoHeight.toDouble(),
-    );
+    canvas.context2D.drawImage(videoElement, 0, 0, videoWidth.toDouble(), videoHeight.toDouble());
 
     final blobCompleter = Completer<web.Blob>();
     canvas.toBlob(
@@ -306,8 +297,7 @@ class Camera {
 
     final web.MediaStreamTrack defaultVideoTrack = videoTracks.first;
 
-    final web.MediaTrackSettings defaultVideoTrackSettings = defaultVideoTrack
-        .getSettings();
+    final web.MediaTrackSettings defaultVideoTrackSettings = defaultVideoTrack.getSettings();
 
     final int width = defaultVideoTrackSettings.width;
     final int height = defaultVideoTrackSettings.height;
@@ -357,14 +347,7 @@ class Camera {
 
     if (videoTracks.isNotEmpty) {
       final web.MediaStreamTrack defaultVideoTrack = videoTracks.first;
-      final bool canEnableTorchMode =
-          defaultVideoTrack
-              .getCapabilities()
-              .torchNullable
-              ?.toDart
-              .first
-              .toDart ??
-          false;
+      final bool canEnableTorchMode = defaultVideoTrack.getCapabilities().canEnableTorch;
 
       if (canEnableTorchMode) {
         defaultVideoTrack.applyWebTweakConstraints(
@@ -390,26 +373,24 @@ class Camera {
   ///
   /// Throws a [CameraWebException] if the zoom level is not supported
   /// or the camera has not been initialized or started.
-  double getMaxZoomLevel() =>
-      _cameraService.getZoomLevelCapabilityForCamera(this).maximum;
+  double getMaxZoomLevel() => _cameraService.getZoomLevelCapabilityForCamera(this).maximum;
 
   /// Returns the camera minimum zoom level.
   ///
   /// Throws a [CameraWebException] if the zoom level is not supported
   /// or the camera has not been initialized or started.
-  double getMinZoomLevel() =>
-      _cameraService.getZoomLevelCapabilityForCamera(this).minimum;
+  double getMinZoomLevel() => _cameraService.getZoomLevelCapabilityForCamera(this).minimum;
 
   /// Sets the camera zoom level to [zoom].
   ///
   /// Throws a [CameraWebException] if the zoom level is invalid,
   /// not supported or the camera has not been initialized or started.
   void setZoomLevel(double zoom) {
-    final ZoomLevelCapability zoomLevelCapability = _cameraService
-        .getZoomLevelCapabilityForCamera(this);
+    final ZoomLevelCapability zoomLevelCapability = _cameraService.getZoomLevelCapabilityForCamera(
+      this,
+    );
 
-    if (zoom < zoomLevelCapability.minimum ||
-        zoom > zoomLevelCapability.maximum) {
+    if (zoom < zoomLevelCapability.minimum || zoom > zoomLevelCapability.maximum) {
       throw CameraWebException(
         textureId,
         CameraErrorCode.zoomLevelInvalid,
@@ -436,8 +417,7 @@ class Camera {
     }
 
     final web.MediaStreamTrack defaultVideoTrack = videoTracks.first;
-    final web.MediaTrackSettings defaultVideoTrackSettings = defaultVideoTrack
-        .getSettings();
+    final web.MediaTrackSettings defaultVideoTrackSettings = defaultVideoTrack.getSettings();
 
     final String? facingMode = defaultVideoTrackSettings.facingModeNullable;
 
@@ -464,28 +444,17 @@ class Camera {
       options.videoBitsPerSecond = recorderOptions.videoBitrate!;
     }
 
-    mediaRecorder ??= web.MediaRecorder(
-      videoElement.srcObject! as web.MediaStream,
-      options,
-    );
+    mediaRecorder ??= web.MediaRecorder(videoElement.srcObject! as web.MediaStream, options);
 
     _videoAvailableCompleter = Completer<XFile>();
 
-    _videoDataAvailableListener = (web.BlobEvent event) =>
-        _onVideoDataAvailable(event);
+    _videoDataAvailableListener = (web.BlobEvent event) => _onVideoDataAvailable(event);
 
-    _videoRecordingStoppedListener = (web.Event event) =>
-        _onVideoRecordingStopped(event);
+    _videoRecordingStoppedListener = (web.Event event) => _onVideoRecordingStopped(event);
 
-    mediaRecorder!.addEventListener(
-      'dataavailable',
-      _videoDataAvailableListener?.toJS,
-    );
+    mediaRecorder!.addEventListener('dataavailable', _videoDataAvailableListener?.toJS);
 
-    mediaRecorder!.addEventListener(
-      'stop',
-      _videoRecordingStoppedListener?.toJS,
-    );
+    mediaRecorder!.addEventListener('stop', _videoRecordingStoppedListener?.toJS);
 
     _onVideoRecordingErrorSubscription = mediaRecorderOnErrorProvider
         .forTarget(mediaRecorder)
@@ -522,15 +491,9 @@ class Camera {
     }
 
     // Clean up the media recorder with its event listeners and video data.
-    mediaRecorder!.removeEventListener(
-      'dataavailable',
-      _videoDataAvailableListener?.toJS,
-    );
+    mediaRecorder!.removeEventListener('dataavailable', _videoDataAvailableListener?.toJS);
 
-    mediaRecorder!.removeEventListener(
-      'stop',
-      _videoDataAvailableListener?.toJS,
-    );
+    mediaRecorder!.removeEventListener('stop', _videoDataAvailableListener?.toJS);
 
     await _onVideoRecordingErrorSubscription?.cancel();
 
@@ -595,6 +558,7 @@ class Camera {
     await _onVideoRecordingErrorSubscription?.cancel();
     _onVideoRecordingErrorSubscription = null;
     await videoRecordingErrorController.close();
+    await _cameraFrameStreamController?.close();
   }
 
   /// Returns the first supported video mime type (amongst mp4 and webm)
@@ -603,11 +567,7 @@ class Camera {
   /// Throws a [CameraWebException] if the browser does not support
   /// any of the available video mime types.
   String get _videoMimeType {
-    const types = <String>[
-      'video/webm;codecs="vp9,opus"',
-      'video/mp4',
-      'video/webm',
-    ];
+    const types = <String>['video/webm;codecs="vp9,opus"', 'video/mp4', 'video/webm'];
 
     return types.firstWhere(
       (String type) => isVideoTypeSupported(type),
@@ -619,8 +579,7 @@ class Camera {
     );
   }
 
-  CameraWebException
-  get _videoRecordingNotStartedException => CameraWebException(
+  CameraWebException get _videoRecordingNotStartedException => CameraWebException(
     textureId,
     CameraErrorCode.videoRecordingNotStarted,
     'The video recorder is uninitialized. The recording might not have been started. Make sure to call `startVideoRecording` first.',
@@ -641,5 +600,192 @@ class Camera {
       ..width = '100%'
       ..height = '100%'
       ..objectFit = 'cover';
+  }
+
+  StreamController<CameraImageData>? _cameraFrameStreamController;
+
+  /// Whether the camera frame stream is initialized.
+  bool _isCameraFrameStreamInitialized() =>
+      _cameraFrameStreamController != null && !_cameraFrameStreamController!.isClosed;
+
+  /// Whether the camera is currently streaming frames.
+  bool _isCameraFrameStreaming() =>
+      _isCameraFrameStreamInitialized() && _cameraFrameStreamController!.hasListener;
+
+  /// Used for safely emitting camera frame stream event
+  void _safelyEmitCameraFrameStreamEvent(CameraImageData data) {
+    if (_isCameraFrameStreamInitialized()) {
+      _cameraFrameStreamController!.add(data);
+    }
+  }
+
+  /// Used for safely closing camera frame stream event
+  void _safelyCloseCameraFrameStream() {
+    if (_isCameraFrameStreamInitialized()) {
+      _cameraFrameStreamController!.close();
+    }
+  }
+
+  /// Used for safely emitting camera frame stream error
+  void _safelyEmitCameraFrameStreamError(Object error) {
+    if (_isCameraFrameStreamInitialized()) {
+      _cameraFrameStreamController!.addError(error);
+    }
+  }
+
+  // TODO(TecHaxter): Introduce FPS in CameraImageStreamOptions of
+  //                  package:camera_platform_interface.
+  //                  https://github.com/flutter/flutter/issues/176148
+  /// The target FPS for the camera frame stream.
+  ///
+  /// Frames are emitted within a tolerance window, so actual delivery may
+  /// slightly exceed or fall below this target depending on browser timing.
+  @visibleForTesting
+  final int cameraStreamFPS = 60;
+
+  /// Returns a stream of camera frames.
+  ///
+  /// To stop listening to new animation frames close all listening streams.
+  Stream<CameraImageData> cameraFrameStream({CameraImageStreamOptions? options}) {
+    if (_isCameraFrameStreamInitialized()) {
+      return _cameraFrameStreamController!.stream;
+    }
+
+    _cameraFrameStreamController = StreamController<CameraImageData>.broadcast(
+      onListen: () {
+        if (canUseMediaStreamTrackProcessor && stream != null) {
+          _triggerVideoStreamTrackProcessorLoop(
+            stream!,
+            onImageAvailable: _safelyEmitCameraFrameStreamEvent,
+            shouldContinue: _isCameraFrameStreaming,
+            onClose: _safelyCloseCameraFrameStream,
+            onError: _safelyEmitCameraFrameStreamError,
+          );
+        } else {
+          _triggerAnimationFramesLoop(_getAndEmitFrameFromVideoElement, fps: cameraStreamFPS);
+        }
+      },
+    );
+
+    return _cameraFrameStreamController!.stream;
+  }
+
+  /// Triggers animation frames in a loop at a specified FPS
+  /// as long as [animationFrameId] is not cancelled
+  void _triggerAnimationFramesLoop(VoidCallback action, {required int fps}) {
+    int? animationFrameId;
+    final num fpsInterval = 1000 / fps;
+    num lastFrameTimestamp = 0;
+    late JSExportedDartFunction jsAnimate;
+
+    int? animate(num timestamp) {
+      // Schedule the next frame
+      animationFrameId = window.requestAnimationFrame(jsAnimate);
+      // Calculate the elapsed time since the last frame
+      final num elapsed = timestamp - lastFrameTimestamp;
+
+      // If we're close to the next frame (~`_frameTimeToleranceMs`), do it.
+      if (fpsInterval - elapsed <= _frameTimeToleranceMs) {
+        // Get ready for next frame
+        lastFrameTimestamp = timestamp;
+        // Perform the action task
+        action();
+      }
+      return animationFrameId;
+    }
+
+    jsAnimate = animate.toJS;
+    // Initialize the animation loop
+    animationFrameId = animate(window.performance.now());
+
+    // Listen for the stream controller cancellation to stop the animation
+    _cameraFrameStreamController?.onCancel = () {
+      if (animationFrameId != null) {
+        window.cancelAnimationFrame(animationFrameId!);
+        animationFrameId = null;
+      }
+    };
+  }
+
+  /// Used to capture [videoElement] and and handle camera frame stream accordingly
+  void _getAndEmitFrameFromVideoElement() {
+    try {
+      final CameraImageData image = _cameraService.takeFrame(videoElement, cameraId: textureId);
+      _safelyEmitCameraFrameStreamEvent(image);
+    } catch (e) {
+      _safelyEmitCameraFrameStreamError(e);
+      _safelyCloseCameraFrameStream();
+    }
+  }
+
+  /// Uses [MediaStreamTrackProcessor] to read [web.VideoFrame] from the given
+  /// [stream] and convert them to [CameraImageData]. The converted
+  /// [CameraImageData] is emitted to the [_cameraFrameStreamController].
+  Future<void> _triggerVideoStreamTrackProcessorLoop(
+    web.MediaStream stream, {
+    required bool Function() shouldContinue,
+    required void Function(CameraImageData) onImageAvailable,
+    required void Function() onClose,
+    required void Function(Object) onError,
+  }) async {
+    web.ReadableStreamDefaultReader? reader;
+    final copyOptions = web.VideoFrameCopyToOptions(format: 'RGBA');
+
+    bool isNonFatal(Object e) =>
+        e is CameraWebException &&
+        [
+          CameraErrorCode.videoTrackReaderClosed,
+          CameraErrorCode.missingPlaneLayout,
+          CameraErrorCode.unableToCloneFrame,
+        ].contains(e.code);
+
+    try {
+      reader = _cameraService.getMediaStreamTrackReader(
+        _cameraService.getMediaStreamVideoTrack(stream, cameraId: textureId),
+      );
+
+      while (shouldContinue()) {
+        final web.VideoFrame videoFrame = await _cameraService.readVideoTrack(
+          reader,
+          cameraId: textureId,
+        );
+
+        try {
+          final destination = JSUint8Array.withLength(videoFrame.allocationSize(copyOptions));
+          final int stride = await _cameraService.copyVideoFrameToBufferAndGetStride(
+            videoFrame,
+            destination: destination,
+            copyOptions: copyOptions,
+            cameraId: textureId,
+          );
+
+          if (!shouldContinue()) {
+            break;
+          }
+          final CameraImageData imageData = _cameraService.getCameraImageData(
+            width: videoFrame.visibleRect!.width.toInt(),
+            height: videoFrame.visibleRect!.height.toInt(),
+            bytesPerRow: stride,
+            bytes: destination.toDart,
+          );
+
+          onImageAvailable(imageData);
+        } catch (e) {
+          if (isNonFatal(e)) {
+            continue;
+          }
+          rethrow;
+        } finally {
+          videoFrame.close();
+        }
+      }
+    } catch (e) {
+      if (!isNonFatal(e)) {
+        onError(e);
+      }
+    } finally {
+      onClose();
+      reader?.releaseLock();
+    }
   }
 }

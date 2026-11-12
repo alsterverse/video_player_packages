@@ -2,31 +2,33 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import XCTest
+import Testing
 
 @testable import test_plugin
 
-class ListTests: XCTestCase {
+@MainActor
+struct ListTests {
 
-  func testListInList() throws {
+  @Test
+  func listInList() async throws {
     let inside = TestMessage(testList: [1, 2, 3])
     let top = TestMessage(testList: [inside])
     let binaryMessenger = EchoBinaryMessenger(codec: CoreTestsPigeonCodec.shared)
     let api = FlutterSmallApi(binaryMessenger: binaryMessenger)
 
-    let expectation = XCTestExpectation(description: "callback")
-    api.echo(top) { result in
-      switch result {
-      case .success(let res):
-        XCTAssertEqual(1, res.testList?.count)
-        XCTAssertTrue(res.testList?[0] is TestMessage)
-        XCTAssert(equalsList(inside.testList, (res.testList?[0] as! TestMessage).testList))
-        expectation.fulfill()
-      case .failure(_):
-        return
-      }
-    }
-    wait(for: [expectation], timeout: 1.0)
+    let res = try await api.echo(top)
+    #expect(res.testList?.count == 1)
+    #expect(res.testList?[0] is TestMessage)
+    #expect(equalsList(inside.testList, (res.testList?[0] as! TestMessage).testList))
+  }
+
+  @Test
+  func descriptionSnapshot() {
+    let msg = TestMessage(testList: ["hello", 42])
+    let desc = msg.description
+    #expect(desc.hasPrefix("TestMessage(testList: "))
+    #expect(desc.contains("hello"))
+    #expect(desc.contains("42"))
   }
 
 }

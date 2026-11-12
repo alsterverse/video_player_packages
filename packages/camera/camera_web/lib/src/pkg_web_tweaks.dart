@@ -6,6 +6,7 @@
 
 import 'dart:js_interop';
 
+import 'package:flutter/foundation.dart';
 import 'package:web/web.dart';
 
 /// Adds missing fields to [Element].
@@ -15,8 +16,7 @@ extension FullScreenSupportMethods on Element {
 }
 
 /// Adds missing fields to [MediaTrackSupportedConstraints].
-extension NonStandardFieldsOnMediaTrackSupportedConstraints
-    on MediaTrackSupportedConstraints {
+extension NonStandardFieldsOnMediaTrackSupportedConstraints on MediaTrackSupportedConstraints {
   @JS('zoom')
   external bool? get zoomNullable;
 
@@ -29,8 +29,41 @@ extension NonStandardFieldsOnMediaTrackCapabilities on MediaTrackCapabilities {
   @JS('zoom')
   external WebTweakMediaSettingsRange? get zoomNullable;
 
+  /// The raw `torch` capability, as reported by the browser.
+  ///
+  /// Chromium and WebKit report a `boolean`, while the Image Capture
+  /// specification changed this to `sequence<boolean>` in
+  /// https://github.com/w3c/mediacapture-image/pull/305. Typed as [JSAny] so
+  /// that either shape can be read; see [canEnableTorch].
   @JS('torch')
-  external JSArray<JSBoolean>? get torchNullable;
+  external JSAny? get torchNullable;
+
+  /// Whether the camera is able to turn its torch on.
+  bool get canEnableTorch {
+    final JSAny? torch = torchNullable;
+    if (torch == null) {
+      return false;
+    }
+    if (torch.isA<JSBoolean>()) {
+      return (torch as JSBoolean).toDart;
+    }
+    if (torch.isA<JSArray<JSAny?>>()) {
+      final List<JSAny?> values = (torch as JSArray<JSAny?>).toDart;
+      if (values.every((JSAny? value) => value.isA<JSBoolean>())) {
+        return values.any((JSAny? value) => (value! as JSBoolean).toDart);
+      }
+    }
+    assert(() {
+      debugPrint(
+        'camera_web: ignoring the `torch` capability of this camera because '
+        'the browser reported it as neither a boolean nor a sequence of '
+        'booleans. Please report the browser and its version at '
+        'https://github.com/flutter/flutter/issues.',
+      );
+      return true;
+    }());
+    return false;
+  }
 
   @JS('facingMode')
   external JSArray<JSString>? get facingModeNullable;
@@ -44,7 +77,6 @@ extension NonStandardFieldsOnMediaTrackSettings on MediaTrackSettings {
 
 /// Brought over from package:web 1.0.0
 extension type WebTweakMediaSettingsRange._(JSObject _) implements JSObject {
-  @JS('MediaSettingsRange')
   external factory WebTweakMediaSettingsRange({num max, num min, num step});
 
   external double get max;
@@ -58,17 +90,23 @@ extension type WebTweakMediaSettingsRange._(JSObject _) implements JSObject {
 /// Adds an applyConstraints method that accepts the WebTweakMediaTrackConstraints.
 extension WebTweakMethodVersions on MediaStreamTrack {
   @JS('applyConstraints')
-  external JSPromise<JSAny?> applyWebTweakConstraints([
-    WebTweakMediaTrackConstraints constraints,
-  ]);
+  external JSPromise<JSAny?> applyWebTweakConstraints([WebTweakMediaTrackConstraints constraints]);
 }
 
 /// Allows creating the MediaTrackConstraints that are needed.
 /// Brought over from package:web 1.0.0
 extension type WebTweakMediaTrackConstraints._(JSObject _) implements JSObject {
-  @JS('MediaTrackConstraints')
-  external factory WebTweakMediaTrackConstraints({
-    JSAny zoom,
-    ConstrainBoolean torch,
-  });
+  external factory WebTweakMediaTrackConstraints({JSAny zoom, ConstrainBoolean torch});
 }
+
+extension type WebTweakImageDataSettings._(JSObject _) implements ImageDataSettings {
+  external factory WebTweakImageDataSettings({
+    PredefinedColorSpace colorSpace,
+    WebTweakPredefinedFormat? format,
+  });
+
+  external WebTweakPredefinedFormat? get format;
+  external set format(WebTweakPredefinedFormat? value);
+}
+
+typedef WebTweakPredefinedFormat = String;

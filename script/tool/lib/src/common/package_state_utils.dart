@@ -93,17 +93,12 @@ Future<PackageChangeState> checkPackageChangeState(
         continue;
       }
 
-      final bool isUnpublishedExampleChange = _isUnpublishedExampleChange(
-        components,
-        package,
-      );
+      final bool isUnpublishedExampleChange = _isUnpublishedExampleChange(components, package);
 
       // Since examples of federated plugin implementations are only intended
       // for testing purposes, any unpublished example change in one of them is
       // effectively a developer-only change.
-      if (package.isFederated &&
-          package.isPlatformImplementation &&
-          isUnpublishedExampleChange) {
+      if (package.isFederated && package.isPlatformImplementation && isUnpublishedExampleChange) {
         continue;
       }
 
@@ -140,7 +135,9 @@ bool _isTestChange(List<String> pathComponents) {
       pathComponents.contains('Tests') ||
       pathComponents.last == 'dart_test.yaml' ||
       // Pigeon's custom platform tests.
-      pathComponents.first == 'platform_tests';
+      pathComponents.first == 'platform_tests' ||
+      // Standalone test apps within a package (e.g., material_ui/test_apps/).
+      pathComponents.first == 'test_apps';
 }
 
 // True if the given file is an example file other than the one that will be
@@ -148,10 +145,7 @@ bool _isTestChange(List<String> pathComponents) {
 //
 // This is not exhastive; it currently only handles variations we actually have
 // in our repositories.
-bool _isUnpublishedExampleChange(
-  List<String> pathComponents,
-  RepositoryPackage package,
-) {
+bool _isUnpublishedExampleChange(List<String> pathComponents, RepositoryPackage package) {
   if (pathComponents.first != 'example') {
     return false;
   }
@@ -160,9 +154,7 @@ bool _isUnpublishedExampleChange(
     return false;
   }
 
-  final Directory exampleDirectory = package.directory.childDirectory(
-    'example',
-  );
+  final Directory exampleDirectory = package.directory.childDirectory('example');
 
   // Check for example.md/EXAMPLE.md first, as that has priority. If it's
   // present, any other example file is unpublished.
@@ -183,8 +175,7 @@ bool _isUnpublishedExampleChange(
       exampleDirectory.childFile(mainName).existsSync();
   if (hasExampleCode) {
     // If there is an example main, only that example file is published.
-    return !((exampleComponents.length == 1 &&
-            exampleComponents.first == mainName) ||
+    return !((exampleComponents.length == 1 && exampleComponents.first == mainName) ||
         (exampleComponents.length == 2 &&
             exampleComponents.first == 'lib' &&
             exampleComponents[1] == mainName));
@@ -202,6 +193,10 @@ Future<bool> _isDevChange(
   String? repoPath,
 }) async {
   return _isTestChange(pathComponents) ||
+      // Agent directories (.agents/) are for developer-only utility tools (skills, scripts).
+      pathComponents.first == '.agents' ||
+      // Eval directories (evals/) are for evaluation utility code.
+      pathComponents.first == 'evals' ||
       // The top-level "tool" directory is for non-client-facing utility
       // code, such as test scripts.
       pathComponents.first == 'tool' ||
@@ -213,6 +208,8 @@ Future<bool> _isDevChange(
       pathComponents.first == 'run_tests.sh' ||
       // CONTRIBUTING.md is dev-facing.
       pathComponents.last == 'CONTRIBUTING.md' ||
+      // AGENTS.md is dev/agent-facing.
+      pathComponents.last == 'AGENTS.md' ||
       // The top-level "pending_changelogs" directory is the repo convention for storing
       // pending changelog files.
       pathComponents.first == 'pending_changelogs' ||
@@ -221,21 +218,15 @@ Future<bool> _isDevChange(
       pathComponents.contains('lint-baseline.xml') ||
       // Example build files are very unlikely to be interesting to clients.
       _isExampleBuildFile(pathComponents) ||
+      // CI config files don't affect clients.
+      pathComponents.last == 'ci_config.yaml' ||
       // Test-only gradle depenedencies don't affect clients.
-      await _isGradleTestDependencyChange(
-        pathComponents,
-        git: git,
-        repoPath: repoPath,
-      ) ||
+      await _isGradleTestDependencyChange(pathComponents, git: git, repoPath: repoPath) ||
       // Implementation comments don't affect clients.
       // This check is currently Dart-only since that's the only place
       // this has come up in practice; it could be generalized to other
       // languages if needed.
-      await _isDartImplementationCommentChange(
-        pathComponents,
-        git: git,
-        repoPath: repoPath,
-      );
+      await _isDartImplementationCommentChange(pathComponents, git: git, repoPath: repoPath);
 }
 
 bool _isExampleBuildFile(List<String> pathComponents) {
@@ -268,14 +259,10 @@ Future<bool> _isGradleTestDependencyChange(
   }
   final List<String> diff = await git.getDiffContents(targetPath: repoPath);
   final changeLine = RegExp(r'^[+-] ');
-  final testDependencyLine = RegExp(
-    r'^[+-]\s*(?:androidT|t)estImplementation(?:\s|\()',
-  );
+  final testDependencyLine = RegExp(r'^[+-]\s*(?:androidT|t)estImplementation(?:\s|\()');
   var foundTestDependencyChange = false;
   for (final line in diff) {
-    if (!changeLine.hasMatch(line) ||
-        line.startsWith('--- ') ||
-        line.startsWith('+++ ')) {
+    if (!changeLine.hasMatch(line) || line.startsWith('--- ') || line.startsWith('+++ ')) {
       continue;
     }
     if (!testDependencyLine.hasMatch(line)) {
@@ -307,9 +294,7 @@ Future<bool> _isDartImplementationCommentChange(
   final nonDocCommentLine = RegExp(r'^[+-]\s*//\s');
   var foundIgnoredChange = false;
   for (final line in diff) {
-    if (!changeLine.hasMatch(line) ||
-        line.startsWith('--- ') ||
-        line.startsWith('+++ ')) {
+    if (!changeLine.hasMatch(line) || line.startsWith('--- ') || line.startsWith('+++ ')) {
       continue;
     }
     if (!nonDocCommentLine.hasMatch(line) && !whitespaceLine.hasMatch(line)) {

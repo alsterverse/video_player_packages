@@ -13,8 +13,7 @@ const String _transformCommandAtom = r' *,?([^(]+)\(([^)]*)\)';
 final RegExp _transformValidator = RegExp('^($_transformCommandAtom)*\$');
 final RegExp _transformCommand = RegExp(_transformCommandAtom);
 
-typedef _MatrixParser =
-    AffineMatrix Function(List<double> params, AffineMatrix current);
+typedef _MatrixParser = AffineMatrix Function(List<double> params, AffineMatrix current);
 
 const Map<String, _MatrixParser> _matrixParsers = <String, _MatrixParser>{
   'matrix': _parseSvgMatrix,
@@ -66,10 +65,7 @@ AffineMatrix? parseTransform(String? transform) {
   if (!_transformValidator.hasMatch(transform)) {
     throw StateError('illegal or unsupported transform: $transform');
   }
-  final Iterable<Match> matches = _transformCommand
-      .allMatches(transform)
-      .toList()
-      .reversed;
+  final Iterable<Match> matches = _transformCommand.allMatches(transform).toList().reversed;
   AffineMatrix result = AffineMatrix.identity;
   for (final m in matches) {
     final String command = m.group(1)!.trim();
@@ -100,26 +96,12 @@ AffineMatrix _parseSvgMatrix(List<double> params, AffineMatrix current) {
 
 AffineMatrix _parseSvgSkewX(List<double> params, AffineMatrix current) {
   assert(params.isNotEmpty);
-  return AffineMatrix(
-    1.0,
-    0.0,
-    tan(params.first),
-    1.0,
-    0.0,
-    0.0,
-  ).multiplied(current);
+  return AffineMatrix(1.0, 0.0, tan(params.first), 1.0, 0.0, 0.0).multiplied(current);
 }
 
 AffineMatrix _parseSvgSkewY(List<double> params, AffineMatrix current) {
   assert(params.isNotEmpty);
-  return AffineMatrix(
-    1.0,
-    tan(params.first),
-    0.0,
-    1.0,
-    0.0,
-    0.0,
-  ).multiplied(current);
+  return AffineMatrix(1.0, tan(params.first), 0.0, 1.0, 0.0, 0.0).multiplied(current);
 }
 
 AffineMatrix _parseSvgTranslate(List<double> params, AffineMatrix current) {
@@ -185,14 +167,27 @@ double parsePercentage(String val, {double multiplier = 1.0}) {
 /// Whether a string should be treated as a percentage (i.e. if it ends with a `'%'`).
 bool isPercentage(String? val) => val?.endsWith('%') ?? false;
 
+/// Parses values in the form of '1.5em' as a multiple of the font size.
+double parseEm(String val) {
+  final String trimmed = val.trim();
+  return double.parse(trimmed.substring(0, trimmed.length - 2));
+}
+
+/// Whether a string should be treated as an `em` value (i.e. if it is a number
+/// followed by `'em'`, in any case).
+bool isEm(String? val) {
+  if (val == null) {
+    return false;
+  }
+  final String trimmed = val.trim();
+  return trimmed.toLowerCase().endsWith('em') &&
+      double.tryParse(trimmed.substring(0, trimmed.length - 2)) != null;
+}
+
 /// Parses value from the form '25%', 0.25 or 25.0 as a double.
 /// Note: Percentage or decimals will be multiplied by the total
 /// view box size, where as doubles will be returned as is.
-double? parsePatternUnitToDouble(
-  String rawValue,
-  String mode, {
-  ViewportNode? viewBox,
-}) {
+double? parsePatternUnitToDouble(String rawValue, String mode, {ViewportNode? viewBox}) {
   double? value;
   double? viewBoxValue;
   if (viewBox != null) {
@@ -204,9 +199,7 @@ double? parsePatternUnitToDouble(
   }
 
   if (rawValue.contains('%')) {
-    value =
-        ((double.parse(rawValue.substring(0, rawValue.length - 1))) / 100) *
-        viewBoxValue!;
+    value = ((double.parse(rawValue.substring(0, rawValue.length - 1))) / 100) * viewBoxValue!;
   } else if (rawValue.startsWith('0.')) {
     value = (double.parse(rawValue)) * viewBoxValue!;
   } else if (rawValue.isNotEmpty) {

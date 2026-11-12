@@ -28,6 +28,7 @@ generated file will always have the name `[source_file].g.dart`.
 import 'package:go_router/go_router.dart';
 
 part 'readme_excerpts.g.dart';
+
 ```
 
 ### Running `build_runner`
@@ -40,6 +41,49 @@ dart run build_runner build
 
 Read more about using
 [`build_runner` on pub.dev](https://pub.dev/packages/build_runner).
+
+### Builder options
+
+#### `duplicate_route_paths`
+
+When two routes resolve to the same URL, `go_router` matches the first and the
+second becomes unreachable. Navigating to the second one's `location` shows the
+first one's page. The builder warns about this at build time.
+
+Routes are compared by the URL they resolve to, not by the path they declare, so
+depth in the route tree does not matter. A route at `section/detail` collides with
+a route at `section` holding a child at `detail`. Parameter names are ignored, so
+`product/:id` and `product/:productId` are the same URL, though a parameter's
+regex constraint still counts, so `product/:id(\d+)` and `product/:id(\w+)` are
+not. Casing is ignored when the earlier route sets `caseSensitive: false`, since
+it then matches any casing.
+
+The whole library is compared, `part` files included. Shell routes and
+`StatefulShellRoute` branches contribute nothing to the URLs beneath them.
+
+Use `build.yaml` to change what a duplicate does:
+
+```yaml
+targets:
+  $default:
+    builders:
+      go_router_builder:
+        options:
+          duplicate_route_paths: error
+```
+
+Accepted values are `warning` (the default), `error`, and `ignore`.
+
+Warning is the default because some duplicates work. Matching backtracks, so
+naming one route class twice at the same path, each declaration carrying
+different children, is fine. Both resolve to the same class and every child stays
+reachable, which makes it a way to group children by feature. The builder still
+warns, because it cannot tell that from a mistake, so use `ignore` if you write
+it deliberately. Their children are a different story: a child path repeated
+across the two declarations is a genuine collision and is reported on its own.
+
+`error` applies to the whole package with no per-route exception, so it fails on
+the deliberate grouping too.
 
 ## Migration Guides
 - [Migrating to 4.0.0](https://flutter.dev/go/go-router-builder-v4-breaking-changes).
@@ -95,6 +139,7 @@ class HomeRoute extends GoRouteData with $HomeRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) => const HomeScreen();
 }
+
 ```
 
 ## Route tree
@@ -116,6 +161,7 @@ class HomeRoute extends GoRouteData with $HomeRoute {
   Widget build(BuildContext context, GoRouterState state) => const HomeScreen();
 }
 
+
 class RedirectRoute extends GoRouteData {
   // There is no need to implement [build] when this [redirect] is unconditional.
   @override
@@ -123,6 +169,7 @@ class RedirectRoute extends GoRouteData {
     return const HomeRoute().location;
   }
 }
+
 
 @TypedGoRoute<LoginRoute>(path: '/login')
 class LoginRoute extends GoRouteData with $LoginRoute {
@@ -134,6 +181,7 @@ class LoginRoute extends GoRouteData with $LoginRoute {
     return LoginScreen(from: from);
   }
 }
+
 ```
 
 ## `GoRouter` initialization
@@ -161,6 +209,7 @@ class ErrorRoute extends GoRouteData {
     return ErrorScreen(error: error);
   }
 }
+
 ```
 
 With this in place, you can provide the `errorBuilder` parameter like so:
@@ -201,9 +250,8 @@ a return value. The generated routes also follow this functionality.
 
 <?code-excerpt "example/lib/readme_excerpts.dart (awaitPush)"?>
 ```dart
-final bool? result = await const FamilyRoute(
-  fid: 'John',
-).push<bool>(context);
+final bool? result = await const FamilyRoute(fid: 'John')
+    .push<bool>(context);
 ```
 
 ## Query parameters
@@ -222,6 +270,7 @@ class LoginRoute extends GoRouteData with $LoginRoute {
     return LoginScreen(from: from);
   }
 }
+
 ```
 
 ### Default values
@@ -240,6 +289,7 @@ class MyRoute extends GoRouteData with $MyRoute {
     return MyScreen(queryParameter: queryParameter);
   }
 }
+
 ```
 
 A query parameter that equals to its default value is not included in the location.
@@ -261,6 +311,7 @@ class PersonRouteWithExtra extends GoRouteData with $PersonRouteWithExtra {
     return PersonScreen($extra);
   }
 }
+
 ```
 
 Pass the extra param as a typed object:
@@ -270,6 +321,7 @@ Pass the extra param as a typed object:
 void tapWithExtra() {
   PersonRouteWithExtra(Person(id: 1, name: 'Marvin', age: 42)).go(context);
 }
+
 ```
 
 The `$extra` parameter is still passed outside the location, still defeats
@@ -295,6 +347,7 @@ class HotdogRouteWithEverything extends GoRouteData
     return HotdogScreen(ketchup, mustard, $extra);
   }
 }
+
 ```
 
 This seems kinda silly, but it works.
@@ -332,6 +385,7 @@ class RedirectRoute extends GoRouteData {
     return const HomeRoute().location;
   }
 }
+
 ```
 
 ## Type conversions
@@ -353,6 +407,7 @@ class BooksRoute extends GoRouteData with $BooksRoute {
     return BooksScreen(kind: kind);
   }
 }
+
 ```
 
 ## Transitions
@@ -381,6 +436,7 @@ class MyMaterialRouteWithKey extends GoRouteData with $MyMaterialRouteWithKey {
     return const MaterialPage<void>(key: _key, child: MyPage());
   }
 }
+
 ```
 
 ### Custom transitions
@@ -411,6 +467,7 @@ class FancyRoute extends GoRouteData with $FancyRoute {
     );
   }
 }
+
 ```
 
 ## TypedShellRoute and navigator keys
@@ -474,6 +531,7 @@ class DetailsRoute extends RelativeGoRouteData with $DetailsRoute {
   Widget build(BuildContext context, GoRouterState state) =>
       const DetailsScreen();
 }
+
 ```
 
 Navigate using the `goRelative` or `pushRelative` methods provided by the code generator:
@@ -488,5 +546,14 @@ Relative routing methods are not idempotent and will cause an error when the rel
 ## Run tests
 
 To run unit tests, run command `dart tool/run_tests.dart` from `packages/go_router_builder/`.
+
+Each `.dart` file in `test_inputs/` is a test case, paired with a `.expect` file
+holding either the generated output or the error message the builder must
+produce. Two optional companion files tune a case:
+
+* `<name>.dart.options` holds a JSON map of builder options, matching what
+  `build.yaml` would pass to the builder.
+* `<name>.dart.warnings` holds the warnings the builder must log, one per line.
+  An empty file asserts that the builder logs nothing.
 
 To run tests in examples, run `flutter test` from `packages/go_router_builder/example`.

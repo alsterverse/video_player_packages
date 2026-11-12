@@ -193,7 +193,8 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
                 message.getUri(),
                 message.getFormatHint(),
                 message.getHttpHeaders(),
-                message.getUserAgent()));
+                message.getUserAgent(),
+                null));
     VideoPlayerDiag.log(
         "ev=load.begin pid=%d url=%s",
         message.getPlayerId(), VideoPlayerDiag.shortUrl(message.getUri()));

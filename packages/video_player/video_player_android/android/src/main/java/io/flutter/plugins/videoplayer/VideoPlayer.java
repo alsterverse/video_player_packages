@@ -35,11 +35,10 @@ public abstract class VideoPlayer implements VideoPlayerInstanceApi {
   @NonNull protected final VideoPlayerCallbacks videoPlayerEvents;
   @Nullable protected SurfaceProducer surfaceProducer;
   @Nullable private DisposeHandler disposeHandler;
-  @Nullable private ExoPlayerEventListener exoPlayerEventListener;
   @NonNull protected ExoPlayer exoPlayer;
   // TODO: Migrate to stable API, see https://github.com/flutter/flutter/issues/147039.
   @UnstableApi @Nullable protected DefaultTrackSelector trackSelector;
-  @NonNull protected ExoPlayerEventListener exoPlayerEventListener;
+  @Nullable protected ExoPlayerEventListener exoPlayerEventListener;
 
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
   private boolean isDisposed = false;

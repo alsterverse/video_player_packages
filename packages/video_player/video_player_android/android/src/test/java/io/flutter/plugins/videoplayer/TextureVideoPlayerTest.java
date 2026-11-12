@@ -225,7 +225,8 @@ public final class TextureVideoPlayerTest {
             })) {
 
       TextureVideoPlayer player =
-          TextureVideoPlayer.create(mockContext, mockEvents, mockProducer, fakeVideoAsset, options);
+          TextureVideoPlayer.create(
+              mockContext, mockEvents, mockTextureRegistry, mockProducer, fakeVideoAsset, options);
 
       assertEquals(1, mockedBuilder.constructed().size());
       ExoPlayer.Builder builderMock = mockedBuilder.constructed().get(0);

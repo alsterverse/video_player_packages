@@ -297,7 +297,7 @@ public final class VideoPlayerPlugin: NSObject, FlutterPlugin, AVFoundationVideo
 
   func fileURLForAsset(name asset: String, package: String?) throws -> String? {
     let resource =
-      if let package = package {
+      if let package {
         assetProvider.lookupKey(forAsset: asset, fromPackage: package)
       } else {
         assetProvider.lookupKey(forAsset: asset)
@@ -343,9 +343,9 @@ public final class VideoPlayerPlugin: NSObject, FlutterPlugin, AVFoundationVideo
     }
 
     // Set up the event channel.
-    let eventBridge = FVPEventBridge(
+    let eventBridge = EventBridge(
       messenger: binaryMessenger,
-      channelName: "flutter.dev/videoPlayer/videoEvents\(channelSuffix)"
+      channelSuffix: channelSuffix
     )
     await player.setEventListener(eventBridge)
 

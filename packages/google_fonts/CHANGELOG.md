@@ -1,3 +1,103 @@
+## 9.0.0
+
+- Migrates to `material_ui` and `cupertino_ui` packages.
+- Updates minimum supported SDK version to Flutter 3.47/Dart 3.13.
+- Adds `config`, `pendingFonts`, and `getTextTheme` to `GoogleFontsLite`.
+- Decouples internal base library from the main entry point to ensure complete tree-shakability.
+- Adds code samples and documentation for `GoogleFontsLite`.
+- Adds the `GoogleFontsLite` class to allow tree-shaking unused font code.
+- Added fonts:
+  - `Akt`
+  - `Alien Block`
+  - `Allkin`
+  - `Alyamama`
+  - `BJCree`
+  - `Betania Patmos`
+  - `Betania Patmos GDL`
+  - `Betania Patmos In`
+  - `Betania Patmos In GDL`
+  - `Bpmf Huninn`
+  - `Bpmf Iansui`
+  - `Bpmf Zihi Kai Std`
+  - `Datatype`
+  - `Estedad`
+  - `Finlandica Headline`
+  - `Finlandica Text`
+  - `Geist Pixel`
+  - `Gveret Levin`
+  - `Idiqlat`
+  - `Iosevka Charon`
+  - `Iosevka Charon Mono`
+  - `LINE Seed JP`
+  - `M PLUS U`
+  - `Miranda Sans`
+  - `Montenegrin Gothic One`
+  - `Playwrite NZ Basic`
+  - `Playwrite NZ Basic Guides`
+  - `Pliant`
+  - `Ramsina`
+  - `SN Pro`
+  - `STIX Two Math`
+  - `Saira Stencil`
+  - `Strichpunkt Sans`
+  - `Yuyu`
+  - `Yuyu Short`
+- Removed fonts:
+  - `Finlandica`
+  - `Saira Stencil One`
+
+## 8.2.1
+
+- Fixes `pendingFonts()` retaining failed font loads.
+
+## 8.2.0
+
+- Extract the class `Config` to its own file and rename it `GoogleFontsConfig`. The `Config` class is now deprecated.
+- Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 8.1.0
+
+- Adds the ability to supply a custom HTTP client to `GoogleFonts.config`.
+
+## 8.0.2
+
+- Fixes a bug where exceptions thrown during return within try blocks in an async function were not correctly caught, aligning behavior with expected Dart semantics (see [dart-lang/sdk#44395](https://github.com/dart-lang/sdk/issues/44395)).
+
+## 8.0.1
+
+- Fixes WOFF2/WOFF font selection when loading fonts bundled with the app to prefer compressed formats regardless of asset manifest order.
+
+## 8.0.0
+
+- Added fonts:
+  - `Amarna`
+  - `BBH Bartle`
+  - `BBH Bogle`
+  - `BBH Hegarty`
+  - `Cause`
+  - `Elms Sans`
+  - `Geom`
+  - `Google Sans`
+  - `Google Sans Flex`
+  - `Kedebideri`
+  - `Lilex`
+  - `Momo Signature`
+  - `Momo Trust Display`
+  - `Momo Trust Sans`
+  - `Noto Sans Syriac Western`
+  - `Science Gothic`
+  - `Sekuya`
+  - `Stack Sans Headline`
+  - `Stack Sans Notch`
+  - `Stack Sans Text`
+- Removed fonts:
+  - `Chiron GoRound TC`
+  - `Chiron Sung HK`
+
+## 7.1.0
+
+- Adds support for WOFF2 and WOFF font formats on web platforms when loading fonts bundled with the app, providing improved performance and smaller bundle sizes.
+
 ## 7.0.2
 
 - Adds missing public API documentation
@@ -532,7 +632,6 @@
   - `Wix Madefor Display`
   - `Wix Madefor Text`
   - `Ysabeau`
-
 - Removed fonts:
   - `Arima Madurai`
   - `Fredoka One`

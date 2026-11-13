@@ -39,8 +39,7 @@ Future<void> _validateGeneratedTestFiles() async {
   await _validateGeneratedFiles(
     (String baseDir) => generateTestPigeons(baseDir: baseDir),
     generationMessage: 'Generating test output',
-    incorrectFilesMessage:
-        'The following files are not updated, or not formatted correctly:',
+    incorrectFilesMessage: 'The following files are not updated, or not formatted correctly:',
   );
 }
 
@@ -85,14 +84,7 @@ Future<void> _validateGeneratedFiles(
   print('Validating generated files:');
   print('  $generationMessage...');
 
-  int generateExitCode = await generateExamplePigeons();
-
-  if (generateExitCode != 0) {
-    print('Generation failed; see above for errors.');
-    exit(generateExitCode);
-  }
-
-  generateExitCode = await generateTestPigeons(baseDir: baseDir);
+  final int generateExitCode = await generator(baseDir);
 
   if (generateExitCode != 0) {
     print('Generation failed; see above for errors.');
@@ -119,8 +111,7 @@ Future<void> _validateGeneratedFiles(
       .flattened
       .toSet();
   final Iterable<String> filteredFiles = modifiedFiles.where(
-    (String path) =>
-        extensions.contains(p.extension(path).replaceFirst('.', '')),
+    (String path) => extensions.contains(p.extension(path).replaceFirst('.', '')),
   );
 
   if (filteredFiles.isEmpty) {
@@ -193,6 +184,7 @@ Future<void> main(List<String> args) async {
     androidKotlinLint,
     androidJavaIntegrationTests,
     androidKotlinIntegrationTests,
+    androidKotlinNativeInteropReleaseTests,
     linuxUnitTests,
     linuxIntegrationTests,
   ];

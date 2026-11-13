@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import Flutter
-import XCTest
+import Testing
 
 @testable import test_plugin
 
@@ -18,44 +18,52 @@ class MockNullableArgHostApi: NullableArgHostApi {
   }
 }
 
-class NullableReturnsTests: XCTestCase {
-  var codec = FlutterStandardMessageCodec.sharedInstance()
-  func testNullableParameterWithFlutterApi() {
+@MainActor
+struct NullableReturnsTests {
+  let codec = FlutterStandardMessageCodec.sharedInstance()
+
+  @Test
+  func nullableParameterWithFlutterApi() async throws {
     let binaryMessenger = EchoBinaryMessenger(codec: codec)
     binaryMessenger.defaultReturn = 99
     let api = NullableArgFlutterApi(binaryMessenger: binaryMessenger)
 
-    let expectation = XCTestExpectation(description: "callback")
-    api.doit(x: nil) { result in
-      switch result {
-      case .success(let res):
-        XCTAssertEqual(99, res)
-        expectation.fulfill()
-      case .failure(_):
-        return
-      }
-    }
-    wait(for: [expectation], timeout: 1.0)
+    let res = try await api.doit(x: nil)
+    #expect(res == 99)
   }
 
-  func testNullableParameterWithHostApi() {
+  @Test
+  func nullableParameterWithHostApi() async throws {
     let api = MockNullableArgHostApi()
     let binaryMessenger = MockBinaryMessenger<Int64?>(codec: codec)
     let channel = "dev.flutter.pigeon.pigeon_integration_tests.NullableArgHostApi.doit"
 
     NullableArgHostApiSetup.setUp(binaryMessenger: binaryMessenger, api: api)
-    XCTAssertNotNil(binaryMessenger.handlers[channel])
+    #expect(binaryMessenger.handlers[channel] != nil)
 
     let inputEncoded = binaryMessenger.codec.encode([nil] as [Any?])
 
-    let expectation = XCTestExpectation(description: "callback")
-    binaryMessenger.handlers[channel]?(inputEncoded) { _ in
-      expectation.fulfill()
+    await confirmation { confirmed in
+      binaryMessenger.handlers[channel]?(inputEncoded) { _ in
+        confirmed()
+      }
     }
 
-    XCTAssertTrue(api.didCall)
-    XCTAssertNil(api.x)
-    wait(for: [expectation], timeout: 1.0)
+    #expect(api.didCall)
+    #expect(api.x == nil)
+  }
 
+  @Test
+  func nonNullReturnFailsOnNSNullResponse() async throws {
+    let binaryMessenger = MockBinaryMessenger<NSNull>(codec: codec)
+    binaryMessenger.result = NSNull()
+    let api = FlutterIntegrationCoreApi(binaryMessenger: binaryMessenger)
+
+    do {
+      _ = try await api.sendMultipleNullableTypes(aBool: nil, anInt: nil, aString: nil)
+      Issue.record("Expected a null-error but the call succeeded.")
+    } catch let error as PigeonError {
+      #expect(error.code == "null-error")
+    }
   }
 }

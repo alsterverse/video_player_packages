@@ -12,6 +12,17 @@ import io.flutter.plugin.common.MessageCodec
 import io.flutter.plugin.common.StandardMessageCodec
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+
+const val aStringConstant: String = "stringConstantValue"
+const val anIntConstant: Long = 42L
+const val aDoubleConstant: Double = 3.14
+const val aBoolConstant: Boolean = true
 
 private object MessagesPigeonUtils {
 
@@ -35,7 +46,36 @@ private object MessagesPigeonUtils {
     }
   }
 
+  fun doubleEquals(a: Double, b: Double): Boolean {
+    // Normalize -0.0 to 0.0 and handle NaN equality.
+    return (if (a == 0.0) 0.0 else a) == (if (b == 0.0) 0.0 else b) || (a.isNaN() && b.isNaN())
+  }
+
+  fun floatEquals(a: Float, b: Float): Boolean {
+    // Normalize -0.0 to 0.0 and handle NaN equality.
+    return (if (a == 0.0f) 0.0f else a) == (if (b == 0.0f) 0.0f else b) || (a.isNaN() && b.isNaN())
+  }
+
+  fun doubleHash(d: Double): Int {
+    // Normalize -0.0 to 0.0 and handle NaN to ensure consistent hash codes.
+    val normalized = if (d == 0.0) 0.0 else d
+    val bits = java.lang.Double.doubleToLongBits(normalized)
+    return (bits xor (bits ushr 32)).toInt()
+  }
+
+  fun floatHash(f: Float): Int {
+    // Normalize -0.0 to 0.0 and handle NaN to ensure consistent hash codes.
+    val normalized = if (f == 0.0f) 0.0f else f
+    return java.lang.Float.floatToIntBits(normalized)
+  }
+
   fun deepEquals(a: Any?, b: Any?): Boolean {
+    if (a === b) {
+      return true
+    }
+    if (a == null || b == null) {
+      return false
+    }
     if (a is ByteArray && b is ByteArray) {
       return a.contentEquals(b)
     }
@@ -46,19 +86,108 @@ private object MessagesPigeonUtils {
       return a.contentEquals(b)
     }
     if (a is DoubleArray && b is DoubleArray) {
-      return a.contentEquals(b)
+      if (a.size != b.size) return false
+      for (i in a.indices) {
+        if (!doubleEquals(a[i], b[i])) return false
+      }
+      return true
+    }
+    if (a is FloatArray && b is FloatArray) {
+      if (a.size != b.size) return false
+      for (i in a.indices) {
+        if (!floatEquals(a[i], b[i])) return false
+      }
+      return true
     }
     if (a is Array<*> && b is Array<*>) {
-      return a.size == b.size && a.indices.all { deepEquals(a[it], b[it]) }
+      if (a.size != b.size) return false
+      for (i in a.indices) {
+        if (!deepEquals(a[i], b[i])) return false
+      }
+      return true
     }
     if (a is List<*> && b is List<*>) {
-      return a.size == b.size && a.indices.all { deepEquals(a[it], b[it]) }
+      if (a.size != b.size) return false
+      val iterA = a.iterator()
+      val iterB = b.iterator()
+      while (iterA.hasNext() && iterB.hasNext()) {
+        if (!deepEquals(iterA.next(), iterB.next())) return false
+      }
+      return true
     }
     if (a is Map<*, *> && b is Map<*, *>) {
-      return a.size == b.size &&
-          a.all { (b as Map<Any?, Any?>).contains(it.key) && deepEquals(it.value, b[it.key]) }
+      if (a.size != b.size) return false
+      for (entry in a) {
+        val key = entry.key
+        var found = false
+        for (bEntry in b) {
+          if (deepEquals(key, bEntry.key)) {
+            if (deepEquals(entry.value, bEntry.value)) {
+              found = true
+              break
+            } else {
+              return false
+            }
+          }
+        }
+        if (!found) return false
+      }
+      return true
+    }
+    if (a is Double && b is Double) {
+      return doubleEquals(a, b)
+    }
+    if (a is Float && b is Float) {
+      return floatEquals(a, b)
     }
     return a == b
+  }
+
+  fun deepHash(value: Any?): Int {
+    return when (value) {
+      null -> 0
+      is ByteArray -> value.contentHashCode()
+      is IntArray -> value.contentHashCode()
+      is LongArray -> value.contentHashCode()
+      is DoubleArray -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + doubleHash(item)
+        }
+        result
+      }
+      is FloatArray -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + floatHash(item)
+        }
+        result
+      }
+      is Array<*> -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + deepHash(item)
+        }
+        result
+      }
+      is List<*> -> {
+        var result = 1
+        for (item in value) {
+          result = 31 * result + deepHash(item)
+        }
+        result
+      }
+      is Map<*, *> -> {
+        var result = 0
+        for (entry in value) {
+          result += ((deepHash(entry.key) * 31) xor deepHash(entry.value))
+        }
+        result
+      }
+      is Double -> doubleHash(value)
+      is Float -> floatHash(value)
+      else -> value.hashCode()
+    }
   }
 }
 
@@ -73,15 +202,17 @@ class FlutterError(
     val code: String,
     override val message: String? = null,
     val details: Any? = null
-) : Throwable()
+) : RuntimeException()
 
 enum class Code(val raw: Int) {
   ONE(0),
   TWO(1);
 
   companion object {
+    private val pigeonValues = values()
+
     fun ofRaw(raw: Int): Code? {
-      return values().firstOrNull { it.raw == raw }
+      return pigeonValues.getOrNull(raw)
     }
   }
 }
@@ -89,50 +220,65 @@ enum class Code(val raw: Int) {
 /** Generated class from Pigeon that represents data sent in messages. */
 data class MessageData(
     val name: String? = null,
-    val description: String? = null,
+    val messageDescription: String? = null,
     val code: Code,
     val data: Map<String, String>
 ) {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): MessageData {
       val name = pigeonVar_list[0] as String?
-      val description = pigeonVar_list[1] as String?
+      val messageDescription = pigeonVar_list[1] as String?
       val code = pigeonVar_list[2] as Code
       val data = pigeonVar_list[3] as Map<String, String>
-      return MessageData(name, description, code, data)
+      return MessageData(name, messageDescription, code, data)
     }
   }
 
   fun toList(): List<Any?> {
     return listOf(
         name,
-        description,
+        messageDescription,
         code,
         data,
     )
   }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is MessageData) {
+    if (other == null || other.javaClass != javaClass) {
       return false
     }
     if (this === other) {
       return true
     }
-    return MessagesPigeonUtils.deepEquals(toList(), other.toList())
+    val other = other as MessageData
+    return MessagesPigeonUtils.deepEquals(this.name, other.name) &&
+        MessagesPigeonUtils.deepEquals(this.messageDescription, other.messageDescription) &&
+        MessagesPigeonUtils.deepEquals(this.code, other.code) &&
+        MessagesPigeonUtils.deepEquals(this.data, other.data)
   }
 
-  override fun hashCode(): Int = toList().hashCode()
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.name)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.messageDescription)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.code)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.data)
+    return result
+  }
+
+  override fun toString(): String {
+    return "MessageData(name=$name, messageDescription=$messageDescription, code=$code, data=$data)"
+  }
 }
 
 private open class MessagesPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
-        return (readValue(buffer) as Long?)?.let { Code.ofRaw(it.toInt()) }
+        (readValue(buffer) as Long?)?.let { Code.ofRaw(it.toInt()) }
       }
       130.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { MessageData.fromList(it) }
+        (readValue(buffer) as? List<Any?>)?.let { MessageData.fromList(it) }
       }
       else -> super.readValueOfType(type, buffer)
     }
@@ -159,7 +305,7 @@ interface ExampleHostApi {
 
   fun add(a: Long, b: Long): Long
 
-  fun sendMessage(message: MessageData, callback: (Result<Boolean>) -> Unit)
+  suspend fun sendMessage(message: MessageData): Boolean
 
   companion object {
     /** The codec used by ExampleHostApi. */
@@ -226,14 +372,14 @@ interface ExampleHostApi {
           channel.setMessageHandler { message, reply ->
             val args = message as List<Any?>
             val messageArg = args[0] as MessageData
-            api.sendMessage(messageArg) { result: Result<Boolean> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(MessagesPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(MessagesPigeonUtils.wrapResult(data))
-              }
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> =
+                  try {
+                    listOf(api.sendMessage(messageArg))
+                  } catch (exception: Throwable) {
+                    MessagesPigeonUtils.wrapError(exception)
+                  }
+              reply.reply(wrapped)
             }
           }
         } else {
@@ -253,29 +399,29 @@ class MessageFlutterApi(
     val codec: MessageCodec<Any?> by lazy { MessagesPigeonCodec() }
   }
 
-  fun flutterMethod(aStringArg: String?, callback: (Result<String>) -> Unit) {
+  suspend fun flutterMethod(aStringArg: String?): String {
     val separatedMessageChannelSuffix =
         if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
-    val channelName =
-        "dev.flutter.pigeon.pigeon_example_package.MessageFlutterApi.flutterMethod$separatedMessageChannelSuffix"
-    val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(aStringArg)) {
-      if (it is List<*>) {
-        if (it.size > 1) {
-          callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))
-        } else if (it[0] == null) {
-          callback(
-              Result.failure(
-                  FlutterError(
-                      "null-error",
-                      "Flutter api returned null value for non-null return value.",
-                      "")))
+    return suspendCancellableCoroutine { continuation ->
+      val channelName =
+          "dev.flutter.pigeon.pigeon_example_package.MessageFlutterApi.flutterMethod$separatedMessageChannelSuffix"
+      val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
+      channel.send(listOf(aStringArg)) {
+        if (it is List<*>) {
+          if (it.size > 1) {
+            continuation.resumeWithException(
+                FlutterError(it[0] as String, it[1] as String, it[2] as String?))
+          } else if (it[0] == null) {
+            continuation.resumeWithException(
+                FlutterError(
+                    "null-error", "Flutter api returned null value for non-null return value.", ""))
+          } else {
+            val output = it[0] as String
+            continuation.resume(output)
+          }
         } else {
-          val output = it[0] as String
-          callback(Result.success(output))
+          continuation.resumeWithException(MessagesPigeonUtils.createConnectionError(channelName))
         }
-      } else {
-        callback(Result.failure(MessagesPigeonUtils.createConnectionError(channelName)))
       }
     }
   }

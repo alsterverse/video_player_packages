@@ -1,5 +1,37 @@
-## NEXT
+## 0.12.2
 
+* Adds `CameraController.isZeroShutterLagSupported` and
+  `CameraController.setZeroShutterLagEnabled` for zero-shutter-lag still image
+  capture on platforms that support it.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.12.1
+
+* Adds `setJpegImageQuality` for controlling JPEG compression quality.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.12.0+2
+
+* Fixes a crash where a `CameraController` could update its value after being disposed, throwing "A CameraController was used after being disposed".
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 0.12.0+1
+
+* Makes `Optional.of` constructor `const`.
+
+## 0.12.0
+
+* Adds support for video stabilization.
+
+## 0.11.4
+
+* Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
+* Fixes a bug where exceptions thrown during return within try blocks in an async function were not correctly caught, aligning behavior with expected Dart semantics (see [dart-lang/sdk#44395](https://github.com/dart-lang/sdk/issues/44395)).
+* Updates example to demonstrate correct exception handling for async return within try blocks, ensuring exceptions thrown during return are properly caught as per [dart-lang/sdk#44395](https://github.com/dart-lang/sdk/issues/44395).
+
+## 0.11.3+1
+
+* Fixes delivering errors from onCameraError.
 * Updates README to reflect currently supported OS versions for the latest
   versions of the endorsed platform implementations.
   * Applications built with older versions of Flutter will continue to

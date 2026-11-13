@@ -16,15 +16,8 @@ import 'basic_types.dart';
 class AffineMatrix {
   /// Creates an immutable affine matrix. To work with the identity matrix, use
   /// the [identity] property.
-  const AffineMatrix(
-    this.a,
-    this.b,
-    this.c,
-    this.d,
-    this.e,
-    this.f, [
-    double? m4_10,
-  ]) : _m4_10 = m4_10 ?? (1.0 * a);
+  const AffineMatrix(this.a, this.b, this.c, this.d, this.e, this.f, [double? m4_10])
+    : _m4_10 = m4_10 ?? (1.0 * a);
 
   /// The identity affine matrix.
   static const AffineMatrix identity = AffineMatrix(1, 0, 0, 1, 0, 0);
@@ -50,15 +43,18 @@ class AffineMatrix {
   /// Translations can affect this value, so we have to track it.
   final double _m4_10;
 
+  /// The scale factor along the X axis, including rotation.
+  double get xScale => math.sqrt(a * a + c * c);
+
+  /// The scale factor along the Y axis, including rotation.
+  double get yScale => math.sqrt(b * b + d * d);
+
   /// Calculates the scale for a stroke width based on the average of the x- and
   /// y-axis scales of this matrix.
   double? scaleStrokeWidth(double? width) {
     if (width == null || (a == 1 && d == 1)) {
       return width;
     }
-
-    final double xScale = math.sqrt(a * a + c * c);
-    final double yScale = math.sqrt(b * b + d * d);
 
     return (xScale + yScale) / 2 * width;
   }
@@ -104,15 +100,7 @@ class AffineMatrix {
 
   /// Creates a new affine matrix, translated along the x and y axis.
   AffineMatrix translated(double x, double y) {
-    return AffineMatrix(
-      a,
-      b,
-      c,
-      d,
-      (a * x) + (c * y) + e,
-      (b * x) + (d * y) + f,
-      _m4_10,
-    );
+    return AffineMatrix(a, b, c, d, (a * x) + (c * y) + e, (b * x) + (d * y) + f, _m4_10);
   }
 
   /// Creates a new affine matrix, skewed along the x axis.
@@ -160,10 +148,7 @@ class AffineMatrix {
 
   /// Maps `point` using the values of this matrix.
   Point transformPoint(Point point) {
-    return Point(
-      (a * point.x) + (c * point.y) + e,
-      (b * point.x) + (d * point.y) + f,
-    );
+    return Point((a * point.x) + (c * point.y) + e, (b * point.x) + (d * point.y) + f);
   }
 
   /// Maps `rect` using the values of this matrix.

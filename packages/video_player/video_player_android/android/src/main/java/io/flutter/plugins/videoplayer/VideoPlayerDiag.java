@@ -13,10 +13,11 @@ import java.util.Locale;
  * Opt-in event logging for diagnosing what a texture shows between two videos; the Android half of
  * FVPDiag in video_player_avfoundation.
  *
- * <p>A page reveals its video texture when the plugin reports the player ready. Whether that texture
- * has a frame by then cannot be seen from Dart, which learns only that ExoPlayer reached {@code
- * STATE_READY}. These events timestamp the load and the first rendered frame against the same wall
- * clock the Dart side logs, so tool/videodiag/analyze.py in the app repo can interleave them.
+ * <p>A page reveals its video texture when the plugin reports the player ready. Whether that
+ * texture has a frame by then cannot be seen from Dart, which learns only that ExoPlayer reached
+ * {@code STATE_READY}. These events timestamp the load and the first rendered frame against the
+ * same wall clock the Dart side logs, so tool/videodiag/analyze.py in the app repo can interleave
+ * them.
  *
  * <p>Off unless the app calls {@code setEnabled} on the {@code flutter.dev/videoPlayer/diag} method
  * channel, so a normal build pays one already-resolved boolean per event.
@@ -62,9 +63,9 @@ public final class VideoPlayerDiag {
   }
 
   /**
-   * Logs one {@code [VideoDiag/android]} line: an event name plus {@code key=value} fields, prefixed
-   * with the wall clock in milliseconds so the app's own {@code [VideoDiag]} lines interleave with
-   * these. Field values must not contain spaces -- the parser splits on them.
+   * Logs one {@code [VideoDiag/android]} line: an event name plus {@code key=value} fields,
+   * prefixed with the wall clock in milliseconds so the app's own {@code [VideoDiag]} lines
+   * interleave with these. Field values must not contain spaces -- the parser splits on them.
    */
   public static void log(@NonNull String format, Object... args) {
     if (!enabled) {

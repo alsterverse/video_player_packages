@@ -1,3 +1,46 @@
+## 2.19.0
+
+* Adds support for tapping points of interest on the map.
+  On iOS, this requires `google_maps_flutter_ios_sdk9` or
+  `google_maps_flutter_ios_sdk10` (the default `google_maps_flutter_ios`
+  package does not receive new features).
+
+## 2.18.2
+
+* Updates README to indicate that `google_maps_flutter_ios` is a legacy
+  implementation.
+* Updates minimum supported SDK version to Flutter 3.47/Dart 3.13.
+
+## 2.18.1
+
+* Clarifies that clearing a tile cache may cause flickering on some platforms.
+
+## 2.18.0
+
+* Adds support for mapTypeControlEnabled, fullscreenControlEnabled, and streetViewControlEnabled on web.
+
+## 2.17.1
+
+* Updates README to link to implementation packages for platform-specific
+  setup information.
+
+## 2.17.0
+
+* Adds missing re-exports of classes related to advanced markers.
+
+## 2.16.0
+
+* Adds `colorScheme` support for web cloud-based maps styling brightness.
+
+## 2.15.0
+
+* Adds support for advanced markers, and new example pages showing their usage.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 2.14.2
+
+* Updates README with discussion of the new `google_maps_flutter_ios_sdk*` packages.
+
 ## 2.14.1
 
 * Replaces internal use of deprecated methods.
@@ -603,7 +646,6 @@ GoogleMapController is now uniformly driven by implementing `DefaultLifecycleObs
 ## 0.5.19
 
 * Adds support for toggling Indoor View on or off.
-
 * Allow BitmapDescriptor scaling override
 
 ## 0.5.18

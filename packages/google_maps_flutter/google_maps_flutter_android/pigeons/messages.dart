@@ -7,9 +7,8 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(
   PigeonOptions(
     dartOut: 'lib/src/messages.g.dart',
-    javaOptions: JavaOptions(package: 'io.flutter.plugins.googlemaps'),
-    javaOut:
-        'android/src/main/java/io/flutter/plugins/googlemaps/Messages.java',
+    kotlinOptions: KotlinOptions(package: 'io.flutter.plugins.googlemaps'),
+    kotlinOut: 'android/src/main/kotlin/io/flutter/plugins/googlemaps/Messages.kt',
     copyrightHeader: 'pigeons/copyright.txt',
   ),
 )
@@ -217,6 +216,7 @@ class PlatformMarker {
     this.visible = true,
     this.zIndex = 0.0,
     this.clusterManagerId,
+    this.collisionBehavior = PlatformMarkerCollisionBehavior.requiredDisplay,
   });
 
   final double alpha;
@@ -233,6 +233,14 @@ class PlatformMarker {
   final double zIndex;
   final String markerId;
   final String? clusterManagerId;
+
+  final PlatformMarkerCollisionBehavior collisionBehavior;
+}
+
+enum PlatformMarkerCollisionBehavior {
+  requiredDisplay,
+  optionalAndHidesLowerPriority,
+  requiredAndHidesOptional,
 }
 
 /// Pigeon equivalent of the Polygon class.
@@ -473,6 +481,8 @@ class PlatformMapViewCreationParams {
   final List<PlatformGroundOverlay> initialGroundOverlays;
 }
 
+enum PlatformMarkerType { marker, advancedMarker }
+
 /// Pigeon equivalent of MapConfiguration.
 class PlatformMapConfiguration {
   PlatformMapConfiguration({
@@ -494,6 +504,7 @@ class PlatformMapConfiguration {
     required this.trafficEnabled,
     required this.buildingsEnabled,
     required this.liteModeEnabled,
+    required this.markerType,
     required this.mapId,
     required this.style,
   });
@@ -516,6 +527,7 @@ class PlatformMapConfiguration {
   final bool? trafficEnabled;
   final bool? buildingsEnabled;
   final bool? liteModeEnabled;
+  final PlatformMarkerType markerType;
   final String? mapId;
   final String? style;
 }
@@ -596,11 +608,7 @@ class PlatformBitmapAsset {
 /// Pigeon equivalent of [AssetImageBitmap]. See
 /// https://developers.google.com/maps/documentation/android-sdk/reference/com/google/android/libraries/maps/model/BitmapDescriptorFactory#public-static-bitmapdescriptor-fromasset-string-assetname
 class PlatformBitmapAssetImage {
-  PlatformBitmapAssetImage({
-    required this.name,
-    required this.scale,
-    this.size,
-  });
+  PlatformBitmapAssetImage({required this.name, required this.scale, this.size});
   final String name;
   final double scale;
   final PlatformDoublePair? size;
@@ -643,6 +651,26 @@ class PlatformBitmapBytesMap {
   final double? height;
 }
 
+/// Pigeon equivalent of [PinConfig].
+class PlatformBitmapPinConfig {
+  PlatformBitmapPinConfig({
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.glyphColor,
+    required this.glyphBitmap,
+    required this.glyphText,
+    required this.glyphTextColor,
+  });
+
+  final PlatformColor? backgroundColor;
+  final PlatformColor? borderColor;
+  final PlatformColor? glyphColor;
+  final PlatformBitmap? glyphBitmap;
+
+  final String? glyphText;
+  final PlatformColor? glyphTextColor;
+}
+
 /// Interface for non-test interactions with the native SDK.
 ///
 /// For test-only state queries, see [MapsInspectorApi].
@@ -673,10 +701,7 @@ abstract class MapsApi {
   );
 
   /// Updates the set of custer managers for clusters on the map.
-  void updateClusterManagers(
-    List<PlatformClusterManager> toAdd,
-    List<String> idsToRemove,
-  );
+  void updateClusterManagers(List<PlatformClusterManager> toAdd, List<String> idsToRemove);
 
   /// Updates the set of markers on the map.
   void updateMarkers(
@@ -728,10 +753,7 @@ abstract class MapsApi {
 
   /// Moves the camera according to [cameraUpdate], animating the update using a
   /// duration in milliseconds if provided.
-  void animateCamera(
-    PlatformCameraUpdate cameraUpdate,
-    int? durationMilliseconds,
-  );
+  void animateCamera(PlatformCameraUpdate cameraUpdate, int? durationMilliseconds);
 
   /// Gets the current map zoom level.
   double getZoomLevel();
@@ -759,6 +781,12 @@ abstract class MapsApi {
   /// This allows checking asynchronously for initial style failures, as there
   /// is no way to return failures from map initialization.
   bool didLastStyleSucceed();
+
+  /// Returns true if this map supports advanced markers.
+  ///
+  /// This allows checking if the map supports advanced markers before
+  /// attempting to use them.
+  bool isAdvancedMarkersAvailable();
 
   /// Clears the cache of tiles previously requseted from the tile provider.
   void clearTileCache(String tileOverlayId);
@@ -803,6 +831,9 @@ abstract class MapsCallbackApi {
   /// Called when a circle is tapped.
   void onCircleTap(String circleId);
 
+  /// Called when a point of interest is tapped.
+  void onPointOfInterestTap(String placeId);
+
   /// Called when a marker cluster is tapped.
   void onClusterTap(PlatformCluster cluster);
 
@@ -817,11 +848,7 @@ abstract class MapsCallbackApi {
 
   /// Called to get data for a map tile.
   @async
-  PlatformTile getTileOverlayTile(
-    String tileOverlayId,
-    PlatformPoint location,
-    int zoom,
-  );
+  PlatformTile getTileOverlayTile(String tileOverlayId, PlatformPoint location, int zoom);
 }
 
 /// Interface for global SDK initialization.
@@ -834,9 +861,7 @@ abstract class MapsInitializerApi {
   /// Calling this more than once in the lifetime of an application will result
   /// in an error.
   @async
-  PlatformRendererType initializeWithPreferredRenderer(
-    PlatformRendererType? type,
-  );
+  PlatformRendererType initializeWithPreferredRenderer(PlatformRendererType? type);
 
   /// Attempts to trigger any thread-blocking work
   /// the Google Maps SDK normally does when a map is shown for the first time.

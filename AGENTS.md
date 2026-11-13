@@ -6,7 +6,7 @@ This document provides guidance for AI agents to effectively contribute to the `
 
 - **Format All Code**: Every code change must be formatted using the repository's tools.
 - **Pass All Tests**: All changes must pass linting, analysis, and relevant tests.
-- **Update CHANGELOGs**: Any user-facing change or bug fix in a package requires an update to its `CHANGELOG.md` and `pubspec.yaml` version.
+- **Update CHANGELOGs**: Any user-facing change or bug fix in a package requires an update to its `CHANGELOG.md` and `pubspec.yaml` version. Ensure you follow the [CHANGELOG style guide](https://github.com/flutter/flutter/blob/master/docs/ecosystem/contributing/README.md#changelog-style).
 - **Follow Conventions**: Adhere to the repository's specific conventions, such as federated plugin structure and code generation steps.
 
 ## Agent Environment Setup
@@ -90,11 +90,9 @@ dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart update-dependency 
   The tool can also run native and integration tests, but these may require a more complete environment than is available.
 - **Validation**: Run these checks to ensure that changes follow team guidelines:
   ```bash
+  dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart validate --packages <changed_packages>
   dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart publish-check --packages <changed_packages>
-  dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart readme-check --packages <changed_packages>
-  dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart version-check --packages <changed_packages>
   dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart license-check
-  dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart repo-package-info-check
   ```
 
 ### Specialized Workflows
@@ -138,6 +136,7 @@ All code must adhere to the repository's style guides. The `format` command hand
 - **Kotlin**: Android Kotlin style, formatted with `ktfmt`.
 - **Objective-C**: Google style, formatted with `clang-format`.
 - **Swift**: Google style, formatted with `swift-format`.
+- **Comments**: Avoid adding redundant or trivial comments that simply restate what the code itself does (e.g., repeating method calls in English). Comments should explain the *why* behind complex or non-obvious logic, or serve as public API documentation.
 
 ## Version and CHANGELOG updates
 
@@ -151,8 +150,10 @@ dart run $REPO_ROOT/script/tool/bin/flutter_plugin_tools.dart update-release-inf
   --changelog="A description of the changes."
 ```
 
-- `--version=minimal`: Bumps patch for bug fixes, and skips unchanged packages. This is usually the best option unless a new feature is being added.
+- `--version=minimal`: Bumps patch for bug fixes and non-breaking changes, and skips unchanged packages. This is usually the best option unless a new feature is being added.
   - When making public API changes, use `--version=minor` instead.
 - `--base-branch=origin/main`: Diffs against the `main` branch to find changed packages.
 
-If you update manually, follow semantic versioning and the repository's CHANGELOG format.
+If a change is strictly internal/exempt (e.g., repo-wide CI tooling) and should not bump package versions, explain the exemption in the PR description and request the `override: no versioning needed` and `override: no changelog needed` labels.
+
+If you update manually, follow semantic versioning and the [repository's CHANGELOG style](https://github.com/flutter/flutter/blob/master/docs/ecosystem/contributing/README.md#changelog-style).

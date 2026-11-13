@@ -1,7 +1,59 @@
 ## NEXT
 
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.5.6
+
+* Fixes an issue where trailing pinned cells in `TableView` were losing hit tests to underlying non-pinned cells.
+
+## 0.5.5
+
+* Fixes `TableView` laying out and painting trailing pinned rows and columns twice, which could throw when the table was scrolled to the end.
+* Fixes `TableView` losing its regular rows or columns on scroll when more than one row or column is trailing pinned.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.5.4
+
+* Fixes memory leaks.
+
+## 0.5.3
+
+* Fixes hit testing for `TreeView` row content and gestures after horizontal scrolling.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 0.5.2
+
+* Fixes a crash in `TreeView` when it collapses to 0 rows or the last node is collapsed.
+
+## 0.5.1
+
+* Fixes an infinite loop of onExit/onEnter events when setState is called within onEnter in a TableSpan.
+
+## 0.5.0
+
+* Adds support for trailing pinned columns and rows in TableView.
+
+## 0.4.2
+
+* Fixes an issue where merged cells would unmerge when the first cell was overlaid by a pinned row or column.
+
+## 0.4.1
+
+* Adds warnings for TableView pinned rows and columns that exceed the viewport dimensions.
+
+## 0.4.0
+
+* Added `alignment` property to `TableView` and `TreeView` to align content within the viewport when it is smaller than the viewport extent.
+
+## 0.3.9
+
+* Fixes TableSpan borders being flipped when one or both axis directions are reversed.
+
+## 0.3.8
+
 * Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
 * Updates examples to use the new RadioGroup API instead of deprecated Radio parameters.
+* Optimizes tableview janks with >250k rows.
 
 ## 0.3.7
 

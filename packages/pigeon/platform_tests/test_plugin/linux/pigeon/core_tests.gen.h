@@ -12,6 +12,13 @@
 
 G_BEGIN_DECLS
 
+#define CORE_TESTS_PIGEON_TEST_A_STRING_CONSTANT "stringConstantValue"
+#define CORE_TESTS_PIGEON_TEST_A_STRING_CONSTANT_WITH_ESCAPES \
+  "string\\'\\\"\\$ConstantValue"
+#define CORE_TESTS_PIGEON_TEST_AN_INT_CONSTANT 42
+#define CORE_TESTS_PIGEON_TEST_A_DOUBLE_CONSTANT 3.14
+#define CORE_TESTS_PIGEON_TEST_A_BOOL_CONSTANT TRUE
+
 /**
  * CoreTestsPigeonTestAnEnum:
  * PIGEON_INTEGRATION_TESTS_AN_ENUM_ONE:
@@ -67,6 +74,40 @@ CoreTestsPigeonTestUnusedClass* core_tests_pigeon_test_unused_class_new(
  * Returns: the field value.
  */
 FlValue* core_tests_pigeon_test_unused_class_get_a_field(
+    CoreTestsPigeonTestUnusedClass* object);
+
+/**
+ * core_tests_pigeon_test_unused_class_equals:
+ * @a: a #CoreTestsPigeonTestUnusedClass.
+ * @b: another #CoreTestsPigeonTestUnusedClass.
+ *
+ * Checks if two #CoreTestsPigeonTestUnusedClass objects are equal.
+ *
+ * Returns: TRUE if @a and @b are equal.
+ */
+gboolean core_tests_pigeon_test_unused_class_equals(
+    CoreTestsPigeonTestUnusedClass* a, CoreTestsPigeonTestUnusedClass* b);
+
+/**
+ * core_tests_pigeon_test_unused_class_hash:
+ * @object: a #CoreTestsPigeonTestUnusedClass.
+ *
+ * Calculates a hash code for a #CoreTestsPigeonTestUnusedClass object.
+ *
+ * Returns: the hash code.
+ */
+guint core_tests_pigeon_test_unused_class_hash(
+    CoreTestsPigeonTestUnusedClass* object);
+
+/**
+ * core_tests_pigeon_test_unused_class_to_string:
+ * @object: a #CoreTestsPigeonTestUnusedClass.
+ *
+ * Returns a string representation of a #CoreTestsPigeonTestUnusedClass object.
+ *
+ * Returns: (transfer full): a new string, free with g_free().
+ */
+gchar* core_tests_pigeon_test_unused_class_to_string(
     CoreTestsPigeonTestUnusedClass* object);
 
 /**
@@ -443,6 +484,40 @@ FlValue* core_tests_pigeon_test_all_types_get_list_map(
  * Returns: the field value.
  */
 FlValue* core_tests_pigeon_test_all_types_get_map_map(
+    CoreTestsPigeonTestAllTypes* object);
+
+/**
+ * core_tests_pigeon_test_all_types_equals:
+ * @a: a #CoreTestsPigeonTestAllTypes.
+ * @b: another #CoreTestsPigeonTestAllTypes.
+ *
+ * Checks if two #CoreTestsPigeonTestAllTypes objects are equal.
+ *
+ * Returns: TRUE if @a and @b are equal.
+ */
+gboolean core_tests_pigeon_test_all_types_equals(
+    CoreTestsPigeonTestAllTypes* a, CoreTestsPigeonTestAllTypes* b);
+
+/**
+ * core_tests_pigeon_test_all_types_hash:
+ * @object: a #CoreTestsPigeonTestAllTypes.
+ *
+ * Calculates a hash code for a #CoreTestsPigeonTestAllTypes object.
+ *
+ * Returns: the hash code.
+ */
+guint core_tests_pigeon_test_all_types_hash(
+    CoreTestsPigeonTestAllTypes* object);
+
+/**
+ * core_tests_pigeon_test_all_types_to_string:
+ * @object: a #CoreTestsPigeonTestAllTypes.
+ *
+ * Returns a string representation of a #CoreTestsPigeonTestAllTypes object.
+ *
+ * Returns: (transfer full): a new string, free with g_free().
+ */
+gchar* core_tests_pigeon_test_all_types_to_string(
     CoreTestsPigeonTestAllTypes* object);
 
 /**
@@ -869,6 +944,42 @@ FlValue* core_tests_pigeon_test_all_nullable_types_get_recursive_class_map(
     CoreTestsPigeonTestAllNullableTypes* object);
 
 /**
+ * core_tests_pigeon_test_all_nullable_types_equals:
+ * @a: a #CoreTestsPigeonTestAllNullableTypes.
+ * @b: another #CoreTestsPigeonTestAllNullableTypes.
+ *
+ * Checks if two #CoreTestsPigeonTestAllNullableTypes objects are equal.
+ *
+ * Returns: TRUE if @a and @b are equal.
+ */
+gboolean core_tests_pigeon_test_all_nullable_types_equals(
+    CoreTestsPigeonTestAllNullableTypes* a,
+    CoreTestsPigeonTestAllNullableTypes* b);
+
+/**
+ * core_tests_pigeon_test_all_nullable_types_hash:
+ * @object: a #CoreTestsPigeonTestAllNullableTypes.
+ *
+ * Calculates a hash code for a #CoreTestsPigeonTestAllNullableTypes object.
+ *
+ * Returns: the hash code.
+ */
+guint core_tests_pigeon_test_all_nullable_types_hash(
+    CoreTestsPigeonTestAllNullableTypes* object);
+
+/**
+ * core_tests_pigeon_test_all_nullable_types_to_string:
+ * @object: a #CoreTestsPigeonTestAllNullableTypes.
+ *
+ * Returns a string representation of a #CoreTestsPigeonTestAllNullableTypes
+ * object.
+ *
+ * Returns: (transfer full): a new string, free with g_free().
+ */
+gchar* core_tests_pigeon_test_all_nullable_types_to_string(
+    CoreTestsPigeonTestAllNullableTypes* object);
+
+/**
  * CoreTestsPigeonTestAllNullableTypesWithoutRecursion:
  *
  * The primary purpose for this class is to ensure coverage of Swift structs
@@ -1280,6 +1391,97 @@ core_tests_pigeon_test_all_nullable_types_without_recursion_get_map_map(
     CoreTestsPigeonTestAllNullableTypesWithoutRecursion* object);
 
 /**
+ * core_tests_pigeon_test_all_nullable_types_without_recursion_equals:
+ * @a: a #CoreTestsPigeonTestAllNullableTypesWithoutRecursion.
+ * @b: another #CoreTestsPigeonTestAllNullableTypesWithoutRecursion.
+ *
+ * Checks if two #CoreTestsPigeonTestAllNullableTypesWithoutRecursion objects
+ * are equal.
+ *
+ * Returns: TRUE if @a and @b are equal.
+ */
+gboolean core_tests_pigeon_test_all_nullable_types_without_recursion_equals(
+    CoreTestsPigeonTestAllNullableTypesWithoutRecursion* a,
+    CoreTestsPigeonTestAllNullableTypesWithoutRecursion* b);
+
+/**
+ * core_tests_pigeon_test_all_nullable_types_without_recursion_hash:
+ * @object: a #CoreTestsPigeonTestAllNullableTypesWithoutRecursion.
+ *
+ * Calculates a hash code for a
+ * #CoreTestsPigeonTestAllNullableTypesWithoutRecursion object.
+ *
+ * Returns: the hash code.
+ */
+guint core_tests_pigeon_test_all_nullable_types_without_recursion_hash(
+    CoreTestsPigeonTestAllNullableTypesWithoutRecursion* object);
+
+/**
+ * core_tests_pigeon_test_all_nullable_types_without_recursion_to_string:
+ * @object: a #CoreTestsPigeonTestAllNullableTypesWithoutRecursion.
+ *
+ * Returns a string representation of a
+ * #CoreTestsPigeonTestAllNullableTypesWithoutRecursion object.
+ *
+ * Returns: (transfer full): a new string, free with g_free().
+ */
+gchar* core_tests_pigeon_test_all_nullable_types_without_recursion_to_string(
+    CoreTestsPigeonTestAllNullableTypesWithoutRecursion* object);
+
+/**
+ * CoreTestsPigeonTestAnEmptyClass:
+ *
+ * A data class without fields for testing empty classes.
+ */
+
+G_DECLARE_FINAL_TYPE(CoreTestsPigeonTestAnEmptyClass,
+                     core_tests_pigeon_test_an_empty_class,
+                     CORE_TESTS_PIGEON_TEST, AN_EMPTY_CLASS, GObject)
+
+/**
+ * core_tests_pigeon_test_an_empty_class_new:
+ *
+ * Creates a new #AnEmptyClass object.
+ *
+ * Returns: a new #CoreTestsPigeonTestAnEmptyClass
+ */
+CoreTestsPigeonTestAnEmptyClass* core_tests_pigeon_test_an_empty_class_new();
+
+/**
+ * core_tests_pigeon_test_an_empty_class_equals:
+ * @a: a #CoreTestsPigeonTestAnEmptyClass.
+ * @b: another #CoreTestsPigeonTestAnEmptyClass.
+ *
+ * Checks if two #CoreTestsPigeonTestAnEmptyClass objects are equal.
+ *
+ * Returns: TRUE if @a and @b are equal.
+ */
+gboolean core_tests_pigeon_test_an_empty_class_equals(
+    CoreTestsPigeonTestAnEmptyClass* a, CoreTestsPigeonTestAnEmptyClass* b);
+
+/**
+ * core_tests_pigeon_test_an_empty_class_hash:
+ * @object: a #CoreTestsPigeonTestAnEmptyClass.
+ *
+ * Calculates a hash code for a #CoreTestsPigeonTestAnEmptyClass object.
+ *
+ * Returns: the hash code.
+ */
+guint core_tests_pigeon_test_an_empty_class_hash(
+    CoreTestsPigeonTestAnEmptyClass* object);
+
+/**
+ * core_tests_pigeon_test_an_empty_class_to_string:
+ * @object: a #CoreTestsPigeonTestAnEmptyClass.
+ *
+ * Returns a string representation of a #CoreTestsPigeonTestAnEmptyClass object.
+ *
+ * Returns: (transfer full): a new string, free with g_free().
+ */
+gchar* core_tests_pigeon_test_an_empty_class_to_string(
+    CoreTestsPigeonTestAnEmptyClass* object);
+
+/**
  * CoreTestsPigeonTestAllClassesWrapper:
  *
  * A class for testing nested class handling.
@@ -1302,6 +1504,7 @@ G_DECLARE_FINAL_TYPE(CoreTestsPigeonTestAllClassesWrapper,
  * nullable_class_list: field in this object.
  * class_map: field in this object.
  * nullable_class_map: field in this object.
+ * an_empty_class: field in this object.
  *
  * Creates a new #AllClassesWrapper object.
  *
@@ -1314,7 +1517,8 @@ core_tests_pigeon_test_all_classes_wrapper_new(
         all_nullable_types_without_recursion,
     CoreTestsPigeonTestAllTypes* all_types, FlValue* class_list,
     FlValue* nullable_class_list, FlValue* class_map,
-    FlValue* nullable_class_map);
+    FlValue* nullable_class_map,
+    CoreTestsPigeonTestAnEmptyClass* an_empty_class);
 
 /**
  * core_tests_pigeon_test_all_classes_wrapper_get_all_nullable_types
@@ -1397,6 +1601,54 @@ FlValue* core_tests_pigeon_test_all_classes_wrapper_get_nullable_class_map(
     CoreTestsPigeonTestAllClassesWrapper* object);
 
 /**
+ * core_tests_pigeon_test_all_classes_wrapper_get_an_empty_class
+ * @object: a #CoreTestsPigeonTestAllClassesWrapper.
+ *
+ * Gets the value of the anEmptyClass field of @object.
+ *
+ * Returns: the field value.
+ */
+CoreTestsPigeonTestAnEmptyClass*
+core_tests_pigeon_test_all_classes_wrapper_get_an_empty_class(
+    CoreTestsPigeonTestAllClassesWrapper* object);
+
+/**
+ * core_tests_pigeon_test_all_classes_wrapper_equals:
+ * @a: a #CoreTestsPigeonTestAllClassesWrapper.
+ * @b: another #CoreTestsPigeonTestAllClassesWrapper.
+ *
+ * Checks if two #CoreTestsPigeonTestAllClassesWrapper objects are equal.
+ *
+ * Returns: TRUE if @a and @b are equal.
+ */
+gboolean core_tests_pigeon_test_all_classes_wrapper_equals(
+    CoreTestsPigeonTestAllClassesWrapper* a,
+    CoreTestsPigeonTestAllClassesWrapper* b);
+
+/**
+ * core_tests_pigeon_test_all_classes_wrapper_hash:
+ * @object: a #CoreTestsPigeonTestAllClassesWrapper.
+ *
+ * Calculates a hash code for a #CoreTestsPigeonTestAllClassesWrapper object.
+ *
+ * Returns: the hash code.
+ */
+guint core_tests_pigeon_test_all_classes_wrapper_hash(
+    CoreTestsPigeonTestAllClassesWrapper* object);
+
+/**
+ * core_tests_pigeon_test_all_classes_wrapper_to_string:
+ * @object: a #CoreTestsPigeonTestAllClassesWrapper.
+ *
+ * Returns a string representation of a #CoreTestsPigeonTestAllClassesWrapper
+ * object.
+ *
+ * Returns: (transfer full): a new string, free with g_free().
+ */
+gchar* core_tests_pigeon_test_all_classes_wrapper_to_string(
+    CoreTestsPigeonTestAllClassesWrapper* object);
+
+/**
  * CoreTestsPigeonTestTestMessage:
  *
  * A data class containing a List, used in unit tests.
@@ -1428,6 +1680,40 @@ CoreTestsPigeonTestTestMessage* core_tests_pigeon_test_test_message_new(
 FlValue* core_tests_pigeon_test_test_message_get_test_list(
     CoreTestsPigeonTestTestMessage* object);
 
+/**
+ * core_tests_pigeon_test_test_message_equals:
+ * @a: a #CoreTestsPigeonTestTestMessage.
+ * @b: another #CoreTestsPigeonTestTestMessage.
+ *
+ * Checks if two #CoreTestsPigeonTestTestMessage objects are equal.
+ *
+ * Returns: TRUE if @a and @b are equal.
+ */
+gboolean core_tests_pigeon_test_test_message_equals(
+    CoreTestsPigeonTestTestMessage* a, CoreTestsPigeonTestTestMessage* b);
+
+/**
+ * core_tests_pigeon_test_test_message_hash:
+ * @object: a #CoreTestsPigeonTestTestMessage.
+ *
+ * Calculates a hash code for a #CoreTestsPigeonTestTestMessage object.
+ *
+ * Returns: the hash code.
+ */
+guint core_tests_pigeon_test_test_message_hash(
+    CoreTestsPigeonTestTestMessage* object);
+
+/**
+ * core_tests_pigeon_test_test_message_to_string:
+ * @object: a #CoreTestsPigeonTestTestMessage.
+ *
+ * Returns a string representation of a #CoreTestsPigeonTestTestMessage object.
+ *
+ * Returns: (transfer full): a new string, free with g_free().
+ */
+gchar* core_tests_pigeon_test_test_message_to_string(
+    CoreTestsPigeonTestTestMessage* object);
+
 G_DECLARE_FINAL_TYPE(CoreTestsPigeonTestMessageCodec,
                      core_tests_pigeon_test_message_codec,
                      CORE_TESTS_PIGEON_TEST, MESSAGE_CODEC,
@@ -1447,6 +1733,7 @@ extern const int core_tests_pigeon_test_all_types_type_id;
 extern const int core_tests_pigeon_test_all_nullable_types_type_id;
 extern const int
     core_tests_pigeon_test_all_nullable_types_without_recursion_type_id;
+extern const int core_tests_pigeon_test_an_empty_class_type_id;
 extern const int core_tests_pigeon_test_all_classes_wrapper_type_id;
 extern const int core_tests_pigeon_test_test_message_type_id;
 
@@ -1832,6 +2119,134 @@ core_tests_pigeon_test_host_integration_core_api_echo_list_response_new(
  */
 CoreTestsPigeonTestHostIntegrationCoreApiEchoListResponse*
 core_tests_pigeon_test_host_integration_core_api_echo_list_response_new_error(
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostIntegrationCoreApiEchoStringListResponse,
+    core_tests_pigeon_test_host_integration_core_api_echo_string_list_response,
+    CORE_TESTS_PIGEON_TEST, HOST_INTEGRATION_CORE_API_ECHO_STRING_LIST_RESPONSE,
+    GObject)
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_string_list_response_new:
+ *
+ * Creates a new response to HostIntegrationCoreApi.echoStringList.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiEchoStringListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoStringListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_string_list_response_new(
+    FlValue* return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_string_list_response_new_error:
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Creates a new error response to HostIntegrationCoreApi.echoStringList.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiEchoStringListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoStringListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_string_list_response_new_error(
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostIntegrationCoreApiEchoIntListResponse,
+    core_tests_pigeon_test_host_integration_core_api_echo_int_list_response,
+    CORE_TESTS_PIGEON_TEST, HOST_INTEGRATION_CORE_API_ECHO_INT_LIST_RESPONSE,
+    GObject)
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_int_list_response_new:
+ *
+ * Creates a new response to HostIntegrationCoreApi.echoIntList.
+ *
+ * Returns: a new #CoreTestsPigeonTestHostIntegrationCoreApiEchoIntListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoIntListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_int_list_response_new(
+    FlValue* return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_int_list_response_new_error:
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Creates a new error response to HostIntegrationCoreApi.echoIntList.
+ *
+ * Returns: a new #CoreTestsPigeonTestHostIntegrationCoreApiEchoIntListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoIntListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_int_list_response_new_error(
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostIntegrationCoreApiEchoDoubleListResponse,
+    core_tests_pigeon_test_host_integration_core_api_echo_double_list_response,
+    CORE_TESTS_PIGEON_TEST, HOST_INTEGRATION_CORE_API_ECHO_DOUBLE_LIST_RESPONSE,
+    GObject)
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_double_list_response_new:
+ *
+ * Creates a new response to HostIntegrationCoreApi.echoDoubleList.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiEchoDoubleListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoDoubleListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_double_list_response_new(
+    FlValue* return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_double_list_response_new_error:
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Creates a new error response to HostIntegrationCoreApi.echoDoubleList.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiEchoDoubleListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoDoubleListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_double_list_response_new_error(
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostIntegrationCoreApiEchoBoolListResponse,
+    core_tests_pigeon_test_host_integration_core_api_echo_bool_list_response,
+    CORE_TESTS_PIGEON_TEST, HOST_INTEGRATION_CORE_API_ECHO_BOOL_LIST_RESPONSE,
+    GObject)
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_bool_list_response_new:
+ *
+ * Creates a new response to HostIntegrationCoreApi.echoBoolList.
+ *
+ * Returns: a new #CoreTestsPigeonTestHostIntegrationCoreApiEchoBoolListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoBoolListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_bool_list_response_new(
+    FlValue* return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_echo_bool_list_response_new_error:
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Creates a new error response to HostIntegrationCoreApi.echoBoolList.
+ *
+ * Returns: a new #CoreTestsPigeonTestHostIntegrationCoreApiEchoBoolListResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiEchoBoolListResponse*
+core_tests_pigeon_test_host_integration_core_api_echo_bool_list_response_new_error(
     const gchar* code, const gchar* message, FlValue* details);
 
 G_DECLARE_FINAL_TYPE(
@@ -2449,6 +2864,110 @@ core_tests_pigeon_test_host_integration_core_api_echo_required_int_response_new(
  */
 CoreTestsPigeonTestHostIntegrationCoreApiEchoRequiredIntResponse*
 core_tests_pigeon_test_host_integration_core_api_echo_required_int_response_new_error(
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostIntegrationCoreApiAreAllNullableTypesEqualResponse,
+    core_tests_pigeon_test_host_integration_core_api_are_all_nullable_types_equal_response,
+    CORE_TESTS_PIGEON_TEST,
+    HOST_INTEGRATION_CORE_API_ARE_ALL_NULLABLE_TYPES_EQUAL_RESPONSE, GObject)
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_are_all_nullable_types_equal_response_new:
+ *
+ * Creates a new response to HostIntegrationCoreApi.areAllNullableTypesEqual.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiAreAllNullableTypesEqualResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiAreAllNullableTypesEqualResponse*
+core_tests_pigeon_test_host_integration_core_api_are_all_nullable_types_equal_response_new(
+    gboolean return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_are_all_nullable_types_equal_response_new_error:
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Creates a new error response to
+ * HostIntegrationCoreApi.areAllNullableTypesEqual.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiAreAllNullableTypesEqualResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiAreAllNullableTypesEqualResponse*
+core_tests_pigeon_test_host_integration_core_api_are_all_nullable_types_equal_response_new_error(
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesHashResponse,
+    core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_hash_response,
+    CORE_TESTS_PIGEON_TEST,
+    HOST_INTEGRATION_CORE_API_GET_ALL_NULLABLE_TYPES_HASH_RESPONSE, GObject)
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_hash_response_new:
+ *
+ * Creates a new response to HostIntegrationCoreApi.getAllNullableTypesHash.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesHashResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesHashResponse*
+core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_hash_response_new(
+    int64_t return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_hash_response_new_error:
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Creates a new error response to
+ * HostIntegrationCoreApi.getAllNullableTypesHash.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesHashResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesHashResponse*
+core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_hash_response_new_error(
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesWithoutRecursionHashResponse,
+    core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_without_recursion_hash_response,
+    CORE_TESTS_PIGEON_TEST,
+    HOST_INTEGRATION_CORE_API_GET_ALL_NULLABLE_TYPES_WITHOUT_RECURSION_HASH_RESPONSE,
+    GObject)
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_without_recursion_hash_response_new:
+ *
+ * Creates a new response to
+ * HostIntegrationCoreApi.getAllNullableTypesWithoutRecursionHash.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesWithoutRecursionHashResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesWithoutRecursionHashResponse*
+core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_without_recursion_hash_response_new(
+    int64_t return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_without_recursion_hash_response_new_error:
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Creates a new error response to
+ * HostIntegrationCoreApi.getAllNullableTypesWithoutRecursionHash.
+ *
+ * Returns: a new
+ * #CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesWithoutRecursionHashResponse
+ */
+CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesWithoutRecursionHashResponse*
+core_tests_pigeon_test_host_integration_core_api_get_all_nullable_types_without_recursion_hash_response_new_error(
     const gchar* code, const gchar* message, FlValue* details);
 
 G_DECLARE_FINAL_TYPE(
@@ -3565,6 +4084,14 @@ typedef struct {
       FlValue* an_object, gpointer user_data);
   CoreTestsPigeonTestHostIntegrationCoreApiEchoListResponse* (*echo_list)(
       FlValue* list, gpointer user_data);
+  CoreTestsPigeonTestHostIntegrationCoreApiEchoStringListResponse* (
+      *echo_string_list)(FlValue* string_list, gpointer user_data);
+  CoreTestsPigeonTestHostIntegrationCoreApiEchoIntListResponse* (
+      *echo_int_list)(FlValue* int_list, gpointer user_data);
+  CoreTestsPigeonTestHostIntegrationCoreApiEchoDoubleListResponse* (
+      *echo_double_list)(FlValue* double_list, gpointer user_data);
+  CoreTestsPigeonTestHostIntegrationCoreApiEchoBoolListResponse* (
+      *echo_bool_list)(FlValue* bool_list, gpointer user_data);
   CoreTestsPigeonTestHostIntegrationCoreApiEchoEnumListResponse* (
       *echo_enum_list)(FlValue* enum_list, gpointer user_data);
   CoreTestsPigeonTestHostIntegrationCoreApiEchoClassListResponse* (
@@ -3605,6 +4132,17 @@ typedef struct {
       *echo_optional_default_double)(double a_double, gpointer user_data);
   CoreTestsPigeonTestHostIntegrationCoreApiEchoRequiredIntResponse* (
       *echo_required_int)(int64_t an_int, gpointer user_data);
+  CoreTestsPigeonTestHostIntegrationCoreApiAreAllNullableTypesEqualResponse* (
+      *are_all_nullable_types_equal)(CoreTestsPigeonTestAllNullableTypes* a,
+                                     CoreTestsPigeonTestAllNullableTypes* b,
+                                     gpointer user_data);
+  CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesHashResponse* (
+      *get_all_nullable_types_hash)(CoreTestsPigeonTestAllNullableTypes* value,
+                                    gpointer user_data);
+  CoreTestsPigeonTestHostIntegrationCoreApiGetAllNullableTypesWithoutRecursionHashResponse* (
+      *get_all_nullable_types_without_recursion_hash)(
+      CoreTestsPigeonTestAllNullableTypesWithoutRecursion* value,
+      gpointer user_data);
   CoreTestsPigeonTestHostIntegrationCoreApiEchoAllNullableTypesResponse* (
       *echo_all_nullable_types)(CoreTestsPigeonTestAllNullableTypes* everything,
                                 gpointer user_data);
@@ -3841,6 +4379,9 @@ typedef struct {
       *default_is_main_thread)(gpointer user_data);
   CoreTestsPigeonTestHostIntegrationCoreApiTaskQueueIsBackgroundThreadResponse* (
       *task_queue_is_background_thread)(gpointer user_data);
+  void (*async_task_queue_is_background_thread)(
+      CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+      gpointer user_data);
   void (*call_flutter_noop)(
       CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
       gpointer user_data);
@@ -4042,6 +4583,22 @@ typedef struct {
       gpointer user_data);
   void (*call_flutter_small_api_echo_string)(
       const gchar* a_string,
+      CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*call_flutter_callback_noop)(
+      CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*call_flutter_callback_echo_string)(
+      const gchar* a_string,
+      CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*call_flutter_callback_throw_error)(
+      CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*call_flutter_callback_throw_error_from_void)(
+      CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*call_flutter_is_async_flutter_api_on_root)(
       CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
       gpointer user_data);
 } CoreTestsPigeonTestHostIntegrationCoreApiVTable;
@@ -5011,6 +5568,31 @@ void core_tests_pigeon_test_host_integration_core_api_respond_echo_another_async
  * HostIntegrationCoreApi.echoAnotherAsyncNullableEnum.
  */
 void core_tests_pigeon_test_host_integration_core_api_respond_error_echo_another_async_nullable_enum(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_async_task_queue_is_background_thread:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostIntegrationCoreApi.asyncTaskQueueIsBackgroundThread.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_async_task_queue_is_background_thread(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    gboolean return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_error_async_task_queue_is_background_thread:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to
+ * HostIntegrationCoreApi.asyncTaskQueueIsBackgroundThread.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_error_async_task_queue_is_background_thread(
     CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
     const gchar* code, const gchar* message, FlValue* details);
 
@@ -6267,6 +6849,524 @@ void core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_small
 void core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_small_api_echo_string(
     CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
     const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_noop:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ *
+ * Responds to HostIntegrationCoreApi.callFlutterCallbackNoop.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_noop(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_noop:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostIntegrationCoreApi.callFlutterCallbackNoop.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_noop(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_echo_string:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostIntegrationCoreApi.callFlutterCallbackEchoString.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_echo_string(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    const gchar* return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_echo_string:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to
+ * HostIntegrationCoreApi.callFlutterCallbackEchoString.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_echo_string(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_throw_error:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostIntegrationCoreApi.callFlutterCallbackThrowError.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_throw_error(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    FlValue* return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_throw_error:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to
+ * HostIntegrationCoreApi.callFlutterCallbackThrowError.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_throw_error(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_throw_error_from_void:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ *
+ * Responds to HostIntegrationCoreApi.callFlutterCallbackThrowErrorFromVoid.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_callback_throw_error_from_void(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_throw_error_from_void:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to
+ * HostIntegrationCoreApi.callFlutterCallbackThrowErrorFromVoid.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_callback_throw_error_from_void(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_is_async_flutter_api_on_root:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostIntegrationCoreApi.callFlutterIsAsyncFlutterApiOnRoot.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_call_flutter_is_async_flutter_api_on_root(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    gboolean return_value);
+
+/**
+ * core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_is_async_flutter_api_on_root:
+ * @response_handle: a #CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to
+ * HostIntegrationCoreApi.callFlutterIsAsyncFlutterApiOnRoot.
+ */
+void core_tests_pigeon_test_host_integration_core_api_respond_error_call_flutter_is_async_flutter_api_on_root(
+    CoreTestsPigeonTestHostIntegrationCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse,
+    core_tests_pigeon_test_flutter_callback_core_api_noop_response,
+    CORE_TESTS_PIGEON_TEST, FLUTTER_CALLBACK_CORE_API_NOOP_RESPONSE, GObject)
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_noop_response_is_error:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse.
+ *
+ * Checks if a response to FlutterCallbackCoreApi.noop is an error.
+ *
+ * Returns: a %TRUE if this response is an error.
+ */
+gboolean
+core_tests_pigeon_test_flutter_callback_core_api_noop_response_is_error(
+    CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_noop_response_get_error_code:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse.
+ *
+ * Get the error code for this response.
+ *
+ * Returns: an error code or %NULL if not an error.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_noop_response_get_error_code(
+    CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_noop_response_get_error_message:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse.
+ *
+ * Get the error message for this response.
+ *
+ * Returns: an error message.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_noop_response_get_error_message(
+    CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_noop_response_get_error_details:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse.
+ *
+ * Get the error details for this response.
+ *
+ * Returns: (allow-none): an error details or %NULL.
+ */
+FlValue*
+core_tests_pigeon_test_flutter_callback_core_api_noop_response_get_error_details(
+    CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse* response);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse,
+    core_tests_pigeon_test_flutter_callback_core_api_echo_string_response,
+    CORE_TESTS_PIGEON_TEST, FLUTTER_CALLBACK_CORE_API_ECHO_STRING_RESPONSE,
+    GObject)
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_is_error:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse.
+ *
+ * Checks if a response to FlutterCallbackCoreApi.echoString is an error.
+ *
+ * Returns: a %TRUE if this response is an error.
+ */
+gboolean
+core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_is_error(
+    CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_error_code:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse.
+ *
+ * Get the error code for this response.
+ *
+ * Returns: an error code or %NULL if not an error.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_error_code(
+    CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_error_message:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse.
+ *
+ * Get the error message for this response.
+ *
+ * Returns: an error message.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_error_message(
+    CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_error_details:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse.
+ *
+ * Get the error details for this response.
+ *
+ * Returns: (allow-none): an error details or %NULL.
+ */
+FlValue*
+core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_error_details(
+    CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_return_value:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse.
+ *
+ * Get the return value for this response.
+ *
+ * Returns: a return value.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_echo_string_response_get_return_value(
+    CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse* response);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse,
+    core_tests_pigeon_test_flutter_callback_core_api_throw_error_response,
+    CORE_TESTS_PIGEON_TEST, FLUTTER_CALLBACK_CORE_API_THROW_ERROR_RESPONSE,
+    GObject)
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_is_error:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse.
+ *
+ * Checks if a response to FlutterCallbackCoreApi.throwError is an error.
+ *
+ * Returns: a %TRUE if this response is an error.
+ */
+gboolean
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_is_error(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_error_code:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse.
+ *
+ * Get the error code for this response.
+ *
+ * Returns: an error code or %NULL if not an error.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_error_code(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_error_message:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse.
+ *
+ * Get the error message for this response.
+ *
+ * Returns: an error message.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_error_message(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_error_details:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse.
+ *
+ * Get the error details for this response.
+ *
+ * Returns: (allow-none): an error details or %NULL.
+ */
+FlValue*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_error_details(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse* response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_return_value:
+ * @response: a #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse.
+ *
+ * Get the return value for this response.
+ *
+ * Returns: (allow-none): a return value or %NULL.
+ */
+FlValue*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_response_get_return_value(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse* response);
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse,
+    core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response,
+    CORE_TESTS_PIGEON_TEST,
+    FLUTTER_CALLBACK_CORE_API_THROW_ERROR_FROM_VOID_RESPONSE, GObject)
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_is_error:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse.
+ *
+ * Checks if a response to FlutterCallbackCoreApi.throwErrorFromVoid is an
+ * error.
+ *
+ * Returns: a %TRUE if this response is an error.
+ */
+gboolean
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_is_error(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse*
+        response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_get_error_code:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse.
+ *
+ * Get the error code for this response.
+ *
+ * Returns: an error code or %NULL if not an error.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_get_error_code(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse*
+        response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_get_error_message:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse.
+ *
+ * Get the error message for this response.
+ *
+ * Returns: an error message.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_get_error_message(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse*
+        response);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_get_error_details:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse.
+ *
+ * Get the error details for this response.
+ *
+ * Returns: (allow-none): an error details or %NULL.
+ */
+FlValue*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_response_get_error_details(
+    CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse*
+        response);
+
+/**
+ * CoreTestsPigeonTestFlutterCallbackCoreApi:
+ *
+ * A Flutter API using callback-based asynchronous methods (@asyncCallback).
+ */
+
+G_DECLARE_FINAL_TYPE(CoreTestsPigeonTestFlutterCallbackCoreApi,
+                     core_tests_pigeon_test_flutter_callback_core_api,
+                     CORE_TESTS_PIGEON_TEST, FLUTTER_CALLBACK_CORE_API, GObject)
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_new:
+ * @messenger: an #FlBinaryMessenger.
+ * @suffix: (allow-none): a suffix to add to the API or %NULL for none.
+ *
+ * Creates a new object to access the FlutterCallbackCoreApi API.
+ *
+ * Returns: a new #CoreTestsPigeonTestFlutterCallbackCoreApi
+ */
+CoreTestsPigeonTestFlutterCallbackCoreApi*
+core_tests_pigeon_test_flutter_callback_core_api_new(
+    FlBinaryMessenger* messenger, const gchar* suffix);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_noop:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @cancellable: (allow-none): a #GCancellable or %NULL.
+ * @callback: (scope async): (allow-none): a #GAsyncReadyCallback to call when
+ * the call is complete or %NULL to ignore the response.
+ * @user_data: (closure): user data to pass to @callback.
+ *
+ */
+void core_tests_pigeon_test_flutter_callback_core_api_noop(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, GCancellable* cancellable,
+    GAsyncReadyCallback callback, gpointer user_data);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_noop_finish:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @result: a #GAsyncResult.
+ * @error: (allow-none): #GError location to store the error occurring, or %NULL
+ * to ignore.
+ *
+ * Completes a core_tests_pigeon_test_flutter_callback_core_api_noop() call.
+ *
+ * Returns: a #CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse or %NULL on
+ * error.
+ */
+CoreTestsPigeonTestFlutterCallbackCoreApiNoopResponse*
+core_tests_pigeon_test_flutter_callback_core_api_noop_finish(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, GAsyncResult* result,
+    GError** error);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_echo_string:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @a_string: parameter for this method.
+ * @cancellable: (allow-none): a #GCancellable or %NULL.
+ * @callback: (scope async): (allow-none): a #GAsyncReadyCallback to call when
+ * the call is complete or %NULL to ignore the response.
+ * @user_data: (closure): user data to pass to @callback.
+ *
+ */
+void core_tests_pigeon_test_flutter_callback_core_api_echo_string(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, const gchar* a_string,
+    GCancellable* cancellable, GAsyncReadyCallback callback,
+    gpointer user_data);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_echo_string_finish:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @result: a #GAsyncResult.
+ * @error: (allow-none): #GError location to store the error occurring, or %NULL
+ * to ignore.
+ *
+ * Completes a core_tests_pigeon_test_flutter_callback_core_api_echo_string()
+ * call.
+ *
+ * Returns: a #CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse or
+ * %NULL on error.
+ */
+CoreTestsPigeonTestFlutterCallbackCoreApiEchoStringResponse*
+core_tests_pigeon_test_flutter_callback_core_api_echo_string_finish(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, GAsyncResult* result,
+    GError** error);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @cancellable: (allow-none): a #GCancellable or %NULL.
+ * @callback: (scope async): (allow-none): a #GAsyncReadyCallback to call when
+ * the call is complete or %NULL to ignore the response.
+ * @user_data: (closure): user data to pass to @callback.
+ *
+ */
+void core_tests_pigeon_test_flutter_callback_core_api_throw_error(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, GCancellable* cancellable,
+    GAsyncReadyCallback callback, gpointer user_data);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_finish:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @result: a #GAsyncResult.
+ * @error: (allow-none): #GError location to store the error occurring, or %NULL
+ * to ignore.
+ *
+ * Completes a core_tests_pigeon_test_flutter_callback_core_api_throw_error()
+ * call.
+ *
+ * Returns: a #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse or
+ * %NULL on error.
+ */
+CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorResponse*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_finish(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, GAsyncResult* result,
+    GError** error);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @cancellable: (allow-none): a #GCancellable or %NULL.
+ * @callback: (scope async): (allow-none): a #GAsyncReadyCallback to call when
+ * the call is complete or %NULL to ignore the response.
+ * @user_data: (closure): user data to pass to @callback.
+ *
+ */
+void core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, GCancellable* cancellable,
+    GAsyncReadyCallback callback, gpointer user_data);
+
+/**
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_finish:
+ * @api: a #CoreTestsPigeonTestFlutterCallbackCoreApi.
+ * @result: a #GAsyncResult.
+ * @error: (allow-none): #GError location to store the error occurring, or %NULL
+ * to ignore.
+ *
+ * Completes a
+ * core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void()
+ * call.
+ *
+ * Returns: a
+ * #CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse or %NULL
+ * on error.
+ */
+CoreTestsPigeonTestFlutterCallbackCoreApiThrowErrorFromVoidResponse*
+core_tests_pigeon_test_flutter_callback_core_api_throw_error_from_void_finish(
+    CoreTestsPigeonTestFlutterCallbackCoreApi* api, GAsyncResult* result,
+    GError** error);
 
 G_DECLARE_FINAL_TYPE(
     CoreTestsPigeonTestFlutterIntegrationCoreApiNoopResponse,
@@ -10099,6 +11199,83 @@ core_tests_pigeon_test_flutter_integration_core_api_echo_async_string_response_g
     CoreTestsPigeonTestFlutterIntegrationCoreApiEchoAsyncStringResponse*
         response);
 
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse,
+    core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response,
+    CORE_TESTS_PIGEON_TEST,
+    FLUTTER_INTEGRATION_CORE_API_IS_ASYNC_FLUTTER_API_ON_ROOT_RESPONSE, GObject)
+
+/**
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_is_error:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse.
+ *
+ * Checks if a response to FlutterIntegrationCoreApi.isAsyncFlutterApiOnRoot is
+ * an error.
+ *
+ * Returns: a %TRUE if this response is an error.
+ */
+gboolean
+core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_is_error(
+    CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse*
+        response);
+
+/**
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_error_code:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse.
+ *
+ * Get the error code for this response.
+ *
+ * Returns: an error code or %NULL if not an error.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_error_code(
+    CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse*
+        response);
+
+/**
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_error_message:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse.
+ *
+ * Get the error message for this response.
+ *
+ * Returns: an error message.
+ */
+const gchar*
+core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_error_message(
+    CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse*
+        response);
+
+/**
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_error_details:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse.
+ *
+ * Get the error details for this response.
+ *
+ * Returns: (allow-none): an error details or %NULL.
+ */
+FlValue*
+core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_error_details(
+    CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse*
+        response);
+
+/**
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_return_value:
+ * @response: a
+ * #CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse.
+ *
+ * Get the return value for this response.
+ *
+ * Returns: a return value.
+ */
+gboolean
+core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_response_get_return_value(
+    CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse*
+        response);
+
 /**
  * CoreTestsPigeonTestFlutterIntegrationCoreApi:
  *
@@ -11965,6 +13142,275 @@ CoreTestsPigeonTestFlutterIntegrationCoreApiEchoAsyncStringResponse*
 core_tests_pigeon_test_flutter_integration_core_api_echo_async_string_finish(
     CoreTestsPigeonTestFlutterIntegrationCoreApi* api, GAsyncResult* result,
     GError** error);
+
+/**
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root:
+ * @api: a #CoreTestsPigeonTestFlutterIntegrationCoreApi.
+ * @cancellable: (allow-none): a #GCancellable or %NULL.
+ * @callback: (scope async): (allow-none): a #GAsyncReadyCallback to call when
+ * the call is complete or %NULL to ignore the response.
+ * @user_data: (closure): user data to pass to @callback.
+ *
+ * Returns true if the async FlutterApi method is run on the root isolate.
+ */
+void core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root(
+    CoreTestsPigeonTestFlutterIntegrationCoreApi* api,
+    GCancellable* cancellable, GAsyncReadyCallback callback,
+    gpointer user_data);
+
+/**
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_finish:
+ * @api: a #CoreTestsPigeonTestFlutterIntegrationCoreApi.
+ * @result: a #GAsyncResult.
+ * @error: (allow-none): #GError location to store the error occurring, or %NULL
+ * to ignore.
+ *
+ * Completes a
+ * core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root()
+ * call.
+ *
+ * Returns: a
+ * #CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse
+ * or %NULL on error.
+ */
+CoreTestsPigeonTestFlutterIntegrationCoreApiIsAsyncFlutterApiOnRootResponse*
+core_tests_pigeon_test_flutter_integration_core_api_is_async_flutter_api_on_root_finish(
+    CoreTestsPigeonTestFlutterIntegrationCoreApi* api, GAsyncResult* result,
+    GError** error);
+
+G_DECLARE_FINAL_TYPE(CoreTestsPigeonTestHostCallbackCoreApi,
+                     core_tests_pigeon_test_host_callback_core_api,
+                     CORE_TESTS_PIGEON_TEST, HOST_CALLBACK_CORE_API, GObject)
+
+G_DECLARE_FINAL_TYPE(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle,
+    core_tests_pigeon_test_host_callback_core_api_response_handle,
+    CORE_TESTS_PIGEON_TEST, HOST_CALLBACK_CORE_API_RESPONSE_HANDLE, GObject)
+
+/**
+ * CoreTestsPigeonTestHostCallbackCoreApiVTable:
+ *
+ * Table of functions exposed by HostCallbackCoreApi to be implemented by the
+ * API provider.
+ */
+typedef struct {
+  void (*noop)(
+      CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*echo_string)(
+      const gchar* a_string,
+      CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*echo_all_types)(
+      CoreTestsPigeonTestAllTypes* everything,
+      CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*echo_nullable_string)(
+      const gchar* a_string,
+      CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*throw_error)(
+      CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*throw_error_from_void)(
+      CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+  void (*task_queue_is_background_thread)(
+      CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+      gpointer user_data);
+} CoreTestsPigeonTestHostCallbackCoreApiVTable;
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_set_method_handlers:
+ *
+ * @messenger: an #FlBinaryMessenger.
+ * @suffix: (allow-none): a suffix to add to the API or %NULL for none.
+ * @vtable: implementations of the methods in this API.
+ * @user_data: (closure): user data to pass to the functions in @vtable.
+ * @user_data_free_func: (allow-none): a function which gets called to free
+ * @user_data, or %NULL.
+ *
+ * Connects the method handlers in the HostCallbackCoreApi API.
+ */
+void core_tests_pigeon_test_host_callback_core_api_set_method_handlers(
+    FlBinaryMessenger* messenger, const gchar* suffix,
+    const CoreTestsPigeonTestHostCallbackCoreApiVTable* vtable,
+    gpointer user_data, GDestroyNotify user_data_free_func);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_clear_method_handlers:
+ *
+ * @messenger: an #FlBinaryMessenger.
+ * @suffix: (allow-none): a suffix to add to the API or %NULL for none.
+ *
+ * Clears the method handlers in the HostCallbackCoreApi API.
+ */
+void core_tests_pigeon_test_host_callback_core_api_clear_method_handlers(
+    FlBinaryMessenger* messenger, const gchar* suffix);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_noop:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ *
+ * Responds to HostCallbackCoreApi.noop.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_noop(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_error_noop:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostCallbackCoreApi.noop.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_error_noop(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_echo_string:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostCallbackCoreApi.echoString.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_echo_string(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* return_value);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_error_echo_string:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostCallbackCoreApi.echoString.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_error_echo_string(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_echo_all_types:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostCallbackCoreApi.echoAllTypes.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_echo_all_types(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    CoreTestsPigeonTestAllTypes* return_value);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_error_echo_all_types:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostCallbackCoreApi.echoAllTypes.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_error_echo_all_types(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_echo_nullable_string:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostCallbackCoreApi.echoNullableString.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_echo_nullable_string(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* return_value);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_error_echo_nullable_string:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostCallbackCoreApi.echoNullableString.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_error_echo_nullable_string(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_throw_error:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostCallbackCoreApi.throwError.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_throw_error(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    FlValue* return_value);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_error_throw_error:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostCallbackCoreApi.throwError.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_error_throw_error(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_throw_error_from_void:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ *
+ * Responds to HostCallbackCoreApi.throwErrorFromVoid.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_throw_error_from_void(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_error_throw_error_from_void:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostCallbackCoreApi.throwErrorFromVoid.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_error_throw_error_from_void(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_task_queue_is_background_thread:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @return_value: location to write the value returned by this method.
+ *
+ * Responds to HostCallbackCoreApi.taskQueueIsBackgroundThread.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_task_queue_is_background_thread(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    gboolean return_value);
+
+/**
+ * core_tests_pigeon_test_host_callback_core_api_respond_error_task_queue_is_background_thread:
+ * @response_handle: a #CoreTestsPigeonTestHostCallbackCoreApiResponseHandle.
+ * @code: error code.
+ * @message: error message.
+ * @details: (allow-none): error details or %NULL.
+ *
+ * Responds with an error to HostCallbackCoreApi.taskQueueIsBackgroundThread.
+ */
+void core_tests_pigeon_test_host_callback_core_api_respond_error_task_queue_is_background_thread(
+    CoreTestsPigeonTestHostCallbackCoreApiResponseHandle* response_handle,
+    const gchar* code, const gchar* message, FlValue* details);
 
 G_DECLARE_FINAL_TYPE(CoreTestsPigeonTestHostTrivialApi,
                      core_tests_pigeon_test_host_trivial_api,

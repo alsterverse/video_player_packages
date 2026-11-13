@@ -1,3 +1,54 @@
+## 7.2.19
+
+* Renames keep.xml to google_sign_in_keep.xml to avoid collisions with app-level keep rules during resource shrinking.
+
+## 7.2.18
+
+* Converts Java implementation code to Kotlin.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 7.2.17
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 7.2.16
+
+* Keeps default_web_client_id resource from being stripped by resource shrinkers.
+
+## 7.2.15
+
+* Fixes an `IllegalStateException` ("Reply already submitted") crash when an authorization activity
+  result for `REQUEST_CODE_AUTHORIZE` is delivered more than once (for example after a configuration
+  change or process death).
+
+## 7.2.14
+
+* Uses Google Identity APIs to extract the user ID from the ID token.
+
+## 7.2.13
+
+* Bumps com.google.android.gms:play-services-auth from 21.5.1 to 21.6.0.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 7.2.12
+
+* Migrates to Built-in Kotlin to support AGP 9.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 7.2.11
+
+* Bumps AndroidX Credentials to v1.6.0
+* Bumps Play Services Auth to v21.5.1
+* Bumps Android Identity GoogleID to v1.2.0
+
+## 7.2.10
+
+* Updates build files from Groovy to Kotlin.
+
+## 7.2.9
+
+* Simplifies internal code for Kotlin/Java interoperability.
+
 ## 7.2.8
 
 * Bumps kotlin_version to 2.3.0.

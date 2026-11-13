@@ -5,7 +5,11 @@
 package io.flutter.plugins.camerax;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.OptIn;
 import androidx.camera.core.CameraInfo;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ExperimentalLensFacing;
+import androidx.camera.core.ExperimentalZeroShutterLag;
 import androidx.camera.core.ExposureState;
 
 /**
@@ -21,6 +25,22 @@ class CameraInfoProxyApi extends PigeonApiCameraInfo {
   @Override
   public long sensorRotationDegrees(CameraInfo pigeonInstance) {
     return pigeonInstance.getSensorRotationDegrees();
+  }
+
+  @Override
+  @OptIn(markerClass = ExperimentalLensFacing.class)
+  public LensFacing lensFacing(CameraInfo pigeonInstance) {
+    int lensFacing = pigeonInstance.getLensFacing();
+    switch (lensFacing) {
+      case CameraSelector.LENS_FACING_FRONT:
+        return LensFacing.FRONT;
+      case CameraSelector.LENS_FACING_BACK:
+        return LensFacing.BACK;
+      case CameraSelector.LENS_FACING_EXTERNAL:
+        return LensFacing.EXTERNAL;
+      default:
+        return LensFacing.UNKNOWN;
+    }
   }
 
   @NonNull
@@ -41,5 +61,11 @@ class CameraInfoProxyApi extends PigeonApiCameraInfo {
   public LiveDataProxyApi.LiveDataWrapper getZoomState(CameraInfo pigeonInstance) {
     return new LiveDataProxyApi.LiveDataWrapper(
         pigeonInstance.getZoomState(), LiveDataSupportedType.ZOOM_STATE);
+  }
+
+  @Override
+  @OptIn(markerClass = ExperimentalZeroShutterLag.class)
+  public boolean isZslSupported(CameraInfo pigeonInstance) {
+    return pigeonInstance.isZslSupported();
   }
 }

@@ -1,3 +1,119 @@
+## 0.7.6+1
+
+* Fixes video recording duration discrepancy by waiting for the first recorded frame before completing `startVideoCapturing`, and validates errors on `stopVideoRecording`.
+
+## 0.7.6
+
+* Adds support for zero-shutter-lag still image capture via
+  `isZeroShutterLagSupported` and `setZeroShutterLagEnabled`.
+
+## 0.7.5+2
+
+* Updates Robolectric to 4.17 and adds the JVM arguments it requires for unit tests.
+
+## 0.7.5+1
+
+* Fix exposure offset slider freezing camera preview and fix setExposureOffset return value.
+
+## 0.7.5
+
+* Adds support for custom video output path in video recording.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.7.4+8
+
+* Bumps cameraxVersion from 1.6.1 to 1.6.2.
+* Removes the explicit `androidx.concurrent:concurrent-futures` dependency
+  workaround, as camera-core 1.6.2 includes an
+  upstream fix that makes it unnecessary.
+
+## 0.7.4+7
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 0.7.4+6
+
+* Adds explicit `androidx.concurrent:concurrent-futures:1.2.0` dependency to fix
+  `compileDebugJavaWithJavac` failing with "class file for
+  androidx.concurrent.futures.CallbackToFutureAdapter not found" when
+  `camera-core`'s Jspecify type annotations are resolved during compilation.
+  
+## 0.7.4+5
+
+* Fixes a leaked thread per capture by dispatching the `takePicture` result callback on the main
+  executor.
+
+## 0.7.4+4
+
+* Fix `NullPointerException` when disposing camera during active video recording.
+
+## 0.7.4+3
+
+* Updates `ResolutionPreset.max` to prefer higher resolution over capture rate
+  for CameraX `ResolutionSelector` use cases on Android.
+
+## 0.7.4+2
+
+* Bumps cameraxVersion from 1.6.0 to 1.6.1.
+* Updates androidx.camera:camera-core from 1.6.0 to 1.6.1.
+* Updates androidx.camera:camera-camera2 from 1.6.0 to 1.6.1.
+* Updates androidx.camera:camera-lifecycle from 1.6.0 to 1.6.1.
+* Updates androidx.camera:camera-video from 1.6.0 to 1.6.1.
+
+## 0.7.4+1
+
+* Fixes a `StateError` ("Bad state: No element") in `setFocusMode(FocusMode.auto)`
+  when the current focus and metering action has no auto-focus points.
+
+## 0.7.4
+
+* Adds `setJpegImageQuality` for controlling JPEG compression quality.
+
+## 0.7.3
+
+* Fixes `videoBitrate` configuration being ignored during video recording.
+
+## 0.7.2+1
+
+* Migrates to Built-in Kotlin to support AGP 9.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.7.2
+
+* Bumps camerax_version from 1.5.3 to 1.6.0.
+
+## 0.7.1+2
+
+* Fixes dartdoc comments that accidentally used HTML.
+
+## 0.7.1+1
+
+* Updates build files from Groovy to Kotlin.
+
+## 0.7.1
+
+* Removes outdated restrictions against concurrent camera use cases.
+
+## 0.7.0+1
+
+* Updates example to demonstrate correct exception handling for async return statements, ensuring exceptions thrown during return within try blocks are properly caught as per [dart-lang/sdk#44395](https://github.com/dart-lang/sdk/issues/44395).
+
+## 0.7.0
+
+* Adds video stabilization.
+
+## 0.6.30
+
+* Bump camerax_version from 1.5.2 to 1.5.3.
+
+## 0.6.29
+
+* Modifies lens direction logic to request the value from CameraX directly versus manual detection.
+
+## 0.6.28
+
+* Adds more descriptive error to camera error stream when image capture fails.
+
 ## 0.6.27
 
 * Changes `availableCameras` to get the camera name from `Camera2CameraInfo.getCameraId`.

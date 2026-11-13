@@ -2,22 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase_android/billing_client_wrappers.dart';
 import 'package:in_app_purchase_android/src/types/google_play_user_choice_details.dart';
 import 'package:in_app_purchase_android/src/types/translator.dart';
-import 'package:test/test.dart';
 
 void main() {
   group('Translator ', () {
     test('convertToPlayProductType', () {
-      expect(
-        Translator.convertToPlayProductType(ProductType.inapp),
-        GooglePlayProductType.inapp,
-      );
-      expect(
-        Translator.convertToPlayProductType(ProductType.subs),
-        GooglePlayProductType.subs,
-      );
+      expect(Translator.convertToPlayProductType(ProductType.inapp), GooglePlayProductType.inapp);
+      expect(Translator.convertToPlayProductType(ProductType.subs), GooglePlayProductType.subs);
       expect(GooglePlayProductType.values.length, ProductType.values.length);
     });
 
@@ -52,17 +46,13 @@ void main() {
       const expected = GooglePlayUserChoiceDetails(
         originalExternalTransactionId: 'originalExternalTransactionId',
         externalTransactionToken: 'externalTransactionToken',
-        products: <GooglePlayUserChoiceDetailsProduct>[
-          expectedProduct1,
-          expectedProduct2,
-        ],
+        products: <GooglePlayUserChoiceDetailsProduct>[expectedProduct1, expectedProduct2],
       );
 
       expect(
         Translator.convertToUserChoiceDetails(
           UserChoiceDetailsWrapper(
-            originalExternalTransactionId:
-                expected.originalExternalTransactionId,
+            originalExternalTransactionId: expected.originalExternalTransactionId,
             externalTransactionToken: expected.externalTransactionToken,
             products: <UserChoiceDetailsProductWrapper>[
               UserChoiceDetailsProductWrapper(

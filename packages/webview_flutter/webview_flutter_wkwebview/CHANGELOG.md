@@ -1,3 +1,82 @@
+## 3.27.2
+
+* Restores the minimum iOS version to 13 and minimum macOS version to 10.15.
+* Suppresses `SecTrustGetCertificateAtIndex` deprecation warnings.
+
+## 3.27.1
+
+* Updates minimum iOS version to 15 and minimum macOS version to 12.
+* Removes the pre-iOS 15/macOS 12 code path that used the deprecated `SecTrustGetCertificateAtIndex`.
+
+## 3.27.0
+
+* Adds `WebKitWebViewWidgetCreationParams.uiKitGestureBlockingPolicy` for choosing the gesture
+  blocking policy of the iOS platform view. Setting it to `doNotBlockGesture` works around web
+  views becoming unresponsive to touches. See
+  https://github.com/flutter/flutter/issues/175099.
+
+## 3.26.2
+
+* Fixes a crash when a `WKNavigationDelegate` authentication challenge reply cannot be
+  resolved to a native instance.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 3.26.1
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 3.26.0
+
+* Adds new method for accessing a native `WKWebView` from a `FlutterPluginRegistrar`.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 3.25.1
+
+* Relands update to prevent message calls when application will terminate.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 3.25.0
+
+* Adds support for retrieving cookies with `PlatformWebViewCookieManager.getCookies`.
+
+## 3.24.5
+
+* Reverts `3.24.4` to prevent missing `FlutterSceneLifeCycleDelegate` build error.
+
+## 3.24.4
+
+* Updates plugin to prevent message calls when application will terminate.
+
+## 3.24.3
+
+* Adds support to get failing url from DNS errors on iOS 26+.
+
+## 3.24.2
+
+* Fixes dartdoc comments that accidentally used HTML.
+
+## 3.24.1
+
+* Updates platform views on iOS to only have a weak reference to the native view. This is a
+  potential workaround to prevent a crash during the Flutter engine shutdown. See https://github.com/flutter/flutter/issues/168535
+
+## 3.24.0
+
+* Adds support for `WebKitWebViewControllerCreationParams.javaScriptCanOpenWindowsAutomatically` to allow JavaScript's
+  `window.open()` to work without user interaction on iOS and macOS.
+
+## 3.23.8
+
+* Fixes lossy transition from Dart Color to native UIColor when calling `setBackgroundColor`.
+
+## 3.23.7
+
+* Fixes crash when calling setOnConsoleMessage multiple times.
+
+## 3.23.6
+
+* Fixes a crash if WebViewFlutterWKWebViewExternalAPI is passed the wrong registry.
+
 ## 3.23.5
 
 * Removes internal native library Dart proxy.

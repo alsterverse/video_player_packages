@@ -28,6 +28,7 @@ void main() {
         focusPointSupported: true,
         previewPauseOrientation: DeviceOrientation.portraitUp,
         description: FakeController.fakeDescription,
+        videoStabilizationMode: VideoStabilizationMode.level2,
       );
 
       expect(cameraValue, isA<CameraValue>());
@@ -42,19 +43,15 @@ void main() {
       expect(cameraValue.exposureMode, ExposureMode.auto);
       expect(cameraValue.exposurePointSupported, true);
       expect(cameraValue.deviceOrientation, DeviceOrientation.portraitUp);
-      expect(
-        cameraValue.lockedCaptureOrientation,
-        DeviceOrientation.portraitUp,
-      );
+      expect(cameraValue.lockedCaptureOrientation, DeviceOrientation.portraitUp);
       expect(cameraValue.recordingOrientation, DeviceOrientation.portraitUp);
       expect(cameraValue.isPreviewPaused, false);
       expect(cameraValue.previewPauseOrientation, DeviceOrientation.portraitUp);
+      expect(cameraValue.videoStabilizationMode, VideoStabilizationMode.level2);
     });
 
     test('Can be created as uninitialized', () {
-      const cameraValue = CameraValue.uninitialized(
-        FakeController.fakeDescription,
-      );
+      const cameraValue = CameraValue.uninitialized(FakeController.fakeDescription);
 
       expect(cameraValue, isA<CameraValue>());
       expect(cameraValue.isInitialized, isFalse);
@@ -73,6 +70,7 @@ void main() {
       expect(cameraValue.recordingOrientation, null);
       expect(cameraValue.isPreviewPaused, isFalse);
       expect(cameraValue.previewPauseOrientation, null);
+      expect(cameraValue.videoStabilizationMode, VideoStabilizationMode.off);
     });
 
     test('Can be copied with isInitialized', () {
@@ -96,6 +94,7 @@ void main() {
       expect(cameraValue.recordingOrientation, null);
       expect(cameraValue.isPreviewPaused, isFalse);
       expect(cameraValue.previewPauseOrientation, null);
+      expect(cameraValue.videoStabilizationMode, VideoStabilizationMode.off);
     });
 
     test('Has aspectRatio after setting size', () {
@@ -146,6 +145,7 @@ void main() {
         isPreviewPaused: true,
         previewPauseOrientation: DeviceOrientation.portraitUp,
         description: FakeController.fakeDescription,
+        videoStabilizationMode: VideoStabilizationMode.level3,
       );
 
       expect(
@@ -160,6 +160,7 @@ void main() {
         'recordingOrientation: DeviceOrientation.portraitUp, '
         'isPreviewPaused: true, '
         'previewPausedOrientation: DeviceOrientation.portraitUp, '
+        'videoStabilizationMode: VideoStabilizationMode.level3, '
         // CameraDescription.toString is defined in the platform interface
         // package, so don't assert a specific value for it, only that
         // whatever it returns is inserted as expected.

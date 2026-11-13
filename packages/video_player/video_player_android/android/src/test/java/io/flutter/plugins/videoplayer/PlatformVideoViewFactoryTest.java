@@ -17,8 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
-// Runs under Robolectric because instrumenting the ExoPlayer interface -- to mock it, or to build
-// one -- initializes supertypes that need an Android runtime.
 @RunWith(RobolectricTestRunner.class)
 public class PlatformVideoViewFactoryTest {
   @Test
@@ -27,7 +25,7 @@ public class PlatformVideoViewFactoryTest {
         mock(PlatformVideoViewFactory.VideoPlayerProvider.class);
     final VideoPlayer videoPlayer = mock(VideoPlayer.class);
     final Context context = ApplicationProvider.getApplicationContext();
-    final ExoPlayer exoPlayer = mock(ExoPlayer.class);
+    final ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
     final long playerId = 1L;
 
     when(videoPlayerProvider.getVideoPlayer(playerId)).thenReturn(videoPlayer);
@@ -41,5 +39,7 @@ public class PlatformVideoViewFactoryTest {
     assertTrue(view instanceof PlatformVideoView);
     verify(videoPlayerProvider).getVideoPlayer(playerId);
     verify(videoPlayer).getExoPlayer();
+
+    exoPlayer.release();
   }
 }

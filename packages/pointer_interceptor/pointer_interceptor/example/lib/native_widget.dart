@@ -3,4 +3,4 @@
 // found in the LICENSE file.
 
 export 'platforms/native_widget_ios.dart'
-    if (dart.library.html) 'platforms/native_widget_web.dart';
+    if (dart.library.js_interop) 'platforms/native_widget_web.dart';

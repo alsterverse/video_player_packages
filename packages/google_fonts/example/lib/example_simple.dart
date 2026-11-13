@@ -4,8 +4,8 @@
 
 // ignore_for_file: public_member_api_docs
 
-import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ExampleSimple extends StatefulWidget {
   const ExampleSimple({super.key});
@@ -55,10 +55,7 @@ class ExampleSimpleState extends State<ExampleSimple> {
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                Text(
-                  'You have pushed the button this many times:',
-                  style: pushButtonTextStyle,
-                ),
+                Text('You have pushed the button this many times:', style: pushButtonTextStyle),
                 Text('$_counter', style: counterTextStyle),
               ],
             );

@@ -1,3 +1,22 @@
+## NEXT
+
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.3.0+1
+
+* Fixes `CameraException(camera_error, Failed to initialize video preview)` on
+  multi-stream USB cameras.
+
+## 0.3.0
+
+* Adds support for custom video output path in video recording.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.2.6+5
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
 ## 0.2.6+4
 
 * Removes usage of the deprecated and ignored `maxVideoDuration` in the example.

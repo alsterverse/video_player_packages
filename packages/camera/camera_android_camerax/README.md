@@ -18,22 +18,6 @@ should add it to your `pubspec.yaml` as usual.
 
 ## Limitations
 
-### Concurrent preview display, video recording, image capture, and image streaming
-
-The CameraX plugin only supports the concurrent camera use cases supported by Camerax; see
-[their documentation][6] for more information. To avoid the usage of unsupported concurrent
-use cases, the plugin behaves according to the following:
-
-* If the preview is paused (via `pausePreview`), concurrent video recording and image capture
-  and/or image streaming (via `startVideoCapturing(cameraId, VideoCaptureOptions(streamCallback:...))`)
-  is supported.
-* If the preview is not paused
-  * **and** the camera device is at least supported hardware [`LIMITED`][8], then concurrent
-    image capture and video recording is supported.
-  * **and** the camera device is at least supported hardware [`LEVEL_3`][7], then concurrent
-    video recording and image streaming is supported, but concurrent video recording, image
-    streaming, and image capture is not supported.
-
 ### 240p resolution configuration for video recording
 
 240p resolution configuration for video recording is unsupported by CameraX, and thus,
@@ -71,9 +55,17 @@ in the merged Android manifest of your app, then take the following steps to rem
 
 ### Notes on video capture
 
+#### Custom Video Recording Path
+
+If you wish to record a video to a custom file path, you may specify `videoOutputPath` when calling `startVideoRecording()`. Although it is possible to use an absolute path like `/storage/emulated/0/Download/video.mp4`, this is a fragile practice and may fail on many devices or Android versions due to **Scoped Storage** restrictions.
+
+- **Best Practice:** Always use the [path_provider](https://pub.dev/packages/path_provider) package to fetch a safe, writable directory.
+- **Recommended Directory:** Use `getTemporaryDirectory()` or `getApplicationDocumentsDirectory()`.
+
 #### Setting description while recording
 To avoid cancelling any active recording when calling `setDescriptionWhileRecording`,
 you must start the recording with `startVideoCapturing` with `enablePersistentRecording` set to `true`.
+
 
 ### Notes on image streaming
 

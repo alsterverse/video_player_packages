@@ -14,10 +14,7 @@ class GoogleFontsDescriptor {
   /// The [familyWithVariant] describes the font family and variant, while
   /// the [file] contains information about the font file such as its hash and
   /// expected length.
-  const GoogleFontsDescriptor({
-    required this.familyWithVariant,
-    required this.file,
-  });
+  const GoogleFontsDescriptor({required this.familyWithVariant, required this.file});
 
   /// The font family and variant information.
   ///
@@ -38,7 +35,7 @@ class GoogleFontsFile {
   ///
   /// The [expectedFileHash] is used to verify the integrity of the downloaded
   /// file, and [expectedLength] is checked to ensure the file size is correct.
-  GoogleFontsFile(this.expectedFileHash, this.expectedLength);
+  const GoogleFontsFile(this.expectedFileHash, this.expectedLength);
 
   /// The expected hash of the font file for validation.
   final String expectedFileHash;

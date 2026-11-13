@@ -1,6 +1,67 @@
 ## NEXT
 
-* Updates minimum supported SDK version to Flutter 3.32/Dart 3.8.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 1.3.1
+
+* Fixes a `font-family` list, such as `"Roboto, sans-serif"`, being used as a
+  single family name. The first family is used and the others become fallbacks.
+
+## 1.3.0
+
+* Adds support for SVG filters (`feGaussianBlur`, `feOffset`, `feMerge`, and `feMergeNode`).
+
+## 1.2.7
+
+* Fixes uncaught surface-creation throwables (such as bare JavaScript strings
+  or engine errors) from `useHtmlRenderObject()` so `VectorGraphic` widgets
+  reliably fall back to the HTML render object and cache the fallback instead
+  of crashing repeatedly (flutter/flutter#189451).
+
+## 1.2.6
+
+* Fixes `<text>` not being drawn when the ambient text direction is RTL.
+
+## 1.2.5
+
+* Fixes a leak of the decoded picture when a `VectorGraphic` is removed before
+  loading finishes.
+
+## 1.2.4
+
+* Fixes an unhandled exception reported for every asynchronous loading failure,
+  such as an asset that fails to load, even when `errorBuilder` handles it.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+* Removes unnecessary Material imports.
+* Fixes deprecation lints.
+
+## 1.2.3
+
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+* Fixes a crash when a `semanticsLabel` is provided without an ambient `Directionality` (flutter/flutter#175532).
+
+## 1.2.2
+
+* Fixes `text-anchor` on `<text>` with multiple `<tspan>` children. The
+  anchor now applies to the entire anchored chunk as required by the SVG
+  spec, instead of independently to each tspan.
+
+## 1.2.1
+
+* Fixes uncaught `StateError` and `NoSuchMethodError` from `useHtmlRenderObject()` on CanvasKit / iOS Safari so SVG widgets fall back to the HTML render object.
+
+## 1.2.0
+
+* Adds `imageBuilder` property to `VectorGraphic` for wrapping the loaded vector graphic widget.
+
+## 1.1.21
+
+* Corrected width/height parameter documentation in VectorGraphic widget.
+
+## 1.1.20
+
+* Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
+* Respect BoxFit parameter when viewbox is specified.
 
 ## 1.1.19
 

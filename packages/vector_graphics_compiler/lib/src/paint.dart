@@ -37,10 +37,7 @@ class Color {
   /// Each part is represented by an integer from 0..255.
   const Color.fromARGB(int a, int r, int g, int b)
     : value =
-          (((a & 0xff) << 24) |
-              ((r & 0xff) << 16) |
-              ((g & 0xff) << 8) |
-              ((b & 0xff) << 0)) &
+          (((a & 0xff) << 24) | ((r & 0xff) << 16) | ((g & 0xff) << 8) | ((b & 0xff) << 0)) &
           0xFFFFFFFF;
 
   /// Fully opaque black.
@@ -400,7 +397,7 @@ class Paint {
   /// Creates a new collection of painting attributes.
   ///
   /// See [Paint].
-  const Paint({BlendMode? blendMode, this.stroke, this.fill})
+  const Paint({BlendMode? blendMode, this.stroke, this.fill, this.filterBlurX, this.filterBlurY})
     : blendMode = blendMode ?? BlendMode.srcOver;
 
   /// The Porter-Duff algorithm to use when compositing this painting object
@@ -421,15 +418,23 @@ class Paint {
   /// followed by stroke.
   final Fill? fill;
 
+  /// The Gaussian blur sigma X to apply to this paint, if any.
+  final double? filterBlurX;
+
+  /// The Gaussian blur sigma Y to apply to this paint, if any.
+  final double? filterBlurY;
+
   @override
-  int get hashCode => Object.hash(blendMode, stroke, fill);
+  int get hashCode => Object.hash(blendMode, stroke, fill, filterBlurX, filterBlurY);
 
   @override
   bool operator ==(Object other) {
     return other is Paint &&
         other.blendMode == blendMode &&
         other.stroke == stroke &&
-        other.fill == fill;
+        other.fill == fill &&
+        other.filterBlurX == filterBlurX &&
+        other.filterBlurY == filterBlurY;
   }
 
   /// Apply the bounds to the given paint.
@@ -446,6 +451,8 @@ class Paint {
       blendMode: blendMode,
       stroke: stroke,
       fill: Fill(color: fill!.color, shader: newShader),
+      filterBlurX: filterBlurX,
+      filterBlurY: filterBlurY,
     );
   }
 
@@ -459,6 +466,12 @@ class Paint {
     if (fill != null) {
       buffer.write('${leading}fill: $fill');
     }
+    if (filterBlurX != null) {
+      buffer.write('${leading}filterBlurX: $filterBlurX');
+    }
+    if (filterBlurY != null) {
+      buffer.write('${leading}filterBlurY: $filterBlurY');
+    }
     buffer.write(')');
     return buffer.toString();
   }
@@ -470,14 +483,8 @@ class Paint {
 @immutable
 class Stroke {
   /// Creates a new collection of stroking properties.
-  const Stroke({
-    Color? color,
-    this.shader,
-    this.cap,
-    this.join,
-    this.miterLimit,
-    this.width,
-  }) : color = color ?? Color.opaqueBlack;
+  const Stroke({Color? color, this.shader, this.cap, this.join, this.miterLimit, this.width})
+    : color = color ?? Color.opaqueBlack;
 
   /// The color to use for this stroke.
   ///
@@ -507,15 +514,8 @@ class Stroke {
   final double? width;
 
   @override
-  int get hashCode => Object.hash(
-    PaintingStyle.stroke,
-    color,
-    shader,
-    cap,
-    join,
-    miterLimit,
-    width,
-  );
+  int get hashCode =>
+      Object.hash(PaintingStyle.stroke, color, shader, cap, join, miterLimit, width);
 
   @override
   bool operator ==(Object other) {
@@ -1233,14 +1233,7 @@ enum TileMode {
 @immutable
 class TextPosition {
   /// See [TextPosition].
-  const TextPosition({
-    this.x,
-    this.y,
-    this.dx,
-    this.dy,
-    this.reset = false,
-    this.transform,
-  });
+  const TextPosition({this.x, this.y, this.dx, this.dy, this.reset = false, this.transform});
 
   /// The horizontal axis coordinate for the current text position.
   ///
@@ -1516,3 +1509,14 @@ const FontWeight normalFontWeight = FontWeight.w400;
 
 /// A commonly used font weight that is heavier than normal.
 const FontWeight boldFontWeight = FontWeight.w700;
+
+/// The type of mask to apply.
+///
+/// Corresponds to the SVG `mask-type` attribute.
+enum MaskType {
+  /// An alpha mask where the alpha channel of the mask determines the opacity.
+  alpha,
+
+  /// A luminance mask where the luminance of the mask determines the opacity.
+  luminance,
+}

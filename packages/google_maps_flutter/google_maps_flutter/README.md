@@ -8,18 +8,17 @@ A Flutter plugin that provides a [Google Maps](https://developers.google.com/map
 
 |             | Android | iOS     | Web                              |
 |-------------|---------|---------|----------------------------------|
-| **Support** | SDK 24+ | iOS 14+ | Same as [Flutter's][web-support] |
+| **Support** | SDK 24+ | iOS 15+ | Same as [Flutter's][web-support] |
 
 [web-support]: https://docs.flutter.dev/reference/supported-platforms
 
 **Important:** Not all functionality is supported on all platforms.
-To check details, please read the README files
+For details, please read the README files
 of the endorsed platform packages:
 
 * [`google_maps_flutter_android` README](https://pub.dev/packages/google_maps_flutter_android)
 * [`google_maps_flutter_ios` README](https://pub.dev/packages/google_maps_flutter_ios)
 * [`google_maps_flutter_web` README](https://pub.dev/packages/google_maps_flutter_web)
-
 
 ## Getting Started
 
@@ -37,86 +36,49 @@ of the endorsed platform packages:
 
 For more details, see [Getting started with Google Maps Platform](https://developers.google.com/maps/gmp-get-started).
 
-### Android
+### Platform Setup
 
-1. Specify your API key in the application manifest `android/app/src/main/AndroidManifest.xml`:
+* **Android**: Please see [the `google_maps_flutter_android` README](https://pub.dev/packages/google_maps_flutter_android#setup).
+* **iOS**: Please select an SDK version, and see the relevant README. Note that
+  the default implementation, `google_maps_flutter_ios`, is a legacy
+  implementation that does not support Swift Package Manager, and will not
+  receive future updates. All clients should migrate to one of the following
+  implementations:
+  * [SDK 10.x (iOS 16+)](https://pub.dev/packages/google_maps_flutter_ios_sdk10#setup)
+  * [SDK 9.x (iOS 15+)](https://pub.dev/packages/google_maps_flutter_ios_sdk9#setup)
+* **Web**: Please see [the `google_maps_flutter_web` README](https://pub.dev/packages/google_maps_flutter_web#setup).
 
-   ```xml
-   <manifest ...
-     <application ...
-       <meta-data android:name="com.google.android.geo.API_KEY"
-                  android:value="YOUR KEY HERE"/>
-   ```
+### Advanced Markers
 
-2. Read about Android-specific features and limitations in the
-   [`google_maps_flutter_android` README](https://pub.dev/packages/google_maps_flutter_android).
+[Advanced Markers](https://developers.google.com/maps/documentation/javascript/advanced-markers/overview) 
+are map markers that offer extra customization options. 
+[Map ID](https://developers.google.com/maps/documentation/get-map-id) is 
+required in order to use Advanced Markers:
 
-### iOS
+<?code-excerpt "readme_sample_advanced_markers.dart (AdvancedMarkersSample)"?>
+```dart
+body: GoogleMap(
+  // Set your Map ID.
+  mapId: 'my-map-id',
+  // Enable support for Advanced Markers.
+  markerType: GoogleMapMarkerType.advancedMarker,
+  initialCameraPosition: _kGooglePlex,
+),
+```
 
-1. Specify your API key in the application delegate `ios/Runner/AppDelegate.m`:
-
-   ```objectivec
-   #include "AppDelegate.h"
-   #include "GeneratedPluginRegistrant.h"
-   #import "GoogleMaps/GoogleMaps.h"
-
-   @implementation AppDelegate
-
-   - (BOOL)application:(UIApplication *)application
-       didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-     [GMSServices provideAPIKey:@"YOUR KEY HERE"];
-     [GeneratedPluginRegistrant registerWithRegistry:self];
-     return [super application:application didFinishLaunchingWithOptions:launchOptions];
-   }
-   @end
-   ```
-
-   Or in your Swift code, specify your API key
-   in the application delegate `ios/Runner/AppDelegate.swift`:
-
-   ```swift
-   import UIKit
-   import Flutter
-   import GoogleMaps
-
-   @UIApplicationMain
-   @objc class AppDelegate: FlutterAppDelegate {
-     override func application(
-       _ application: UIApplication,
-       didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-     ) -> Bool {
-       GMSServices.provideAPIKey("YOUR KEY HERE")
-       GeneratedPluginRegistrant.register(with: self)
-       return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-     }
-   }
-   ```
-
-2. Read about iOS-specific features and limitations in the
-   [`google_maps_flutter_ios` README](https://pub.dev/packages/google_maps_flutter_ios).
-
-### Web
-
-1. Add the following to the `<head>` section of `web/index.html`:
-
-   ```html
-   <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
-   ```
-
-2. Read about web-specific features and limitations in the
-   [`google_maps_flutter_web` README](https://pub.dev/packages/google_maps_flutter_web).
-
-### All
-
-You can now add a `GoogleMap` widget to your widget tree.
-
-The map view can be controlled with the `GoogleMapController` that is passed to
-the `GoogleMap`'s `onMapCreated` callback.
-
-The `GoogleMap` widget should be used within a widget with a bounded size. Using it
-in an unbounded widget will cause the application to throw a Flutter exception.
+**WARNING:** On iOS, using a PinConfig may result in the marker not showing. For details and updates, see
+[this issue](https://issuetracker.google.com/issues/370536110). If this issue has not been fixed in the version of the
+Google Maps SDK you are using, consider using an asset or bitmap for customization on iOS.
 
 ### Sample Usage
+
+To show a map, add a `GoogleMap` widget to your widget tree. The map view can
+be controlled with the `GoogleMapController` that is passed to the `GoogleMap`'s
+`onMapCreated` callback.
+
+The `GoogleMap` widget should be used within a widget with a bounded size.
+Using it in an unbounded widget will cause the application to throw a Flutter
+exception.
 
 <?code-excerpt "readme_sample.dart (MapSample)"?>
 ```dart
@@ -128,8 +90,7 @@ class MapSample extends StatefulWidget {
 }
 
 class MapSampleState extends State<MapSample> {
-  final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
+  final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
 
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),

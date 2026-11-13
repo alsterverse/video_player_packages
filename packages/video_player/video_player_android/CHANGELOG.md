@@ -1,8 +1,48 @@
-## NEXT
+## 2.12.3
 
-* Migrates to Built-in Kotlin to support AGP 9 (mirrors upstream
-  flutter/packages#11798).
+* Updates Robolectric to 4.17 and adds the JVM arguments it requires for unit tests.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 2.12.2
+
+* Fixes a [bug](https://github.com/flutter/flutter/issues/132934) where videos with a pixel aspect ratio other than 1.0 (anamorphic content) reported their coded size instead of their display size, causing them to be rendered stretched.
+
+## 2.12.1
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 2.12.0
+
+* Fixes a [bug](https://github.com/flutter/flutter/issues/176575) where some videos report an incorrect duration when initialized without a video duration.
+
+## 2.11.0
+
+* Adds `backBufferDurationMs` to `CreationOptions` to configure ExoPlayer `DefaultLoadControl` back buffer duration.
+
+## 2.10.0
+
+* Implements `getVideoTracks()` and `selectVideoTrack()` methods for video track (quality) selection using ExoPlayer.
+
+## 2.9.7
+
+* Fixes a [bug](https://github.com/flutter/flutter/issues/184241) where the video freezes after returning from a full-screen transition on Android.
+
+## 2.9.6
+
+* Migrates to Built-in Kotlin to support AGP 9.
 * Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 2.9.5
+
+* Updates build files from Groovy to Kotlin.
+
+## 2.9.4
+
+* Updates `androidx.media3` to 1.9.2.
+
+## 2.9.3
+
+* Updates `androidx.media3` to 1.9.1.
 
 ## 2.9.2
 
@@ -201,7 +241,6 @@
 ## 2.7.2
 
 * Updates minimum supported SDK version to Flutter 3.24/Dart 3.5.
-
 * Re-adds Impeller support.
 
 ## 2.7.1

@@ -15,11 +15,12 @@ import 'package:pigeon/pigeon.dart';
     gobjectHeaderOut: 'linux/messages.g.h',
     gobjectSourceOut: 'linux/messages.g.cc',
     gobjectOptions: GObjectOptions(),
-    kotlinOut:
-        'android/app/src/main/kotlin/dev/flutter/pigeon_example_app/Messages.g.kt',
+    kotlinOut: 'android/app/src/main/kotlin/dev/flutter/pigeon_example_app/Messages.g.kt',
     kotlinOptions: KotlinOptions(),
     javaOut: 'android/app/src/main/java/io/flutter/plugins/Messages.java',
     javaOptions: JavaOptions(),
+    // Note that swiftOut can also be a list to output to separate iOS and macOS
+    // locations if required.
     swiftOut: 'ios/Runner/Messages.g.swift',
     swiftOptions: SwiftOptions(),
     objcHeaderOut: 'macos/Runner/messages.g.h',
@@ -37,7 +38,7 @@ enum Code { one, two }
 class MessageData {
   MessageData({required this.code, required this.data});
   String? name;
-  String? description;
+  String? messageDescription;
   Code code;
   Map<String, String> data;
 }
@@ -54,6 +55,7 @@ abstract class ExampleHostApi {
   @async
   bool sendMessage(MessageData message);
 }
+
 // #enddocregion host-definitions
 
 // #docregion flutter-definitions
@@ -63,3 +65,10 @@ abstract class MessageFlutterApi {
 }
 
 // #enddocregion flutter-definitions
+
+// #docregion constants
+const String aStringConstant = 'stringConstantValue';
+const int anIntConstant = 42;
+const double aDoubleConstant = 3.14;
+const bool aBoolConstant = true;
+// #enddocregion constants

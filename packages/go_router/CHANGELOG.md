@@ -1,3 +1,78 @@
+## 18.1.4
+
+- Fixes the system back button being ignored after switching away from a `StatefulShellRoute` branch that still has an active sub-route.
+
+## 18.1.3
+
+- Fixes path parameter regex parsing to support nested parentheses, grouping constructs, and lookahead assertions in GoRoute paths.
+
+## 18.1.2
+
+- Fixes web text fields losing focus when an autocomplete overlay opens inside a shell route.
+
+## 18.1.1
+
+- Fixes unrelated async errors started during redirects being wrapped as `GoException`.
+- Fixes `ShellRoute` page and navigator key collisions when pushing between nested shell routes.
+- Preserves and updates loaded `StatefulShellRoute` branches when the routing configuration changes, including resetting removed branch locations.
+- Preserves branch and root navigator observers when rebuilding inactive or preloaded shell branches.
+- Adds a link from `ShellRoute` to `StatefulShellRoute` for navigation with persistent branch state.
+
+## 18.1.0
+
+- Adds `clipBehavior` to `ShellRoute` and `StatefulShellBranch`, forwarded to the nested `Navigator`.
+
+## 18.0.2
+
+- Fixes `ShellRoute`/`StatefulShellRoute` shell chrome (e.g. a side rail or app bar painted before the routed child) being dropped from the semantics tree by the active route's `ModalBarrier`.
+Fixes pushed routes nested within a shell being lost when a dynamic routing configuration changes.
+
+## 18.0.1
+
+Clarifies `onEnter` documentation regarding evaluation order relative to `redirect:` chains.
+
+## 18.0.0
+
+- Migrates to material_ui and cupertino_ui.
+- Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 17.5.0
+
+- Adds route `metadata` support, including inheritance and override behavior with exposure on `GoRouterState`.
+- Documents support for regular expression constraints in GoRoute path parameters.
+
+## 17.4.0
+
+- Fixes onExit ignored for GoRoute nested inside ShellRoute
+- Adds `BlockedInitialNavigationException` (a `GoException` subtype), raised when the initial navigation is blocked by `onEnter` with no prior route to restore, so apps can distinguish this case in `onException` without string matching.
+
+## 17.3.0
+
+- Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+- Adds `hasOverriddenOnExit` parameter to `GoRouteData.$route` and `RelativeGoRouteData.$route` helper methods for type-safe routes. When set to `true`, enables custom `onExit` callback invocation from route data classes extending `GoRouteData` or `RelativeGoRouteData` when the route is removed from the navigation stack.
+
+## 17.2.3
+
+- Fixes an assertion failure when navigating to URLs with hash fragments missing a leading slash.
+
+## 17.2.2
+
+- Fixes `pop()` restoring stale configuration when route has `onExit`, which could cause the popped route to reappear with async redirects.
+
+## 17.2.1
+
+- Fixes chained top-level redirects not being fully resolved (e.g. `/ → /a → /b` stopping at `/a`).
+- Fixes route-level redirects not triggering top-level redirect re-evaluation on the new location.
+
+## 17.2.0
+
+- Fixes `Block.then()` and `Allow.then()` navigation callbacks being silently lost when triggered by `refreshListenable` due to re-entrant route processing.
+- Adds `encoder`, `decoder` and `compare` parameters to `TypedQueryParameter` annotation for custom encoding, decoding and comparison of query parameters in `TypedGoRoute` constructors.
+
+## 17.1.0
+
+- Adds `TypedQueryParameter` annotation to override parameter names in `TypedGoRoute` constructors.
+
 ## 17.0.1
 
 - Fixes an issue where `onEnter` blocking causes navigation stack loss (stale state restoration).

@@ -73,9 +73,9 @@ class AssetBytesLoader extends BytesLoader {
 
   @override
   Future<ByteData> loadBytes(BuildContext? context) {
-    return _resolveBundle(context).load(
-      packageName == null ? assetName : 'packages/$packageName/$assetName',
-    );
+    return _resolveBundle(
+      context,
+    ).load(packageName == null ? assetName : 'packages/$packageName/$assetName');
   }
 
   @override
@@ -91,11 +91,7 @@ class AssetBytesLoader extends BytesLoader {
 
   @override
   Object cacheKey(BuildContext? context) {
-    return _AssetByteLoaderCacheKey(
-      assetName,
-      packageName,
-      _resolveBundle(context),
-    );
+    return _AssetByteLoaderCacheKey(assetName, packageName, _resolveBundle(context));
   }
 
   @override
@@ -108,11 +104,7 @@ class AssetBytesLoader extends BytesLoader {
 // value of `DefaultAssetBundle.of(context)`.
 @immutable
 class _AssetByteLoaderCacheKey {
-  const _AssetByteLoaderCacheKey(
-    this.assetName,
-    this.packageName,
-    this.assetBundle,
-  );
+  const _AssetByteLoaderCacheKey(this.assetName, this.packageName, this.assetBundle);
 
   final String assetName;
   final String? packageName;
@@ -140,8 +132,7 @@ class _AssetByteLoaderCacheKey {
 /// This loader does not cache bytes requested from the network.
 class NetworkBytesLoader extends BytesLoader {
   /// Creates a new loading context for network bytes.
-  const NetworkBytesLoader(this.url, {this.headers, http.Client? httpClient})
-    : _httpClient = httpClient;
+  const NetworkBytesLoader(this.url, {this.headers, this._httpClient});
 
   /// The HTTP headers to use for the network request.
   final Map<String, String>? headers;
@@ -163,9 +154,7 @@ class NetworkBytesLoader extends BytesLoader {
 
   @override
   bool operator ==(Object other) {
-    return other is NetworkBytesLoader &&
-        other.headers == headers &&
-        other.url == url;
+    return other is NetworkBytesLoader && other.headers == headers && other.url == url;
   }
 
   @override

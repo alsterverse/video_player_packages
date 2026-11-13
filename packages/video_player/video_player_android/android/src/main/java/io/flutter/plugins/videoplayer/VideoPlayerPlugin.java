@@ -14,7 +14,6 @@ import io.flutter.FlutterInjector;
 import io.flutter.Log;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.BinaryMessenger;
-import io.flutter.plugins.videoplayer.LoadMessage;
 import io.flutter.plugins.videoplayer.platformview.PlatformVideoViewFactory;
 import io.flutter.plugins.videoplayer.platformview.PlatformViewVideoPlayer;
 import io.flutter.plugins.videoplayer.texture.TextureVideoPlayer;
@@ -90,12 +89,15 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
 
     long id = nextPlayerIdentifier++;
     final String streamInstance = Long.toString(id);
+    VideoPlayerOptions playerOptions = new VideoPlayerOptions(sharedOptions);
+    playerOptions.backBufferDurationMs = options.getBackBufferDurationMs();
+
     VideoPlayer videoPlayer =
         PlatformViewVideoPlayer.create(
             flutterState.applicationContext,
             VideoPlayerEventCallbacks.bindTo(flutterState.binaryMessenger, streamInstance),
             videoAsset,
-            sharedOptions);
+            playerOptions);
 
     registerPlayerInstance(videoPlayer, id);
     return id;
@@ -109,6 +111,9 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
     long id = nextPlayerIdentifier++;
     final String streamInstance = Long.toString(id);
     TextureRegistry.SurfaceProducer handle = flutterState.textureRegistry.createSurfaceProducer();
+    VideoPlayerOptions playerOptions = new VideoPlayerOptions(sharedOptions);
+    playerOptions.backBufferDurationMs = options.getBackBufferDurationMs();
+
     VideoPlayer videoPlayer =
         TextureVideoPlayer.create(
             flutterState.applicationContext,
@@ -116,7 +121,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
             flutterState.textureRegistry,
             handle,
             videoAsset,
-            sharedOptions);
+            playerOptions);
 
     registerPlayerInstance(videoPlayer, id);
     VideoPlayerDiag.log(
@@ -182,14 +187,14 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
 
   public void load(@NonNull LoadMessage message) {
     VideoPlayer player = getPlayer(message.getPlayerId());
-    final VideoAsset videoAsset = videoAssetWithOptions(
-      new CreationOptions(
-        message.getUri(),
-        message.getFormatHint(),
-        message.getHttpHeaders(),
-        message.getUserAgent()
-      )
-    );
+    final VideoAsset videoAsset =
+        videoAssetWithOptions(
+            new CreationOptions(
+                message.getUri(),
+                message.getFormatHint(),
+                message.getHttpHeaders(),
+                message.getUserAgent(),
+                null));
     VideoPlayerDiag.log(
         "ev=load.begin pid=%d url=%s",
         message.getPlayerId(), VideoPlayerDiag.shortUrl(message.getUri()));

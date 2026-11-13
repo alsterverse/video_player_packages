@@ -1,3 +1,70 @@
+## 0.5.5
+
+* Updates Google Play Billing Library from 8.0.0 to 9.1.0.
+* Raises the minimum supported Android SDK version to 23, as required by Google
+  Play Billing Library 9. Apps targeting a lower `minSdkVersion` will fail to
+  merge the manifest; Flutter's own minimum is already 24.
+* **Behaviour change:** when the Play Store app is blocked by the system (for
+  example, in OEM-customized kids mode), Google Play Billing Library 9 reports
+  `BillingResponse.billingUnavailable` where it previously reported
+  `BillingResponse.error`. Apps that branch on the response code, or that match
+  on the stringified code in `IAPError.message`, must handle the new value.
+* Corrects the documentation for `BillingResponse.billingUnavailable` and
+  `BillingResponse.serviceUnavailable`, which described the wrong conditions.
+
+## 0.5.4
+
+* Fixes a crash (`IllegalStateException: Reply already submitted`) when the
+  Play Billing library invokes a response listener more than once for a single
+  call.
+
+## 0.5.3+1
+
+* Updates Robolectric to 4.17 and adds the JVM arguments it requires for unit tests.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.5.3
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 0.5.2
+
+* Adds support for passing an obfuscated profile ID in `GooglePlayPurchaseParam`.
+
+## 0.5.1
+
+* Adds support to overlay billing related messages. See `InAppPurchaseAndroidPlatformAddition.showInAppMessages`.
+
+## 0.5.0+2
+
+* Bumps the androidx group across 10 directories with 1 update.
+
+## 0.5.0+1
+
+* Migrates to Built-in Kotlin to support AGP 9.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.5.0
+
+* Updates Google Play Billing Library from 7.1.1 to 8.0.0.
+* **BREAKING CHANGES**:
+  * Removes `queryPurchaseHistory` and its wrapper `queryPurchaseHistoryAsync`. Use `queryPurchases` instead.
+* Adds support for `subResponseCode` in `BillingResultWrapper`.
+* Adds support for `oneTimePurchaseOfferDetailsList` in `ProductDetailsWrapper`.
+* Adds support for `unfetchedProductList` in `ProductDetailsResponseWrapper` to handle product IDs that could not be fetched.
+
+## 0.4.0+11
+
+* Updates internal implementation to use Kotlin Pigeon.
+
+## 0.4.0+10
+
+* Fixes dartdoc comments that accidentally used HTML.
+
+## 0.4.0+9
+
+* Updates build files from Groovy to Kotlin.
+
 ## 0.4.0+8
 
 * Bumps com.android.tools.build:gradle from 8.12.1 to 8.13.1.

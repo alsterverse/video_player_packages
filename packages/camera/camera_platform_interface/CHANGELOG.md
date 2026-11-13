@@ -1,6 +1,27 @@
 ## NEXT
 
-* Updates minimum supported SDK version to Flutter 3.32/Dart 3.8.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 2.15.0
+
+* Adds `isZeroShutterLagSupported` and `setZeroShutterLagEnabled` for
+  zero-shutter-lag still image capture on platforms that support it.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 2.14.0
+
+* Adds `videoOutputPath` support to `VideoCaptureOptions`.
+
+## 2.13.1
+
+* Changes the default implementation of `setJpegImageQuality` to a no-op so that
+  platforms that do not support it ignore the setting instead of throwing.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 2.13.0
+
+* Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
+* Adds `setJpegImageQuality` for controlling JPEG compression quality.
 
 ## 2.12.0
 

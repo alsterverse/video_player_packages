@@ -7,8 +7,7 @@
 import 'dart:io';
 import 'dart:mirrors';
 
-import 'package:analyzer/dart/analysis/analysis_context.dart'
-    show AnalysisContext;
+import 'package:analyzer/dart/analysis/analysis_context.dart' show AnalysisContext;
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart'
     show AnalysisContextCollection;
 import 'package:analyzer/dart/analysis/results.dart' show ParsedUnitResult;
@@ -22,8 +21,8 @@ import 'package:path/path.dart' as path;
 import 'ast.dart';
 import 'cpp/cpp_generator.dart';
 import 'dart/dart_generator.dart';
-import 'generator_tools.dart';
 import 'generator_tools.dart' as generator_tools;
+import 'generator_tools.dart';
 import 'gobject/gobject_generator.dart';
 import 'java/java_generator.dart';
 import 'kotlin/kotlin_generator.dart';
@@ -35,7 +34,8 @@ import 'types/task_queue.dart';
 export 'types/task_queue.dart' show TaskQueueType;
 
 class _Asynchronous {
-  const _Asynchronous();
+  const _Asynchronous({this.useCallback = false});
+  final bool useCallback;
 }
 
 class _Attached {
@@ -46,8 +46,11 @@ class _Static {
   const _Static();
 }
 
-/// Metadata to annotate a Api method as asynchronous
+/// Metadata to annotate an Api method as asynchronous using native coroutines/async-await.
 const Object async = _Asynchronous();
+
+/// Metadata to annotate an Api method as asynchronous using callback-based completions.
+const Object asyncCallback = _Asynchronous(useCallback: true);
 
 /// Metadata to annotate the field of a ProxyApi as an Attached Field.
 ///
@@ -88,7 +91,7 @@ class ConfigurePigeon {
   final PigeonOptions options;
 }
 
-/// Metadata to annotate a Pigeon API implemented by the host-platform.
+/// Metadata to annotate a pigeon API implemented by the host-platform.
 ///
 /// The abstract class with this annotation groups a collection of Dart↔host
 /// interop methods. These methods are invoked by Dart and are received by a
@@ -97,8 +100,7 @@ class ConfigurePigeon {
 class HostApi {
   /// Parametric constructor for [HostApi].
   const HostApi({
-    @Deprecated('Mock/fake the generated Dart API instead.')
-    this.dartHostTestHandler,
+    @Deprecated('Mock/fake the generated Dart API instead.') this.dartHostTestHandler,
   });
 
   /// The name of an interface generated for tests. Implement this
@@ -110,7 +112,7 @@ class HostApi {
   /// to specify where to generate the test file.
   ///
   /// Prefer to use a mock of the real [HostApi] with a mocking library for unit
-  /// tests.  Generating this Dart handler is sometimes useful in integration
+  /// tests. Generating this Dart handler is sometimes useful in integration
   /// testing.
   ///
   /// Defaults to `null` in which case no handler will be generated.
@@ -118,7 +120,7 @@ class HostApi {
   final String? dartHostTestHandler;
 }
 
-/// Metadata to annotate a Pigeon API implemented by Flutter.
+/// Metadata to annotate a pigeon API implemented by Flutter.
 ///
 /// The abstract class with this annotation groups a collection of Dart↔host
 /// interop methods. These methods are invoked by the host-platform (such as in
@@ -236,11 +238,13 @@ class TaskQueue {
   final TaskQueueType type;
 }
 
-/// Options used when configuring Pigeon.
+/// Options used when configuring pigeon.
 class PigeonOptions {
   /// Creates a instance of PigeonOptions
   const PigeonOptions({
     this.input,
+    this.appDirectory,
+    this.configDirectory,
     this.dartOut,
     @Deprecated('Mock/fake the generated Dart API instead.') this.dartTestOut,
     this.objcHeaderOut,
@@ -263,11 +267,20 @@ class PigeonOptions {
     this.astOut,
     this.debugGenerators,
     this.basePath,
-    String? dartPackageName,
-  }) : _dartPackageName = dartPackageName;
+    this.fileSpecificClassNameComponent,
+    this._dartPackageName,
+    this.ignoreLints = true,
+    this.nativeInteropTransport,
+  });
 
   /// Path to the file which will be processed.
   final String? input;
+
+  /// The directory that the app exists in, this is required for JNI and FFI APIs.
+  final String? appDirectory;
+
+  /// The directory where generated configuration files for native interop tooling (such as JNIgen and FFIgen) will be written.
+  final String? configDirectory;
 
   /// Path to the Dart file that will be generated.
   final String? dartOut;
@@ -291,8 +304,23 @@ class PigeonOptions {
   /// Options that control how Java will be generated.
   final JavaOptions? javaOptions;
 
-  /// Path to the swift file that will be generated.
-  final String? swiftOut;
+  /// Path to the swift file(s) that will be generated.
+  ///
+  /// Can be either a [String] for a single file, or an [Iterable<String>] for
+  /// multiple files.
+  final Object? swiftOut;
+
+  /// Returns all output paths for Swift from [swiftOut].
+  Iterable<String>? get swiftOutPaths {
+    final Object? out = swiftOut;
+    if (out is String) {
+      return <String>[out];
+    }
+    if (out is Iterable) {
+      return out.whereType<String>();
+    }
+    return null;
+  }
 
   /// Options that control how Swift will be generated.
   final SwiftOptions? swiftOptions;
@@ -339,11 +367,28 @@ class PigeonOptions {
   /// The name of the package the pigeon files will be used in.
   final String? _dartPackageName;
 
+  /// Whether to ignore lint violations in generated Dart code.
+  final bool ignoreLints;
+
+  /// A String to augment class names to avoid cross-file collisions.
+  final String? fileSpecificClassNameComponent;
+
+  /// How native interop moves values between Dart and the host platform.
+  ///
+  /// Only applies to files that use `KotlinOptions.useJni` or
+  /// `SwiftOptions.useFfi`. Defaults to [NativeInteropTransport.hybrid];
+  /// [NativeInteropTransport.objects] is retained for testing, benchmarking,
+  /// and future lazy-access support.
+  @visibleForTesting
+  final NativeInteropTransport? nativeInteropTransport;
+
   /// Creates a [PigeonOptions] from a Map representation where:
   /// `x = PigeonOptions.fromMap(x.toMap())`.
   static PigeonOptions fromMap(Map<String, Object> map) {
     return PigeonOptions(
       input: map['input'] as String?,
+      appDirectory: map['appDirectory'] as String?,
+      configDirectory: map['configDirectory'] as String?,
       dartOut: map['dartOut'] as String?,
       dartTestOut: map['dartTestOut'] as String?,
       objcHeaderOut: map['objcHeaderOut'] as String?,
@@ -355,7 +400,9 @@ class PigeonOptions {
       javaOptions: map.containsKey('javaOptions')
           ? JavaOptions.fromMap(map['javaOptions']! as Map<String, Object>)
           : null,
-      swiftOut: map['swiftOut'] as String?,
+      swiftOut: map['swiftOut'] is Iterable
+          ? (map['swiftOut']! as Iterable<dynamic>).cast<String>().toList()
+          : map['swiftOut'] as String?,
       swiftOptions: map.containsKey('swiftOptions')
           ? SwiftOptions.fromList(map['swiftOptions']! as Map<String, Object>)
           : null,
@@ -371,9 +418,7 @@ class PigeonOptions {
       gobjectHeaderOut: map['gobjectHeaderOut'] as String?,
       gobjectSourceOut: map['gobjectSourceOut'] as String?,
       gobjectOptions: map.containsKey('gobjectOptions')
-          ? GObjectOptions.fromMap(
-              map['gobjectOptions']! as Map<String, Object>,
-            )
+          ? GObjectOptions.fromMap(map['gobjectOptions']! as Map<String, Object>)
           : null,
       dartOptions: map.containsKey('dartOptions')
           ? DartOptions.fromMap(map['dartOptions']! as Map<String, Object>)
@@ -382,7 +427,11 @@ class PigeonOptions {
       astOut: map['astOut'] as String?,
       debugGenerators: map['debugGenerators'] as bool?,
       basePath: map['basePath'] as String?,
+      fileSpecificClassNameComponent: map['fileSpecificClassNameComponent'] as String?,
       dartPackageName: map['dartPackageName'] as String?,
+      nativeInteropTransport: NativeInteropTransport.fromName(
+        map['nativeInteropTransport'] as String?,
+      ),
     );
   }
 
@@ -391,6 +440,8 @@ class PigeonOptions {
   Map<String, Object> toMap() {
     final result = <String, Object>{
       if (input != null) 'input': input!,
+      if (appDirectory != null) 'appDirectory': appDirectory!,
+      if (configDirectory != null) 'configDirectory': configDirectory!,
       if (dartOut != null) 'dartOut': dartOut!,
       if (dartTestOut != null) 'dartTestOut': dartTestOut!,
       if (objcHeaderOut != null) 'objcHeaderOut': objcHeaderOut!,
@@ -413,7 +464,10 @@ class PigeonOptions {
       if (astOut != null) 'astOut': astOut!,
       if (debugGenerators != null) 'debugGenerators': debugGenerators!,
       if (basePath != null) 'basePath': basePath!,
+      if (fileSpecificClassNameComponent != null)
+        'fileSpecificClassNameComponent': fileSpecificClassNameComponent!,
       if (_dartPackageName != null) 'dartPackageName': _dartPackageName,
+      if (nativeInteropTransport != null) 'nativeInteropTransport': nativeInteropTransport!.name,
     };
     return result;
   }
@@ -421,7 +475,7 @@ class PigeonOptions {
   /// Overrides any non-null parameters from [options] into this to make a new
   /// [PigeonOptions].
   PigeonOptions merge(PigeonOptions options) {
-    return PigeonOptions.fromMap(mergeMaps(toMap(), options.toMap()));
+    return PigeonOptions.fromMap(mergePigeonMaps(toMap(), options.toMap()));
   }
 
   /// Returns provided or deduced package name, throws `Exception` if none found.
@@ -451,10 +505,7 @@ class Pigeon {
   /// [AnalysisContextCollection].
   ParseResults parseFile(String inputPath, {String? sdkPath}) {
     final includedPaths = <String>[path.absolute(path.normalize(inputPath))];
-    final collection = AnalysisContextCollection(
-      includedPaths: includedPaths,
-      sdkPath: sdkPath,
-    );
+    final collection = AnalysisContextCollection(includedPaths: includedPaths, sdkPath: sdkPath);
 
     final compilationErrors = <Error>[];
     final rootBuilder = RootBuilder(File(inputPath).readAsStringSync());
@@ -471,10 +522,7 @@ class Pigeon {
               Error(
                 message: diagnostic.message,
                 filename: diagnostic.source.fullName,
-                lineNumber: calculateLineNumber(
-                  diagnostic.source.contents.data,
-                  diagnostic.offset,
-                ),
+                lineNumber: calculateLineNumber(diagnostic.source.contents.data, diagnostic.offset),
               ),
             );
           }
@@ -485,18 +533,14 @@ class Pigeon {
     if (compilationErrors.isEmpty) {
       return rootBuilder.results();
     } else {
-      return ParseResults(
-        root: Root.makeEmpty(),
-        errors: compilationErrors,
-        pigeonOptions: null,
-      );
+      return ParseResults(root: Root.makeEmpty(), errors: compilationErrors, pigeonOptions: null);
     }
   }
 
   /// String that describes how the tool is used.
   static String get usage {
     return '''
-Pigeon is a tool for generating type-safe communication code between Flutter
+pigeon is a tool for generating type-safe communication code between Flutter
 and the host platform.
 
 usage: pigeon --input <pigeon path> --dart_out <dart path> [option]*
@@ -507,6 +551,14 @@ ${_argParser.usage}''';
 
   static final ArgParser _argParser = ArgParser()
     ..addOption('input', help: 'REQUIRED: Path to pigeon file.')
+    ..addOption(
+      'app_directory',
+      help: 'The directory that the app exists in, this is required for JNI and FFI APIs.',
+    )
+    ..addOption(
+      'config_dir',
+      help: 'The directory where generated config files (JNIgen/FFIgen) will be written.',
+    )
     ..addOption(
       'dart_out',
       help:
@@ -519,24 +571,39 @@ ${_argParser.usage}''';
           'Path to generated library for Dart tests, when using '
           '@HostApi(dartHostTestHandler:).',
     )
-    ..addOption(
-      'objc_source_out',
-      help: 'Path to generated Objective-C source file (.m).',
-    )
+    ..addOption('objc_source_out', help: 'Path to generated Objective-C source file (.m).')
     ..addOption('java_out', help: 'Path to generated Java file (.java).')
-    ..addOption(
-      'java_package',
-      help: 'The package that generated Java code will be in.',
-    )
+    ..addOption('java_package', help: 'The package that generated Java code will be in.')
     ..addFlag(
       'java_use_generated_annotation',
       help: 'Adds the java.annotation.Generated annotation to the output.',
     )
     ..addOption(
+      'java_class_name',
+      help: 'The name of the class that will house all the generated classes in Java.',
+    )
+    ..addMultiOption(
       'swift_out',
-      help: 'Path to generated Swift file (.swift).',
+      help: 'Path to generated Swift file(s) (.swift).',
       aliases: const <String>['experimental_swift_out'],
     )
+    ..addOption(
+      'swift_error_class_name',
+      help: 'The name of the error class used for passing custom error parameters in Swift.',
+    )
+    ..addFlag(
+      'swift_include_error_class',
+      help: 'Whether to include the error class in Swift generation.',
+      defaultsTo: true,
+    )
+    ..addFlag('swift_use_ffi', help: 'Whether to use FFI for Swift generation.')
+    ..addOption('swift_ffi_module_name', help: 'The FFI module name for Swift generation.')
+    ..addOption(
+      'swift_app_directory',
+      help: 'The directory that the app exists in, this is required for Swift FFI APIs.',
+    )
+    ..addOption('swift_apple_sdk_path', help: 'The path to the apple sdk for Swift generation.')
+    ..addOption('swift_apple_sdk_triple', help: 'The apple sdk triple for Swift generation.')
     ..addOption(
       'kotlin_out',
       help: 'Path to generated Kotlin file (.kt).',
@@ -546,6 +613,33 @@ ${_argParser.usage}''';
       'kotlin_package',
       help: 'The package that generated Kotlin code will be in.',
       aliases: const <String>['experimental_kotlin_package'],
+    )
+    ..addFlag(
+      'kotlin_use_generated_annotation',
+      help: 'Adds javax.annotation.Generated annotation to the output.',
+    )
+    ..addFlag('kotlin_use_jni', help: 'Whether to use JNI for Kotlin generation.')
+    ..addOption(
+      'kotlin_app_directory',
+      help: 'The directory that the app exists in, this is required for Kotlin JNI APIs.',
+    )
+    ..addOption(
+      'kotlin_error_class_name',
+      help: 'The name of the error class used for passing custom error parameters in Kotlin.',
+    )
+    ..addFlag(
+      'kotlin_include_error_class',
+      help: 'Whether to include the error class in Kotlin generation.',
+      defaultsTo: true,
+    )
+    ..addOption(
+      'kotlin_file_specific_class_name_component',
+      help: 'A String to augment class names to avoid cross file collisions in Kotlin.',
+    )
+    ..addMultiOption(
+      'kotlin_jni_classpaths',
+      help:
+          'Paths to directories or JAR files containing compiled Kotlin/Java classes. Used for JNIgen to locate class definitions.',
     )
     ..addOption(
       'cpp_header_out',
@@ -557,10 +651,12 @@ ${_argParser.usage}''';
       help: 'Path to generated C++ classes file (.cpp).',
       aliases: const <String>['experimental_cpp_source_out'],
     )
+    ..addOption('cpp_namespace', help: 'The namespace that generated C++ code will be in.')
     ..addOption(
-      'cpp_namespace',
-      help: 'The namespace that generated C++ code will be in.',
+      'cpp_header_include_path',
+      help: 'The path to the header that will get placed in the C++ source file.',
     )
+    ..addOption('cpp_header_out_path', help: 'The path to the output header file location for C++.')
     ..addOption(
       'gobject_header_out',
       help: 'Path to generated GObject header file (.h).',
@@ -571,32 +667,29 @@ ${_argParser.usage}''';
       help: 'Path to generated GObject classes file (.cc).',
       aliases: const <String>['experimental_gobject_source_out'],
     )
+    ..addOption('gobject_module', help: 'The module that generated GObject code will be in.')
     ..addOption(
-      'gobject_module',
-      help: 'The module that generated GObject code will be in.',
+      'gobject_header_include_path',
+      help: 'The path to the header that will get placed in the GObject source file.',
     )
     ..addOption(
-      'objc_header_out',
-      help: 'Path to generated Objective-C header file (.h).',
+      'gobject_header_out_path',
+      help: 'The path to the output header file location for GObject.',
     )
+    ..addOption('objc_header_out', help: 'Path to generated Objective-C header file (.h).')
+    ..addOption('objc_prefix', help: 'Prefix for generated Objective-C classes and protocols.')
     ..addOption(
-      'objc_prefix',
-      help: 'Prefix for generated Objective-C classes and protocols.',
+      'objc_header_include_path',
+      help: 'The path to the header that will get placed in the ObjC source file.',
     )
     ..addOption(
       'copyright_header',
-      help:
-          'Path to file with copyright header to be prepended to generated code.',
+      help: 'Path to file with copyright header to be prepended to generated code.',
     )
-    ..addFlag(
-      'one_language',
-      hide: true,
-      help: 'Does nothing, only here to avoid breaking changes',
-    )
+    ..addFlag('one_language', hide: true, help: 'Does nothing, only here to avoid breaking changes')
     ..addOption(
       'ast_out',
-      help:
-          'Path to generated AST debugging info. (Warning: format subject to change)',
+      help: 'Path to generated AST debugging info. (Warning: format subject to change)',
     )
     ..addFlag(
       'debug_generators',
@@ -609,49 +702,101 @@ ${_argParser.usage}''';
       hide: true,
     )
     ..addOption(
-      'package_name',
-      help: 'The package that generated code will be in.',
+      'file_specific_class_name_component',
+      help: 'A String to augment class names to avoid cross file collisions.',
+    )
+    ..addOption('package_name', help: 'The package that generated code will be in.')
+    ..addOption(
+      'native_interop_transport',
+      help: 'How native interop (JNI and FFI) moves values between Dart and the host platform.',
+      allowed: NativeInteropTransport.values.map((NativeInteropTransport t) => t.name),
+      hide: true,
+    )
+    ..addFlag(
+      'ignore_lints',
+      help: 'Ignore all lint violations in generated Dart code.',
+      hide: true,
     );
 
   /// Convert command-line arguments to [PigeonOptions].
   static PigeonOptions parseArgs(List<String> args) {
     // Note: This function shouldn't perform any logic, just translate the args
-    // to PigeonOptions.  Synthesized values inside of the PigeonOption should
+    // to PigeonOptions. Synthesized values inside of the PigeonOption should
     // get set in the `run` function to accommodate users that are using the
     // `configurePigeon` function.
     final ArgResults results = _argParser.parse(args);
+    final swiftOuts = results['swift_out'] as List<String>;
 
     final opts = PigeonOptions(
       input: results['input'] as String?,
+      appDirectory: results['app_directory'] as String?,
+      configDirectory: results['config_dir'] as String?,
       dartOut: results['dart_out'] as String?,
       dartTestOut: results['dart_test_out'] as String?,
       objcHeaderOut: results['objc_header_out'] as String?,
       objcSourceOut: results['objc_source_out'] as String?,
-      objcOptions: ObjcOptions(prefix: results['objc_prefix'] as String?),
+      objcOptions: ObjcOptions(
+        prefix: results['objc_prefix'] as String?,
+        headerIncludePath: results['objc_header_include_path'] as String?,
+      ),
       javaOut: results['java_out'] as String?,
       javaOptions: JavaOptions(
         package: results['java_package'] as String?,
-        useGeneratedAnnotation:
-            results['java_use_generated_annotation'] as bool?,
+        useGeneratedAnnotation: results['java_use_generated_annotation'] as bool?,
+        className: results['java_class_name'] as String?,
       ),
-      swiftOut: results['swift_out'] as String?,
+      swiftOptions: SwiftOptions(
+        errorClassName: results['swift_error_class_name'] as String?,
+        includeErrorClass: results['swift_include_error_class'] as bool? ?? true,
+        useFfi: results['swift_use_ffi'] as bool? ?? false,
+        ffiModuleName: results['swift_ffi_module_name'] as String?,
+        appDirectory: results['swift_app_directory'] as String?,
+        configDirectory: results['config_dir'] as String?,
+        appleSdkPath: results['swift_apple_sdk_path'] as String?,
+        appleSdkTriple: results['swift_apple_sdk_triple'] as String?,
+      ),
+      swiftOut: results.wasParsed('swift_out')
+          ? (swiftOuts.length == 1 ? swiftOuts.first : swiftOuts)
+          : null,
       kotlinOut: results['kotlin_out'] as String?,
       kotlinOptions: KotlinOptions(
         package: results['kotlin_package'] as String?,
+        useGeneratedAnnotation: results['kotlin_use_generated_annotation'] as bool? ?? false,
+        useJni: results['kotlin_use_jni'] as bool? ?? false,
+        appDirectory: results['kotlin_app_directory'] as String?,
+        configDirectory: results['config_dir'] as String?,
+        errorClassName: results['kotlin_error_class_name'] as String?,
+        includeErrorClass: results['kotlin_include_error_class'] as bool? ?? true,
+        fileSpecificClassNameComponent:
+            results['kotlin_file_specific_class_name_component'] as String?,
+        jniClassPaths: results.wasParsed('kotlin_jni_classpaths')
+            ? results['kotlin_jni_classpaths'] as List<String>
+            : null,
       ),
       cppHeaderOut: results['cpp_header_out'] as String?,
       cppSourceOut: results['cpp_source_out'] as String?,
-      cppOptions: CppOptions(namespace: results['cpp_namespace'] as String?),
+      cppOptions: CppOptions(
+        namespace: results['cpp_namespace'] as String?,
+        headerIncludePath: results['cpp_header_include_path'] as String?,
+        headerOutPath: results['cpp_header_out_path'] as String?,
+      ),
       gobjectHeaderOut: results['gobject_header_out'] as String?,
       gobjectSourceOut: results['gobject_source_out'] as String?,
       gobjectOptions: GObjectOptions(
         module: results['gobject_module'] as String?,
+        headerIncludePath: results['gobject_header_include_path'] as String?,
+        headerOutPath: results['gobject_header_out_path'] as String?,
       ),
       copyrightHeader: results['copyright_header'] as String?,
       astOut: results['ast_out'] as String?,
       debugGenerators: results['debug_generators'] as bool?,
       basePath: results['base_path'] as String?,
+      fileSpecificClassNameComponent: results['file_specific_class_name_component'] as String?,
       dartPackageName: results['package_name'] as String?,
+      ignoreLints: results.flag('ignore_lints'),
+      nativeInteropTransport: NativeInteropTransport.fromName(
+        results['native_interop_transport'] as String?,
+      ),
     );
     return opts;
   }
@@ -659,8 +804,7 @@ ${_argParser.usage}''';
   /// Crawls through the reflection system looking for a configurePigeon method and
   /// executing it.
   static void _executeConfigurePigeon(PigeonOptions options) {
-    for (final LibraryMirror library
-        in currentMirrorSystem().libraries.values) {
+    for (final LibraryMirror library in currentMirrorSystem().libraries.values) {
       for (final DeclarationMirror declaration in library.declarations.values) {
         if (declaration is MethodMirror &&
             MirrorSystem.getName(declaration.simpleName) == 'configurePigeon') {
@@ -675,21 +819,17 @@ ${_argParser.usage}''';
     }
   }
 
-  /// The 'main' entrypoint used by the command-line tool.  [args] are the
-  /// command-line arguments.  The optional parameter [adapters] allows you to
+  /// The 'main' entrypoint used by the command-line tool. [args] are the
+  /// command-line arguments. The optional parameter [adapters] allows you to
   /// customize the generators that pigeon will use. The optional parameter
   /// [sdkPath] allows you to specify the Dart SDK path.
-  static Future<int> run(
-    List<String> args, {
-    List<GeneratorAdapter>? adapters,
-    String? sdkPath,
-  }) {
+  static Future<int> run(List<String> args, {List<GeneratorAdapter>? adapters, String? sdkPath}) {
     final PigeonOptions options = Pigeon.parseArgs(args);
     return runWithOptions(options, adapters: adapters, sdkPath: sdkPath);
   }
 
-  /// The 'main' entrypoint used by external packages.  [options] is
-  /// used when running the code generator.  The optional parameter [adapters] allows you to
+  /// The 'main' entrypoint used by external packages. [options] is
+  /// used when running the code generator. The optional parameter [adapters] allows you to
   /// customize the generators that pigeon will use. The optional parameter
   /// [sdkPath] allows you to specify the Dart SDK path.
   static Future<int> runWithOptions(
@@ -706,15 +846,17 @@ ${_argParser.usage}''';
     final List<GeneratorAdapter> safeGeneratorAdapters =
         adapters ??
         <GeneratorAdapter>[
-          DartGeneratorAdapter(),
-          JavaGeneratorAdapter(),
-          SwiftGeneratorAdapter(),
-          KotlinGeneratorAdapter(),
-          CppGeneratorAdapter(),
-          GObjectGeneratorAdapter(),
-          DartTestGeneratorAdapter(),
-          ObjcGeneratorAdapter(),
-          AstGeneratorAdapter(),
+          const DartGeneratorAdapter(),
+          const JavaGeneratorAdapter(),
+          const SwiftGeneratorAdapter(),
+          const FfigenConfigGeneratorAdapter(),
+          const KotlinGeneratorAdapter(),
+          const JnigenConfigGeneratorAdapter(),
+          const CppGeneratorAdapter(),
+          const GObjectGeneratorAdapter(),
+          const DartTestGeneratorAdapter(),
+          const ObjcGeneratorAdapter(),
+          const AstGeneratorAdapter(),
         ];
     _executeConfigurePigeon(options);
 
@@ -723,8 +865,7 @@ ${_argParser.usage}''';
       return 0;
     }
 
-    parseResults =
-        parseResults ?? pigeon.parseFile(options.input!, sdkPath: sdkPath);
+    parseResults = parseResults ?? pigeon.parseFile(options.input!, sdkPath: sdkPath);
 
     final errors = <Error>[];
     errors.addAll(parseResults.errors);
@@ -738,23 +879,16 @@ ${_argParser.usage}''';
 
     if (parseResults.pigeonOptions != null && mergeDefinitionFileOptions) {
       options = PigeonOptions.fromMap(
-        mergeMaps(options.toMap(), parseResults.pigeonOptions!),
+        mergePigeonMaps(options.toMap(), parseResults.pigeonOptions!),
       );
     }
 
-    final InternalPigeonOptions internalOptions =
-        InternalPigeonOptions.fromPigeonOptions(options);
+    final InternalPigeonOptions internalOptions = InternalPigeonOptions.fromPigeonOptions(options);
 
     for (final adapter in safeGeneratorAdapters) {
-      final IOSink? sink = adapter.shouldGenerate(
-        internalOptions,
-        FileType.source,
-      );
+      final IOSink? sink = adapter.shouldGenerate(internalOptions, FileType.source);
       if (sink != null) {
-        final List<Error> adapterErrors = adapter.validate(
-          internalOptions,
-          parseResults.root,
-        );
+        final List<Error> adapterErrors = adapter.validate(internalOptions, parseResults.root);
         errors.addAll(adapterErrors);
         await releaseSink(sink);
       }
@@ -775,6 +909,10 @@ ${_argParser.usage}''';
       return 1;
     }
 
+    final bool useFfi = internalOptions.swiftOptions?.useFfi ?? false;
+    final bool useJni = internalOptions.kotlinOptions?.useJni ?? false;
+
+    final String dartExecutable = Platform.resolvedExecutable;
     for (final adapter in safeGeneratorAdapters) {
       for (final FileType fileType in adapter.fileTypeList) {
         final IOSink? sink = adapter.shouldGenerate(internalOptions, fileType);
@@ -786,6 +924,64 @@ ${_argParser.usage}''';
       }
     }
 
+    if (useFfi) {
+      if (!Platform.isMacOS) {
+        print('FFI Multi-step: Skipping FFIgen on non-macOS platform.');
+      } else {
+        final String? targetConfigDir =
+            internalOptions.swiftOptions?.configDirectory ?? internalOptions.configDirectory;
+        final String fullConfigDir =
+            (internalOptions.basePath != null &&
+                internalOptions.basePath!.isNotEmpty &&
+                targetConfigDir != null &&
+                targetConfigDir.isNotEmpty &&
+                !isWithinOrEquals(internalOptions.basePath!, targetConfigDir))
+            ? path.join(internalOptions.basePath!, targetConfigDir)
+            : (targetConfigDir ?? internalOptions.basePath ?? '');
+        final int exitCode = await _runFfigen(fullConfigDir, internalOptions.input, dartExecutable);
+        if (exitCode != 0) {
+          return exitCode;
+        }
+      }
+      final String? objcVersionWarning = checkObjectiveCPubspecVersion(internalOptions);
+      if (objcVersionWarning != null) {
+        stderr.writeln('Warning: $objcVersionWarning');
+      }
+    }
+
+    if (useJni) {
+      final Map<String, String> env = await _getJniEnvironment(dartExecutable);
+      if (!await _hasJavaRuntime(env)) {
+        print('JNI Multi-step: Skipping JNIgen because no Java runtime was found.');
+      } else if (!_hasAndroidSdk()) {
+        print('JNI Multi-step: Skipping JNIgen because no Android SDK was found.');
+      } else {
+        final String? targetConfigDir =
+            internalOptions.kotlinOptions?.configDirectory ?? internalOptions.configDirectory;
+        final String fullConfigDir =
+            (internalOptions.basePath != null &&
+                internalOptions.basePath!.isNotEmpty &&
+                targetConfigDir != null &&
+                targetConfigDir.isNotEmpty &&
+                !isWithinOrEquals(internalOptions.basePath!, targetConfigDir))
+            ? path.join(internalOptions.basePath!, targetConfigDir)
+            : (targetConfigDir ?? internalOptions.basePath ?? '');
+        final bool success = await _runJnigen(
+          fullConfigDir,
+          internalOptions.input,
+          dartExecutable,
+          env,
+        );
+        if (!success) {
+          return 1;
+        }
+      }
+      final String? jniVersionWarning = checkJniPubspecVersion(internalOptions);
+      if (jniVersionWarning != null) {
+        stderr.writeln('Warning: $jniVersionWarning');
+      }
+    }
+
     return 0;
   }
 
@@ -794,15 +990,151 @@ ${_argParser.usage}''';
     for (final err in errors) {
       if (err.filename != null) {
         if (err.lineNumber != null) {
-          stderr.writeln(
-            'Error: ${err.filename}:${err.lineNumber}: ${err.message}',
-          );
+          stderr.writeln('Error: ${err.filename}:${err.lineNumber}: ${err.message}');
         } else {
           stderr.writeln('Error: ${err.filename}: ${err.message}');
         }
       } else {
         stderr.writeln('Error: ${err.message}');
       }
+    }
+  }
+
+  /// Runs FFIgen in FFI multi-step generation.
+  static Future<int> _runFfigen(
+    String swiftAppDir,
+    String? inputPath,
+    String dartExecutable,
+  ) async {
+    if (!Platform.isMacOS) {
+      print('FFI Multi-step: Skipping FFIgen on non-macOS platform.');
+      return 0;
+    }
+    final String configFile = getFfigenConfigPath(swiftAppDir, inputPath);
+    if (File(configFile).existsSync()) {
+      print('FFI Multi-step: Running FFIgen for $configFile...');
+      final ProcessResult ffigenResult = await Process.run(dartExecutable, ['run', configFile]);
+      if (ffigenResult.exitCode != 0) {
+        print('Error running FFIgen: ${ffigenResult.stderr}');
+        return 1;
+      }
+      print('FFI Multi-step: FFIgen completed successfully.');
+      return 0;
+    } else {
+      print('Error: FFIgen config file $configFile does not exist.');
+      return 1;
+    }
+  }
+
+  /// Gets the environment map for JNI multi-step generation.
+  static Future<Map<String, String>> _getJniEnvironment(String dartExecutable) async {
+    final env = <String, String>{};
+
+    // Try to find Java 17 on macOS
+    if (Platform.isMacOS) {
+      final ProcessResult javaHomeResult = await Process.run('/usr/libexec/java_home', [
+        '-v',
+        '17',
+      ]);
+      if (javaHomeResult.exitCode == 0) {
+        final String javaHome = javaHomeResult.stdout.toString().trim();
+        if (javaHome.isNotEmpty) {
+          env['JAVA_HOME'] = javaHome;
+          print('JNI Multi-step: Using Java 17 from $javaHome');
+        }
+      }
+    }
+
+    // Fallback to current environment's JAVA_HOME if not set or lookup failed
+    if (!env.containsKey('JAVA_HOME')) {
+      final String? currentJavaHome = Platform.environment['JAVA_HOME'];
+      if (currentJavaHome != null && currentJavaHome.isNotEmpty) {
+        env['JAVA_HOME'] = currentJavaHome;
+        print('JNI Multi-step: Using default JAVA_HOME from environment: $currentJavaHome');
+      }
+    }
+
+    // Add dart to PATH if it was found via login shell or full path
+    if (dartExecutable != 'dart') {
+      final String dartDir = path.dirname(dartExecutable);
+      final String currentPath = Platform.environment['PATH'] ?? '';
+      env['PATH'] = '$dartDir:$currentPath';
+      print('Adding $dartDir to PATH for JNIgen due to missing path!');
+    }
+    return env;
+  }
+
+  /// Checks whether a Java runtime is available to execute JNIgen.
+  static Future<bool> _hasJavaRuntime(Map<String, String> env) async {
+    final String? javaHome = env['JAVA_HOME'];
+    if (javaHome != null && javaHome.isNotEmpty) {
+      final String javaExecutable = path.join(javaHome, 'bin', 'java');
+      try {
+        final ProcessResult result = await Process.run(javaExecutable, <String>[
+          '-version',
+        ], environment: env);
+        return result.exitCode == 0;
+      } catch (_) {
+        return false;
+      }
+    }
+    try {
+      final ProcessResult result = await Process.run('java', <String>[
+        '-version',
+      ], environment: env);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Checks whether an Android SDK is available to execute JNIgen.
+  static bool _hasAndroidSdk() {
+    final String? androidHome =
+        Platform.environment['ANDROID_HOME'] ?? Platform.environment['ANDROID_SDK_ROOT'];
+    return androidHome != null && androidHome.isNotEmpty && Directory(androidHome).existsSync();
+  }
+
+  /// Runs JNIgen in JNI multi-step generation.
+  static Future<bool> _runJnigen(
+    String appDir,
+    String? inputPath,
+    String dartExecutable,
+    Map<String, String> env,
+  ) async {
+    if (!await _hasJavaRuntime(env)) {
+      print('JNI Multi-step: Skipping JNIgen because no Java runtime was found.');
+      return true;
+    }
+    if (!_hasAndroidSdk()) {
+      print('JNI Multi-step: Skipping JNIgen because no Android SDK was found.');
+      return true;
+    }
+    final String configFile = getJnigenConfigPath(appDir, inputPath);
+    print('JNI Multi-step: Running JNIgen for $configFile...');
+    final ProcessResult jnigenResult = await Process.run(dartExecutable, [
+      'run',
+      configFile,
+    ], environment: env);
+    if (jnigenResult.exitCode != 0) {
+      print('Error running JNIgen:\n${jnigenResult.stderr}');
+      print('''
+
+================================================================================
+
+PIGEON USERS: If you have changed your pigeon api surface and haven't updated your native code that uses it, you may need to do that before running JNIgen.
+
+Once you have updated the code to use the newly generated API surface, re-run Pigeon and JNIgen will be run as well.
+
+If you have updated the native code and JNIgen still fails to run, review the error output above.
+
+================================================================================
+
+''');
+      return false;
+    } else {
+      print('JNI Multi-step: JNIgen completed successfully.');
+      return true;
     }
   }
 }
@@ -830,11 +1162,7 @@ class Error {
 /// A collection of an AST represented as a [Root] and [Error]'s.
 class ParseResults {
   /// Parametric constructor for [ParseResults].
-  ParseResults({
-    required this.root,
-    required this.errors,
-    required this.pigeonOptions,
-  });
+  ParseResults({required this.root, required this.errors, required this.pigeonOptions});
 
   /// The resulting AST.
   final Root root;

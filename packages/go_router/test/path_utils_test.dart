@@ -9,11 +9,7 @@ void main() {
   test('patternToRegExp without path parameter', () async {
     const pattern = '/settings/detail';
     final pathParameter = <String>[];
-    final RegExp regex = patternToRegExp(
-      pattern,
-      pathParameter,
-      caseSensitive: true,
-    );
+    final RegExp regex = patternToRegExp(pattern, pathParameter, caseSensitive: true);
     expect(pathParameter.isEmpty, isTrue);
     expect(regex.hasMatch('/settings/detail'), isTrue);
     expect(regex.hasMatch('/settings/'), isFalse);
@@ -26,21 +22,14 @@ void main() {
   test('patternToRegExp with path parameter', () async {
     const pattern = '/user/:id/book/:bookId';
     final pathParameter = <String>[];
-    final RegExp regex = patternToRegExp(
-      pattern,
-      pathParameter,
-      caseSensitive: true,
-    );
+    final RegExp regex = patternToRegExp(pattern, pathParameter, caseSensitive: true);
     expect(pathParameter.length, 2);
     expect(pathParameter[0], 'id');
     expect(pathParameter[1], 'bookId');
 
     final RegExpMatch? match = regex.firstMatch('/user/123/book/456/');
     expect(match, isNotNull);
-    final Map<String, String> parameterValues = extractPathParameters(
-      pathParameter,
-      match!,
-    );
+    final Map<String, String> parameterValues = extractPathParameters(pathParameter, match!);
     expect(parameterValues.length, 2);
     expect(parameterValues[pathParameter[0]], '123');
     expect(parameterValues[pathParameter[1]], '456');
@@ -51,23 +40,85 @@ void main() {
     expect(regex.hasMatch('/'), isFalse);
   });
 
-  test('patternToPath without path parameter', () async {
-    const pattern = '/settings/detail';
+  test('patternToRegExp with a nested group in the parameter pattern', () async {
+    const pattern = r'/user/:id((?!(?:0|1)(?:/|$))[^/]+)';
+    final pathParameter = <String>[];
+    final RegExp regex = patternToRegExp(pattern, pathParameter, caseSensitive: true);
+    expect(pathParameter, <String>['id']);
+
+    final RegExpMatch? match = regex.firstMatch('/user/12');
+    expect(match, isNotNull);
+    expect(extractPathParameters(pathParameter, match!)['id'], '12');
+
+    expect(regex.hasMatch('/user/0'), isFalse);
+    expect(regex.hasMatch('/user/0/edit'), isFalse);
+    expect(regex.hasMatch('/user/1'), isFalse);
+    expect(regex.hasMatch('/user/13'), isTrue);
+  });
+
+  test('patternToRegExp keeps group constructs in the parameter pattern', () async {
     final pathParameter = <String>[];
     final RegExp regex = patternToRegExp(
-      pattern,
+      r'/user/:id((?:0x)?\d+)',
       pathParameter,
       caseSensitive: true,
     );
+    expect(pathParameter, <String>['id']);
+    expect(regex.hasMatch('/user/0x42'), isTrue);
+    expect(regex.hasMatch('/user/42'), isTrue);
+    expect(regex.hasMatch('/user/abc'), isFalse);
+  });
+
+  test('patternToRegExp with parentheses in a character class', () async {
+    final pathParameter = <String>[];
+    final RegExp regex = patternToRegExp(r'/a/:x([()])', pathParameter, caseSensitive: true);
+    expect(pathParameter, <String>['x']);
+
+    final RegExpMatch? match = regex.firstMatch('/a/(');
+    expect(match, isNotNull);
+    expect(extractPathParameters(pathParameter, match!)['x'], '(');
+  });
+
+  test('patternToRegExp with a nested group containing an alternation', () async {
+    final pathParameter = <String>[];
+    final RegExp regex = patternToRegExp(
+      r'/details/:id((FOO|BAR)[0-9a-zA-Z]{10})',
+      pathParameter,
+      caseSensitive: true,
+    );
+    expect(pathParameter, <String>['id']);
+
+    final RegExpMatch? matchFoo = regex.firstMatch('/details/FOO0123456789');
+    expect(matchFoo, isNotNull);
+    expect(extractPathParameters(pathParameter, matchFoo!)['id'], 'FOO0123456789');
+
+    final RegExpMatch? matchBar = regex.firstMatch('/details/BAR0123456789');
+    expect(matchBar, isNotNull);
+    expect(extractPathParameters(pathParameter, matchBar!)['id'], 'BAR0123456789');
+
+    final RegExpMatch? matchBaz = regex.firstMatch('/details/BAZ0123456789');
+    expect(matchBaz, isNull);
+  });
+
+  test('patternToPath with a nested group in the parameter pattern', () async {
+    expect(
+      patternToPath(r'/tags/:slug((?!(?:admin|new)(?:/|$))[^/]+)', const <String, String>{
+        'slug': 'flutter',
+      }),
+      '/tags/flutter',
+    );
+  });
+
+  test('patternToPath without path parameter', () async {
+    const pattern = '/settings/detail';
+    final pathParameter = <String>[];
+    final RegExp regex = patternToRegExp(pattern, pathParameter, caseSensitive: true);
 
     const url = '/settings/detail';
     final RegExpMatch? match = regex.firstMatch(url);
     expect(match, isNotNull);
 
-    final Map<String, String> parameterValues = extractPathParameters(
-      pathParameter,
-      match!,
-    );
+    final Map<String, String> parameterValues = extractPathParameters(pathParameter, match!);
     final String restoredUrl = patternToPath(pattern, parameterValues);
 
     expect(url, restoredUrl);
@@ -76,20 +127,13 @@ void main() {
   test('patternToPath with path parameter', () async {
     const pattern = '/user/:id/book/:bookId';
     final pathParameter = <String>[];
-    final RegExp regex = patternToRegExp(
-      pattern,
-      pathParameter,
-      caseSensitive: true,
-    );
+    final RegExp regex = patternToRegExp(pattern, pathParameter, caseSensitive: true);
 
     const url = '/user/123/book/456';
     final RegExpMatch? match = regex.firstMatch(url);
     expect(match, isNotNull);
 
-    final Map<String, String> parameterValues = extractPathParameters(
-      pathParameter,
-      match!,
-    );
+    final Map<String, String> parameterValues = extractPathParameters(pathParameter, match!);
     final String restoredUrl = patternToPath(pattern, parameterValues);
 
     expect(url, restoredUrl);
@@ -111,10 +155,7 @@ void main() {
 
   test('concatenateUris', () {
     void verify(String pathA, String pathB, String expected) {
-      final result = concatenateUris(
-        Uri.parse(pathA),
-        Uri.parse(pathB),
-      ).toString();
+      final result = concatenateUris(Uri.parse(pathA), Uri.parse(pathB)).toString();
       expect(result, expected);
     }
 
@@ -134,8 +175,7 @@ void main() {
   });
 
   test('canonicalUri', () {
-    void verify(String path, String expected) =>
-        expect(canonicalUri(path), expected);
+    void verify(String path, String expected) => expect(canonicalUri(path), expected);
     verify('/a', '/a');
     verify('/a/', '/a');
     verify('/', '/');

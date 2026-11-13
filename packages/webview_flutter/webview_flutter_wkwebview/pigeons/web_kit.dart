@@ -597,15 +597,10 @@ abstract class WKWebsiteDataStore extends NSObject {
 /// An object that manages the content for a rectangular area on the screen.
 ///
 /// See https://developer.apple.com/documentation/uikit/uiview.
-@ProxyApi(
-  swiftOptions: SwiftProxyApiOptions(import: 'UIKit', supportsMacos: false),
-)
+@ProxyApi(swiftOptions: SwiftProxyApiOptions(import: 'UIKit', supportsMacos: false))
 abstract class UIView extends NSObject {
   /// The view’s background color.
-  // TODO(bparrishMines): Using an int here is lossy, and should be replaced
-  //  with a full color representation. See
-  //  https://github.com/flutter/flutter/issues/178870.
-  void setBackgroundColor(int? value);
+  void setBackgroundColor(UIColor? value);
 
   /// A Boolean value that determines whether the view is opaque.
   void setOpaque(bool opaque);
@@ -614,9 +609,7 @@ abstract class UIView extends NSObject {
 /// A view that allows the scrolling and zooming of its contained views.
 ///
 /// See https://developer.apple.com/documentation/uikit/uiscrollview.
-@ProxyApi(
-  swiftOptions: SwiftProxyApiOptions(import: 'UIKit', supportsMacos: false),
-)
+@ProxyApi(swiftOptions: SwiftProxyApiOptions(import: 'UIKit', supportsMacos: false))
 abstract class UIScrollView extends UIView {
   /// The point at which the origin of the content view is offset from the
   /// origin of the scroll view.
@@ -747,6 +740,12 @@ abstract class WKUserContentController extends NSObject {
 abstract class WKPreferences extends NSObject {
   /// A Boolean value that indicates whether JavaScript is enabled.
   void setJavaScriptEnabled(bool enabled);
+
+  /// Set a Boolean value that indicates whether JavaScript can open windows
+  /// without user interaction.
+  ///
+  /// See https://developer.apple.com/documentation/webkit/wkpreferences/javascriptcanopenwindowsautomatically
+  void setJavaScriptCanOpenWindowsAutomatically(bool enabled);
 }
 
 /// An interface for receiving messages from JavaScript code running in a webpage.
@@ -757,10 +756,7 @@ abstract class WKScriptMessageHandler extends NSObject {
   WKScriptMessageHandler();
 
   /// Tells the handler that a webpage sent a script message.
-  late void Function(
-    WKUserContentController controller,
-    WKScriptMessage message,
-  )
+  late void Function(WKUserContentController controller, WKScriptMessage message)
   didReceiveScriptMessage;
 }
 
@@ -776,25 +772,18 @@ abstract class WKNavigationDelegate extends NSObject {
   late void Function(WKWebView webView, String? url)? didFinishNavigation;
 
   /// Tells the delegate that navigation from the main frame has started.
-  late void Function(WKWebView webView, String? url)?
-  didStartProvisionalNavigation;
+  late void Function(WKWebView webView, String? url)? didStartProvisionalNavigation;
 
   /// Asks the delegate for permission to navigate to new content based on the
   /// specified action information.
   @async
-  late NavigationActionPolicy Function(
-    WKWebView webView,
-    WKNavigationAction navigationAction,
-  )
+  late NavigationActionPolicy Function(WKWebView webView, WKNavigationAction navigationAction)
   decidePolicyForNavigationAction;
 
   /// Asks the delegate for permission to navigate to new content after the
   /// response to the navigation request is known.
   @async
-  late NavigationResponsePolicy Function(
-    WKWebView webView,
-    WKNavigationResponse navigationResponse,
-  )
+  late NavigationResponsePolicy Function(WKWebView webView, WKNavigationResponse navigationResponse)
   decidePolicyForNavigationResponse;
 
   /// Tells the delegate that an error occurred during navigation.
@@ -827,20 +816,12 @@ abstract class NSObject {
 
   /// Informs the observing object when the value at the specified key path
   /// relative to the observed object has changed.
-  late void Function(
-    String? keyPath,
-    NSObject? object,
-    Map<KeyValueChangeKey, Object?>? change,
-  )?
+  late void Function(String? keyPath, NSObject? object, Map<KeyValueChangeKey, Object?>? change)?
   observeValue;
 
   /// Registers the observer object to receive KVO notifications for the key
   /// path relative to the object receiving this message.
-  void addObserver(
-    NSObject observer,
-    String keyPath,
-    List<KeyValueObservingOptions> options,
-  );
+  void addObserver(NSObject observer, String keyPath, List<KeyValueObservingOptions> options);
 
   /// Stops the observer object from receiving change notifications for the
   /// property specified by the key path relative to the object receiving this
@@ -853,11 +834,7 @@ abstract class NSObject {
 ///
 /// See https://developer.apple.com/documentation/webkit/wkwebview.
 @ProxyApi(
-  swiftOptions: SwiftProxyApiOptions(
-    import: 'WebKit',
-    name: 'WKWebView',
-    supportsMacos: false,
-  ),
+  swiftOptions: SwiftProxyApiOptions(import: 'WebKit', name: 'WKWebView', supportsMacos: false),
 )
 abstract class UIViewWKWebView extends UIView implements WKWebView {
   UIViewWKWebView(WKWebViewConfiguration initialConfiguration);
@@ -946,11 +923,7 @@ abstract class UIViewWKWebView extends UIView implements WKWebView {
 ///
 /// See https://developer.apple.com/documentation/webkit/wkwebview.
 @ProxyApi(
-  swiftOptions: SwiftProxyApiOptions(
-    import: 'WebKit',
-    name: 'WKWebView',
-    supportsIos: false,
-  ),
+  swiftOptions: SwiftProxyApiOptions(import: 'WebKit', name: 'WKWebView', supportsIos: false),
 )
 abstract class NSViewWKWebView extends NSObject implements WKWebView {
   NSViewWKWebView(WKWebViewConfiguration initialConfiguration);
@@ -1068,8 +1041,7 @@ abstract class WKUIDelegate extends NSObject {
 
   /// Displays a JavaScript alert panel.
   @async
-  void Function(WKWebView webView, String message, WKFrameInfo frame)?
-  runJavaScriptAlertPanel;
+  void Function(WKWebView webView, String message, WKFrameInfo frame)? runJavaScriptAlertPanel;
 
   /// Displays a JavaScript confirm panel.
   @async
@@ -1078,12 +1050,7 @@ abstract class WKUIDelegate extends NSObject {
 
   /// Displays a JavaScript text input panel.
   @async
-  String? Function(
-    WKWebView webView,
-    String prompt,
-    String? defaultText,
-    WKFrameInfo frame,
-  )?
+  String? Function(WKWebView webView, String prompt, String? defaultText, WKFrameInfo frame)?
   runJavaScriptTextInputPanel;
 }
 
@@ -1097,14 +1064,16 @@ abstract class WKHTTPCookieStore extends NSObject {
   /// storage.
   @async
   void setCookie(HTTPCookie cookie);
+
+  /// Fetches all stored cookies.
+  @async
+  List<HTTPCookie> getAllCookies();
 }
 
 /// The interface for the delegate of a scroll view.
 ///
 /// See https://developer.apple.com/documentation/uikit/uiscrollviewdelegate.
-@ProxyApi(
-  swiftOptions: SwiftProxyApiOptions(import: 'UIKit', supportsMacos: false),
-)
+@ProxyApi(swiftOptions: SwiftProxyApiOptions(import: 'UIKit', supportsMacos: false))
 abstract class UIScrollViewDelegate extends NSObject {
   UIScrollViewDelegate();
 
@@ -1113,8 +1082,7 @@ abstract class UIScrollViewDelegate extends NSObject {
   ///
   /// Note that this is a convenient method that includes the `contentOffset` of
   /// the `scrollView`.
-  void Function(UIScrollView scrollView, double x, double y)?
-  scrollViewDidScroll;
+  void Function(UIScrollView scrollView, double x, double y)? scrollViewDidScroll;
 }
 
 /// An authentication credential consisting of information specific to the type
@@ -1125,11 +1093,7 @@ abstract class UIScrollViewDelegate extends NSObject {
 abstract class URLCredential extends NSObject {
   /// Creates a URL credential instance for internet password authentication
   /// with a given user name and password, using a given persistence setting.
-  URLCredential.withUser(
-    String user,
-    String password,
-    UrlCredentialPersistence persistence,
-  );
+  URLCredential.withUser(String user, String password, UrlCredentialPersistence persistence);
 
   /// Creates a URL credential instance for internet password authentication
   /// with a given user name and password, using a given persistence setting.
@@ -1139,11 +1103,7 @@ abstract class URLCredential extends NSObject {
   /// InstanceManager. See https://github.com/flutter/flutter/issues/162437.
   @async
   @static
-  URLCredential withUserAsync(
-    String user,
-    String password,
-    UrlCredentialPersistence persistence,
-  );
+  URLCredential withUserAsync(String user, String password, UrlCredentialPersistence persistence);
 
   /// Creates a URL credential instance for server trust authentication,
   /// initialized with a accepted trust.
@@ -1260,4 +1220,17 @@ abstract class SecCertificate extends NSObject {
   /// Returns a DER representation of a certificate given a certificate object.
   @static
   Uint8List copyData(SecCertificate certificate);
+}
+
+/// An object that stores color data and sometimes opacity.
+///
+/// See https://developer.apple.com/documentation/uikit/uicolor.
+@ProxyApi(swiftOptions: SwiftProxyApiOptions(import: 'UIKit', supportsMacos: false))
+abstract class UIColor extends NSObject {
+  /// Creates a color object using the specified opacity and RGB component
+  /// values.
+  ///
+  /// The colors are specified in an extended color space, and the input value
+  /// is never clamped.
+  UIColor(double red, double green, double blue, double alpha);
 }

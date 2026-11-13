@@ -66,7 +66,7 @@ void main() {
           webOnlyWindowName: null,
           showTitle: false,
         )
-        ..setResponse(true);
+        ..setLaunchResponse(true);
       await followLink!();
       // Calling canLaunch just to pre-check launch is an anti-pattern, since
       // canLaunch doesn't always work, so ensure that it's not called.
@@ -101,7 +101,7 @@ void main() {
           webOnlyWindowName: null,
           showTitle: false,
         )
-        ..setResponse(true);
+        ..setLaunchResponse(true);
       await followLink!();
       // Calling canLaunch just to pre-check launch is an anti-pattern, since
       // canLaunch doesn't always work, so ensure that it's not called.
@@ -109,9 +109,7 @@ void main() {
       expect(mock.launchCalled, isTrue);
     });
 
-    testWidgets('pushes to framework for internal route names', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('pushes to framework for internal route names', (WidgetTester tester) async {
       final Uri uri = Uri.parse('/foo/bar');
       FollowLink? followLink;
 
@@ -133,7 +131,7 @@ void main() {
       var frameworkCalled = false;
       final Future<ByteData> Function(Object?, String) originalPushFunction =
           pushRouteToFrameworkFunction;
-      pushRouteToFrameworkFunction = (Object? _, String __) {
+      pushRouteToFrameworkFunction = (Object? _, String _) {
         frameworkCalled = true;
         return Future<ByteData>.value(ByteData(0));
       };

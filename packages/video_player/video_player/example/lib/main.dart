@@ -11,6 +11,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import 'audio_tracks_demo.dart';
+import 'video_tracks_demo.dart';
+
 void main() {
   runApp(MaterialApp(home: _App()));
 }
@@ -26,6 +29,19 @@ class _App extends StatelessWidget {
           title: const Text('Video player example'),
           actions: <Widget>[
             IconButton(
+              key: const ValueKey<String>('video_tracks_demo'),
+              icon: const Icon(Icons.high_quality),
+              tooltip: 'Video Tracks Demo',
+              onPressed: () {
+                Navigator.push<VideoTracksDemo>(
+                  context,
+                  MaterialPageRoute<VideoTracksDemo>(
+                    builder: (BuildContext context) => const VideoTracksDemo(),
+                  ),
+                );
+              },
+            ),
+            IconButton(
               key: const ValueKey<String>('push_tab'),
               icon: const Icon(Icons.navigation),
               onPressed: () {
@@ -33,6 +49,19 @@ class _App extends StatelessWidget {
                   context,
                   MaterialPageRoute<_PlayerVideoAndPopPage>(
                     builder: (BuildContext context) => _PlayerVideoAndPopPage(),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              key: const ValueKey<String>('audio_tracks_demo'),
+              icon: const Icon(Icons.audiotrack),
+              tooltip: 'Audio Tracks Demo',
+              onPressed: () {
+                Navigator.push<AudioTracksDemo>(
+                  context,
+                  MaterialPageRoute<AudioTracksDemo>(
+                    builder: (BuildContext context) => const AudioTracksDemo(),
                   ),
                 );
               },
@@ -51,19 +80,11 @@ class _App extends StatelessWidget {
         body: TabBarView(
           children: <Widget>[
             _ViewTypeTabBar(
-              builder: (VideoViewType viewType) =>
-                  _InitializeVideosSimulInList(viewType),
+              builder: (VideoViewType viewType) => _InitializeVideosSimulInList(viewType),
             ),
-            _ViewTypeTabBar(
-              builder: (VideoViewType viewType) =>
-                  _BumbleBeeRemoteVideo(viewType),
-            ),
-            _ViewTypeTabBar(
-              builder: (VideoViewType viewType) => const Text('Hello'),
-            ),
-            _ViewTypeTabBar(
-              builder: (VideoViewType viewType) => _MultiplePlayers(viewType),
-            ),
+            _ViewTypeTabBar(builder: (VideoViewType viewType) => _BumbleBeeRemoteVideo(viewType)),
+            _ViewTypeTabBar(builder: (VideoViewType viewType) => const Text('Hello')),
+            _ViewTypeTabBar(builder: (VideoViewType viewType) => _MultiplePlayers(viewType)),
           ],
         ),
       ),
@@ -80,8 +101,7 @@ class _ViewTypeTabBar extends StatefulWidget {
   State<_ViewTypeTabBar> createState() => _ViewTypeTabBarState();
 }
 
-class _ViewTypeTabBarState extends State<_ViewTypeTabBar>
-    with SingleTickerProviderStateMixin {
+class _ViewTypeTabBarState extends State<_ViewTypeTabBar> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override
@@ -128,12 +148,10 @@ class _InitializeVideosSimulInList extends StatefulWidget {
   final VideoViewType viewType;
 
   @override
-  _InitializeVideosSimulInListState createState() =>
-      _InitializeVideosSimulInListState();
+  _InitializeVideosSimulInListState createState() => _InitializeVideosSimulInListState();
 }
 
-class _InitializeVideosSimulInListState
-    extends State<_InitializeVideosSimulInList> {
+class _InitializeVideosSimulInListState extends State<_InitializeVideosSimulInList> {
   late PageController _pageController;
   int _currentPage = 0;
   late List<VideoPlayerController> _videoControllers;
@@ -154,15 +172,9 @@ class _InitializeVideosSimulInListState
       final VideoPlayerController controller;
 
       if (asset.startsWith('http')) {
-        controller = VideoPlayerController.networkUrl(
-          Uri.parse(asset),
-          viewType: widget.viewType,
-        );
+        controller = VideoPlayerController.networkUrl(Uri.parse(asset), viewType: widget.viewType);
       } else {
-        controller = VideoPlayerController.asset(
-          asset,
-          viewType: widget.viewType,
-        );
+        controller = VideoPlayerController.asset(asset, viewType: widget.viewType);
       }
 
       controller.setLooping(true);
@@ -194,8 +206,7 @@ class _InitializeVideosSimulInListState
       controller: _pageController,
       onPageChanged: (int page) {
         // Pause previous video
-        if (_videoControllers.isNotEmpty &&
-            _currentPage < _videoControllers.length) {
+        if (_videoControllers.isNotEmpty && _currentPage < _videoControllers.length) {
           _videoControllers[_currentPage].pause();
         }
 
@@ -314,8 +325,7 @@ class _VideoState extends State<_Video> {
                 alignment: Alignment.bottomCenter,
                 children: <Widget>[
                   VideoPlayer(_controller!),
-                  if (widget.showControls)
-                    _ControlsOverlay(controller: _controller!),
+                  if (widget.showControls) _ControlsOverlay(controller: _controller!),
                   if (widget.showProgressIndicator)
                     VideoProgressIndicator(_controller!, allowScrubbing: true),
                 ],
@@ -423,18 +433,14 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
     final String fileContents = await DefaultAssetBundle.of(
       context,
     ).loadString('assets/bumble_bee_captions.vtt');
-    return WebVTTCaptionFile(
-      fileContents,
-    ); // For vtt files, use WebVTTCaptionFile
+    return WebVTTCaptionFile(fileContents); // For vtt files, use WebVTTCaptionFile
   }
 
   @override
   void initState() {
     super.initState();
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse(
-        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-      ),
+      Uri.parse('https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4'),
       closedCaptionFile: _loadCaptions(),
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       viewType: widget.viewType,
@@ -462,10 +468,7 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
             height: 400,
             child: AspectRatio(
               aspectRatio: _controller.value.aspectRatio,
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[_Video(_controller)],
-              ),
+              child: Stack(alignment: Alignment.center, children: <Widget>[_Video(_controller)]),
             ),
           ),
           Row(
@@ -705,9 +708,7 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
   void initState() {
     super.initState();
 
-    _videoPlayerController = VideoPlayerController.asset(
-      'assets/Butterfly-209.mp4',
-    );
+    _videoPlayerController = VideoPlayerController.asset('assets/Butterfly-209.mp4');
     _videoPlayerController.addListener(() {
       if (startedPlaying && !_videoPlayerController.value.isPlaying) {
         Navigator.pop(context);

@@ -1,5 +1,61 @@
 ## NEXT
 
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.6.5
+
+* Adds support for `myLocationEnabled` and `myLocationButtonEnabled`.
+
+## 0.6.4+2
+
+* Fixes `onMapCreated` never being called when a map tile request stalls or fails.
+
+## 0.6.4+1
+
+* Fixes AdvancedMarker anchor handling.
+
+## 0.6.4
+
+* Adds support for tapping points of interest on the map.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.6.3+1
+
+* Fixes flickering of byte-backed advanced markers when updating their position on web.
+
+## 0.6.3
+
+* Adds support for mapTypeControlEnabled, fullscreenControlEnabled, and streetViewControlEnabled.
+
+## 0.6.2+3
+
+* Updates README to include setup information.
+
+## 0.6.2+2
+
+* Updates README to note that heatmap support was removed from the underlying SDK in 3.65.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 0.6.2+1
+
+* Fixes a bug that prevented non-cloud styles from being applied.
+
+## 0.6.2
+
+* Adds `colorScheme` support for controlling cloud-based map brightness.
+
+## 0.6.1
+
+* Batches clustered marker add/remove operations to avoid redundant re-rendering.
+
+## 0.6.0
+
+* **BREAKING CHANGES**: Adds type constraints to generic type parameters:
+  * `ClusterManagersController<T>` now requires `T extends Object`
+  * `MarkersController<T, O>` now requires `T extends Object`
+* Adds support for Google Maps JavaScript API Advanced Markers (`AdvancedMarker`), including new `AdvancedMarkerController` and `AdvancedMarkersController` classes, support for `PinConfig` with customizable background, border, and glyph, and custom marker content via `BitmapDescriptor` (including `AssetMapBitmap`, `BytesMapBitmap`, and `PinConfig`). Advanced markers require the `marker` library - add `&libraries=marker` to your Google Maps API script URL in `web/index.html`.
+* Adds `isAdvancedMarkersAvailable()` method to check if advanced markers are supported.
+* Refactors marker architecture to support both legacy `Marker` and new `AdvancedMarker` types through unified controller interfaces.
 * Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
 
 ## 0.5.14+3

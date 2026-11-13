@@ -254,19 +254,13 @@ class SK2PriceLocale {
 
   /// Convert this instance of [SK2PriceLocale] to [SK2PriceLocaleMessage]
   SK2PriceLocaleMessage convertToPigeon() {
-    return SK2PriceLocaleMessage(
-      currencyCode: currencyCode,
-      currencySymbol: currencySymbol,
-    );
+    return SK2PriceLocaleMessage(currencyCode: currencyCode, currencySymbol: currencySymbol);
   }
 }
 
 extension on SK2PriceLocaleMessage {
   SK2PriceLocale convertFromPigeon() {
-    return SK2PriceLocale(
-      currencyCode: currencyCode,
-      currencySymbol: currencySymbol,
-    );
+    return SK2PriceLocale(currencyCode: currencyCode, currencySymbol: currencySymbol);
   }
 }
 
@@ -295,6 +289,7 @@ class SK2ProductPurchaseOptions {
     this.quantity,
     this.promotionalOffer,
     this.winBackOfferId,
+    this.introductoryOfferEligibilityCompactJWS,
   });
 
   /// Sets a UUID to associate the purchase with an account in your system.
@@ -309,6 +304,12 @@ class SK2ProductPurchaseOptions {
   /// Sets a win back offer to a purchase.
   final String? winBackOfferId;
 
+  /// Sets the customer's introductory offer eligibility for this purchase,
+  /// as a compact JWS signed by your server.
+  ///
+  /// See [Sk2PurchaseParam.introductoryOfferEligibilityCompactJWS].
+  final String? introductoryOfferEligibilityCompactJWS;
+
   /// Convert to pigeon representation [SK2ProductPurchaseOptionsMessage].
   SK2ProductPurchaseOptionsMessage convertToPigeon() {
     return SK2ProductPurchaseOptionsMessage(
@@ -316,6 +317,7 @@ class SK2ProductPurchaseOptions {
       quantity: quantity,
       winBackOfferId: winBackOfferId,
       promotionalOffer: promotionalOffer,
+      introductoryOfferEligibilityCompactJWS: introductoryOfferEligibilityCompactJWS,
     );
   }
 }
@@ -323,14 +325,10 @@ class SK2ProductPurchaseOptions {
 extension on SK2ProductPurchaseResultMessage {
   SK2ProductPurchaseResult convertFromPigeon() {
     return switch (this) {
-      SK2ProductPurchaseResultMessage.success =>
-        SK2ProductPurchaseResult.success,
-      SK2ProductPurchaseResultMessage.userCancelled =>
-        SK2ProductPurchaseResult.userCancelled,
-      SK2ProductPurchaseResultMessage.pending =>
-        SK2ProductPurchaseResult.pending,
-      SK2ProductPurchaseResultMessage.unverified =>
-        SK2ProductPurchaseResult.unverified,
+      SK2ProductPurchaseResultMessage.success => SK2ProductPurchaseResult.success,
+      SK2ProductPurchaseResultMessage.userCancelled => SK2ProductPurchaseResult.userCancelled,
+      SK2ProductPurchaseResultMessage.pending => SK2ProductPurchaseResult.pending,
+      SK2ProductPurchaseResultMessage.unverified => SK2ProductPurchaseResult.unverified,
     };
   }
 }
@@ -380,9 +378,7 @@ class SK2Product {
   /// If any of the identifiers are invalid or can't be found, they are excluded
   /// from the returned list.
   static Future<List<SK2Product>> products(List<String> identifiers) async {
-    final List<SK2ProductMessage?> productsMsg = await hostApi2.products(
-      identifiers,
-    );
+    final List<SK2ProductMessage?> productsMsg = await hostApi2.products(identifiers);
     if (productsMsg.isEmpty && identifiers.isNotEmpty) {
       throw PlatformException(
         code: 'storekit_no_response',
@@ -421,14 +417,8 @@ class SK2Product {
   }
 
   /// Checks if the user is eligible for a specific win back offer.
-  static Future<bool> isWinBackOfferEligible(
-    String productId,
-    String offerId,
-  ) async {
-    final bool result = await hostApi2.isWinBackOfferEligible(
-      productId,
-      offerId,
-    );
+  static Future<bool> isWinBackOfferEligible(String productId, String offerId) async {
+    final bool result = await hostApi2.isWinBackOfferEligible(productId, offerId);
 
     return result;
   }
@@ -436,13 +426,13 @@ class SK2Product {
   /// Converts this instance of [SK2Product] to it's pigeon representation [SK2ProductMessage]
   SK2ProductMessage convertToPigeon() {
     return SK2ProductMessage(
-      id: id,
       displayName: displayName,
-      description: description,
-      price: price,
       displayPrice: displayPrice,
-      type: type.convertToPigeon(),
+      id: id,
+      localizedDescription: description,
+      price: price,
       priceLocale: priceLocale.convertToPigeon(),
+      type: type.convertToPigeon(),
     );
   }
 }
@@ -454,7 +444,7 @@ extension on SK2ProductMessage {
       displayName: displayName,
       displayPrice: displayPrice,
       price: price,
-      description: description,
+      description: localizedDescription,
       type: type.convertFromPigeon(),
       subscription: subscription?.convertFromPigeon(),
       priceLocale: priceLocale.convertFromPigeon(),

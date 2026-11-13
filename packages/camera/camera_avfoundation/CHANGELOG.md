@@ -1,3 +1,93 @@
+## NEXT
+
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 0.11.1
+
+* Adds support for zero-shutter-lag still image capture via
+  `isZeroShutterLagSupported` and `setZeroShutterLagEnabled` (iOS 17+).
+
+## 0.11.0+4
+
+* Fixes a Swift 6 Sendability mismatch in the `CaptureDevice` protocol's `setExposureTargetBias` completion handler.
+
+## 0.11.0+3
+
+* Fixes a crash when switching camera while recording video due to disconnected photo output.
+
+## 0.11.0+2
+
+* Replaces the deprecated `videoOrientation` with `videoRotationAngle` on iOS 17 and later.
+
+## 0.11.0+1
+
+* Removes availability checks for iOS versions below the package minimum iOS 13.
+
+## 0.11.0
+
+* Adds support for custom video output path in video recording.
+
+## 0.10.3+1
+
+* Replaces the deprecated `isHighResolutionCaptureEnabled`/`isHighResolutionPhotoEnabled` with
+  `maxPhotoDimensions` on iOS 16 and later, falling back to the deprecated APIs on older versions.
+* Fixes the maximum resolution setting being ignored for HEIF captures when using
+  `ResolutionPreset.max`.
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+
+## 0.10.3
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 0.10.2
+
+* Adds `setJpegImageQuality` for controlling JPEG compression quality.
+* Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
+## 0.10.1
+
+* Fixes fatal crash on iPhone 17 when using `ResolutionPreset.max`.
+
+## 0.10.0+3
+
+* Switches to type-safe Pigeon code for image streaming.
+
+## 0.10.0+2
+
+* Updates example to demonstrate correct exception handling for async return statements, ensuring exceptions thrown during return within try blocks are properly caught as per [dart-lang/sdk#44395](https://github.com/dart-lang/sdk/issues/44395).
+
+## 0.10.0+1
+
+* Migrates to Swift-based pigeon interface.
+
+## 0.10.0
+
+* Adds video stabilization.
+  - Adds getSupportedVideoStabilizationModes method.
+  - Adds setVideoStabilizationMode method.
+
+## 0.9.23+2
+
+* Code refactor related to Swift pigeon's generated struct MediaSettings being immutable.
+
+## 0.9.23+1
+
+* Fixes error handling in `startWriting`.
+
+## 0.9.23
+
+* Changes the default storage path for camera pictures and videos on iOS from the application's Documents directory to the system's temporaryDirectory.
+
+## 0.9.22+10
+
+* Handles video and audio interruptions and errors by "pausing" and reporting errors.
+* Uses a single time offset for both video and audio to avoid desync.
+
+## 0.9.22+9
+
+* Migrates `FLTSavePhotoDelegate`, `FLTWritableData`, and `FLTImageStreamHandler` classes to Swift.
+* Migrates `CameraProperties` and `QueueUtils` helpers to Swift.
+
 ## 0.9.22+8
 
 * Migrates `FLTPermissionServicing` and `FLTCameraPermissionManager` classes to Swift.

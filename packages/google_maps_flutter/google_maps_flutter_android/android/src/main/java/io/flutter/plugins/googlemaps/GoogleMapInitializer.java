@@ -13,34 +13,33 @@ import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapsSdkInitializedCallback;
 import io.flutter.plugin.common.BinaryMessenger;
+import kotlin.coroutines.Continuation;
 
 /** GoogleMaps initializer used to initialize the Google Maps SDK with preferred settings. */
-final class GoogleMapInitializer
-    implements OnMapsSdkInitializedCallback, Messages.MapsInitializerApi {
+final class GoogleMapInitializer implements OnMapsSdkInitializedCallback, MapsInitializerApi {
   private static final String TAG = "GoogleMapInitializer";
   private final Context context;
-  private static Messages.Result<Messages.PlatformRendererType> initializationResult;
+  private static @Nullable Continuation<? super PlatformRendererType> initializationContinuation;
   private boolean rendererInitialized = false;
 
   GoogleMapInitializer(Context context, BinaryMessenger binaryMessenger) {
     this.context = context;
 
-    Messages.MapsInitializerApi.setUp(binaryMessenger, this);
+    MapsInitializerApi.Companion.setUp(binaryMessenger, this);
   }
 
+  @Nullable
   @Override
-  public void initializeWithPreferredRenderer(
-      @Nullable Messages.PlatformRendererType type,
-      @NonNull Messages.Result<Messages.PlatformRendererType> result) {
-    if (rendererInitialized || initializationResult != null) {
-      result.error(
-          new Messages.FlutterError(
-              "Renderer already initialized",
-              "Renderer initialization called multiple times",
-              null));
+  public Object initializeWithPreferredRenderer(
+      @Nullable PlatformRendererType type,
+      @NonNull Continuation<? super PlatformRendererType> continuation) {
+    if (rendererInitialized || initializationContinuation != null) {
+      throw new FlutterError(
+          "Renderer already initialized", "Renderer initialization called multiple times", null);
     } else {
-      initializationResult = result;
+      initializationContinuation = continuation;
       initializeWithRendererRequest(Convert.toMapRendererType(type));
+      return ResultUtilsKt.coroutineSuspended();
     }
   }
 
@@ -58,7 +57,7 @@ final class GoogleMapInitializer
       mv.onDestroy();
       Log.i(TAG, "Maps warmup complete.");
     } catch (Exception e) {
-      throw new Messages.FlutterError("Could not warm up", e.toString(), null);
+      throw new FlutterError("Could not warm up", e.toString(), null);
     }
   }
 
@@ -77,22 +76,23 @@ final class GoogleMapInitializer
   @Override
   public void onMapsSdkInitialized(@NonNull MapsInitializer.Renderer renderer) {
     rendererInitialized = true;
-    if (initializationResult != null) {
+    if (initializationContinuation != null) {
       switch (renderer) {
         case LATEST:
-          initializationResult.success(Messages.PlatformRendererType.LATEST);
+          ResultUtilsKt.resumeWithValue(initializationContinuation, PlatformRendererType.LATEST);
           break;
         case LEGACY:
-          initializationResult.success(Messages.PlatformRendererType.LEGACY);
+          ResultUtilsKt.resumeWithValue(initializationContinuation, PlatformRendererType.LEGACY);
           break;
         default:
-          initializationResult.error(
-              new Messages.FlutterError(
+          ResultUtilsKt.resumeWithException(
+              initializationContinuation,
+              new FlutterError(
                   "Unknown renderer type",
                   "Initialized with unknown renderer type",
                   renderer.name()));
       }
-      initializationResult = null;
+      initializationContinuation = null;
     }
   }
 }

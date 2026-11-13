@@ -15,6 +15,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.OutputConfiguration;
@@ -53,6 +54,7 @@ import io.flutter.plugins.camera.features.flash.FlashFeature;
 import io.flutter.plugins.camera.features.flash.FlashMode;
 import io.flutter.plugins.camera.features.focuspoint.FocusPointFeature;
 import io.flutter.plugins.camera.features.fpsrange.FpsRangeFeature;
+import io.flutter.plugins.camera.features.jpegquality.JpegQualityFeature;
 import io.flutter.plugins.camera.features.resolution.ResolutionFeature;
 import io.flutter.plugins.camera.features.resolution.ResolutionPreset;
 import io.flutter.plugins.camera.features.sensororientation.DeviceOrientationManager;
@@ -107,8 +109,10 @@ class Camera
   private CameraProperties cameraProperties;
   private final CameraFeatureFactory cameraFeatureFactory;
   private final Activity activity;
+
   /** A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture. */
   private final CameraCaptureCallback cameraCaptureCallback;
+
   /** A {@link Handler} for running tasks in the background. */
   Handler backgroundHandler;
 
@@ -119,19 +123,31 @@ class Camera
   CameraCaptureSession captureSession;
   @VisibleForTesting ImageReader pictureImageReader;
   ImageStreamReader imageStreamReader;
+
   /** {@link CaptureRequest.Builder} for the camera preview */
   CaptureRequest.Builder previewRequestBuilder;
 
   @VisibleForTesting MediaRecorder mediaRecorder;
+
   /** True when recording video. */
   boolean recordingVideo;
+
   /** True when the preview is paused. */
   @VisibleForTesting boolean pausedPreview;
 
+  /** File used for still image capture (takePicture). */
   private File captureFile;
+
+  /**
+   * File used for video recording. Kept separate from {@link #captureFile} so that calling
+   * takePicture() during an active recording does not overwrite the video path returned by
+   * stopVideoRecording().
+   */
+  private File videoCaptureFile;
 
   /** Holds the current capture timeouts */
   private CaptureTimeoutsWrapper captureTimeouts;
+
   /** Holds the last known capture properties */
   private CameraCaptureProperties captureProps;
 
@@ -271,8 +287,9 @@ class Camera
 
     MediaRecorderBuilder mediaRecorderBuilder;
 
-    // TODO(camsim99): Revert changes that allow legacy code to be used when recordingProfile is null
-    // once this has largely been fixed on the Android side. https://github.com/flutter/flutter/issues/119668
+    // TODO(camsim99): Revert changes that allow legacy code to be used when recordingProfile
+    // is null once this has largely been fixed on the Android side.
+    // https://github.com/flutter/flutter/issues/119668
     if (SdkCapabilityChecker.supportsEncoderProfiles() && getRecordingProfile() != null) {
       mediaRecorderBuilder =
           new MediaRecorderBuilder(
@@ -675,11 +692,37 @@ class Camera
 
       // Trigger one capture to start AE sequence.
       captureSession.capture(
-          previewRequestBuilder.build(), cameraCaptureCallback, backgroundHandler);
+          previewRequestBuilder.build(),
+          createTriggerResetCallback(
+              CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+              CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_IDLE),
+          backgroundHandler);
 
     } catch (CameraAccessException e) {
       e.printStackTrace();
     }
+  }
+
+  @VisibleForTesting
+  CameraCaptureSession.CaptureCallback createTriggerResetCallback(
+      final CaptureRequest.Key<Integer> triggerKey, final int triggerIdleValue) {
+    return new CameraCaptureSession.CaptureCallback() {
+      @Override
+      public void onCaptureCompleted(
+          @NonNull CameraCaptureSession session,
+          @NonNull CaptureRequest request,
+          @NonNull TotalCaptureResult result) {
+        previewRequestBuilder.set(triggerKey, triggerIdleValue);
+      }
+
+      @Override
+      public void onCaptureFailed(
+          @NonNull CameraCaptureSession session,
+          @NonNull CaptureRequest request,
+          @NonNull CaptureFailure failure) {
+        previewRequestBuilder.set(triggerKey, triggerIdleValue);
+      }
+    };
   }
 
   /**
@@ -788,7 +831,11 @@ class Camera
         CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
 
     try {
-      captureSession.capture(previewRequestBuilder.build(), null, backgroundHandler);
+      captureSession.capture(
+          previewRequestBuilder.build(),
+          createTriggerResetCallback(
+              CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_IDLE),
+          backgroundHandler);
     } catch (CameraAccessException e) {
       String message =
           (e.getMessage() == null)
@@ -831,8 +878,9 @@ class Camera
             dartMessenger.error(flutterResult, errorCode, errorMessage, null));
   }
 
-  public void startVideoRecording(@Nullable EventChannel imageStreamChannel) {
-    prepareRecording();
+  public void startVideoRecording(
+      @Nullable EventChannel imageStreamChannel, @Nullable String videoOutputPath) {
+    prepareRecording(videoOutputPath);
 
     if (imageStreamChannel != null) {
       setStreamHandler(imageStreamChannel);
@@ -843,7 +891,7 @@ class Camera
       startCapture(true, imageStreamChannel != null);
     } catch (CameraAccessException e) {
       recordingVideo = false;
-      captureFile = null;
+      videoCaptureFile = null;
       throw new Messages.FlutterError("videoRecordingFailed", e.getMessage(), null);
     }
   }
@@ -880,8 +928,14 @@ class Camera
     } catch (CameraAccessException | IllegalStateException | InterruptedException e) {
       throw new Messages.FlutterError("videoRecordingFailed", e.getMessage(), null);
     }
-    String path = captureFile.getAbsolutePath();
-    captureFile = null;
+    if (videoCaptureFile == null) {
+      throw new Messages.FlutterError(
+          "videoRecordingFailed",
+          "stopVideoRecording was called but videoCaptureFile was null.",
+          null);
+    }
+    String path = videoCaptureFile.getAbsolutePath();
+    videoCaptureFile = null;
     return path;
   }
 
@@ -1157,7 +1211,8 @@ class Camera
 
   public void startPreview(@Nullable Runnable onSuccessCallback)
       throws CameraAccessException, InterruptedException {
-    // If recording is already in progress, the camera is being flipped, so send it through the VideoRenderer to keep the correct orientation.
+    // If recording is already in progress, the camera is being flipped, so send it through the
+    // VideoRenderer to keep the correct orientation.
     if (recordingVideo) {
       startPreviewWithVideoRendererStream(onSuccessCallback);
     } else {
@@ -1257,18 +1312,24 @@ class Camera
   }
 
   @VisibleForTesting
-  void prepareRecording() {
-    final File outputDir = applicationContext.getCacheDir();
-    try {
-      captureFile = File.createTempFile("REC", ".mp4", outputDir);
-    } catch (IOException | SecurityException e) {
-      throw new Messages.FlutterError("cannotCreateFile", e.getMessage(), null);
+  void prepareRecording(@Nullable String videoOutputPath) {
+    if (videoOutputPath != null) {
+      validateOutputPath(videoOutputPath);
+      videoCaptureFile = new File(videoOutputPath);
+    } else {
+      final File outputDir = applicationContext.getCacheDir();
+      try {
+        videoCaptureFile = File.createTempFile("REC", ".mp4", outputDir);
+      } catch (IOException | SecurityException e) {
+        throw new Messages.FlutterError("cannotCreateFile", e.getMessage(), null);
+      }
     }
+
     try {
-      prepareMediaRecorder(captureFile.getAbsolutePath());
+      prepareMediaRecorder(videoCaptureFile.getAbsolutePath());
     } catch (IOException e) {
       recordingVideo = false;
-      captureFile = null;
+      videoCaptureFile = null;
       throw new Messages.FlutterError("videoRecordingFailed", e.getMessage(), null);
     }
     // Re-create autofocus feature so it's using video focus mode now.
@@ -1276,6 +1337,24 @@ class Camera
         cameraFeatureFactory.createAutoFocusFeature(cameraProperties, true));
     // Update camera features with the desired fps range
     setFpsCameraFeatureForRecording(cameraProperties);
+  }
+
+  private void validateOutputPath(String path) {
+    File file = new File(path);
+    if (file.isDirectory()) {
+      throw new Messages.FlutterError("IOError", "The output path is a directory: " + path, null);
+    }
+    File parent = file.getParentFile();
+    if (parent != null && !parent.exists()) {
+      throw new Messages.FlutterError(
+          "IOError", "The parent directory does not exist: " + parent.getAbsolutePath(), null);
+    }
+
+    String lowerPath = path.toLowerCase(Locale.ROOT);
+    if (!lowerPath.endsWith(".mp4")) {
+      throw new Messages.FlutterError(
+          "IOError", "Invalid video extension. Supported extensions: .mp4", null);
+    }
   }
 
   private void setStreamHandler(EventChannel imageStreamChannel) {
@@ -1379,7 +1458,8 @@ class Camera
           "setDescriptionWhileRecordingFailed", "Device was not recording", null);
     }
 
-    // See VideoRenderer.java; support for this EGL extension is required to switch camera while recording.
+    // See VideoRenderer.java; support for this EGL extension is required to switch camera while
+    // recording.
     if (!SdkCapabilityChecker.supportsEglRecordableAndroid()) {
       throw new Messages.FlutterError(
           "setDescriptionWhileRecordingFailed",
@@ -1405,6 +1485,20 @@ class Camera
     } catch (CameraAccessException e) {
       throw new Messages.FlutterError("setDescriptionWhileRecordingFailed", e.getMessage(), null);
     }
+  }
+
+  /**
+   * Sets the JPEG compression quality for still image capture.
+   *
+   * @param quality JPEG quality value between 1 and 100.
+   */
+  public void setJpegImageQuality(@NonNull Long quality) {
+    JpegQualityFeature jpegQualityFeature = cameraFeatures.getJpegQuality();
+    if (jpegQualityFeature == null) {
+      jpegQualityFeature = cameraFeatureFactory.createJpegQualityFeature(cameraProperties);
+      cameraFeatures.setJpegQuality(jpegQualityFeature);
+    }
+    jpegQualityFeature.setValue(quality.intValue());
   }
 
   public void dispose() {

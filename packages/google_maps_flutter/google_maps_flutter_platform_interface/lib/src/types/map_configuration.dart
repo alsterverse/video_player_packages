@@ -37,11 +37,15 @@ class MapConfiguration {
     this.indoorViewEnabled,
     this.trafficEnabled,
     this.buildingsEnabled,
+    this.mapTypeControlEnabled,
+    this.fullscreenControlEnabled,
+    this.streetViewControlEnabled,
     String? mapId,
-    @Deprecated('cloudMapId is deprecated. Use mapId instead.')
-    String? cloudMapId,
+    @Deprecated('cloudMapId is deprecated. Use mapId instead.') String? cloudMapId,
     this.style,
+    this.backgroundColor,
     this.markerType,
+    this.colorScheme,
   }) : mapId = mapId ?? cloudMapId;
 
   /// This setting controls how the API handles gestures on the map. Web only.
@@ -66,6 +70,21 @@ class MapConfiguration {
 
   /// True if the map toolbar should be shown.
   final bool? mapToolbarEnabled;
+
+  /// True if map type control should be shown.
+  ///
+  /// Web only.
+  final bool? mapTypeControlEnabled;
+
+  /// True if fullscreen control should be shown.
+  ///
+  /// Web only.
+  final bool? fullscreenControlEnabled;
+
+  /// True if street view control should be shown.
+  ///
+  /// Web only.
+  final bool? streetViewControlEnabled;
 
   /// The bounds to display.
   final CameraTargetBounds? cameraTargetBounds;
@@ -136,12 +155,23 @@ class MapConfiguration {
   /// To clear a previously set style, set this to an empty string.
   final String? style;
 
+  /// The color displayed behind the map while map tiles load.
+  ///
+  /// This option may only take effect when the map is initialized, depending
+  /// on the platform implementation.
+  final Color? backgroundColor;
+
   /// The type of marker that the map should use.
   ///
   /// Advanced and legacy markers could be handled differently by platform
   /// implementations. This property indicates which type of marker should be
   /// used.
   final MarkerType? markerType;
+
+  /// Preferred color scheme for the cloud-styled map. Web only.
+  ///
+  /// See https://developers.google.com/maps/documentation/javascript/mapcolorscheme for more details.
+  final MapColorScheme? colorScheme;
 
   /// Identifier that's associated with a specific cloud-based map style.
   ///
@@ -156,23 +186,17 @@ class MapConfiguration {
   /// that are different from [other].
   MapConfiguration diffFrom(MapConfiguration other) {
     return MapConfiguration(
-      webCameraControlPosition:
-          webCameraControlPosition != other.webCameraControlPosition
+      webCameraControlPosition: webCameraControlPosition != other.webCameraControlPosition
           ? webCameraControlPosition
           : null,
-      webCameraControlEnabled:
-          webCameraControlEnabled != other.webCameraControlEnabled
+      webCameraControlEnabled: webCameraControlEnabled != other.webCameraControlEnabled
           ? webCameraControlEnabled
           : null,
       webGestureHandling: webGestureHandling != other.webGestureHandling
           ? webGestureHandling
           : null,
-      compassEnabled: compassEnabled != other.compassEnabled
-          ? compassEnabled
-          : null,
-      mapToolbarEnabled: mapToolbarEnabled != other.mapToolbarEnabled
-          ? mapToolbarEnabled
-          : null,
+      compassEnabled: compassEnabled != other.compassEnabled ? compassEnabled : null,
+      mapToolbarEnabled: mapToolbarEnabled != other.mapToolbarEnabled ? mapToolbarEnabled : null,
       cameraTargetBounds: cameraTargetBounds != other.cameraTargetBounds
           ? cameraTargetBounds
           : null,
@@ -180,12 +204,10 @@ class MapConfiguration {
       minMaxZoomPreference: minMaxZoomPreference != other.minMaxZoomPreference
           ? minMaxZoomPreference
           : null,
-      rotateGesturesEnabled:
-          rotateGesturesEnabled != other.rotateGesturesEnabled
+      rotateGesturesEnabled: rotateGesturesEnabled != other.rotateGesturesEnabled
           ? rotateGesturesEnabled
           : null,
-      scrollGesturesEnabled:
-          scrollGesturesEnabled != other.scrollGesturesEnabled
+      scrollGesturesEnabled: scrollGesturesEnabled != other.scrollGesturesEnabled
           ? scrollGesturesEnabled
           : null,
       tiltGesturesEnabled: tiltGesturesEnabled != other.tiltGesturesEnabled
@@ -204,29 +226,29 @@ class MapConfiguration {
       zoomGesturesEnabled: zoomGesturesEnabled != other.zoomGesturesEnabled
           ? zoomGesturesEnabled
           : null,
-      liteModeEnabled: liteModeEnabled != other.liteModeEnabled
-          ? liteModeEnabled
-          : null,
-      myLocationEnabled: myLocationEnabled != other.myLocationEnabled
-          ? myLocationEnabled
-          : null,
-      myLocationButtonEnabled:
-          myLocationButtonEnabled != other.myLocationButtonEnabled
+      liteModeEnabled: liteModeEnabled != other.liteModeEnabled ? liteModeEnabled : null,
+      myLocationEnabled: myLocationEnabled != other.myLocationEnabled ? myLocationEnabled : null,
+      myLocationButtonEnabled: myLocationButtonEnabled != other.myLocationButtonEnabled
           ? myLocationButtonEnabled
           : null,
       padding: padding != other.padding ? padding : null,
-      indoorViewEnabled: indoorViewEnabled != other.indoorViewEnabled
-          ? indoorViewEnabled
+      indoorViewEnabled: indoorViewEnabled != other.indoorViewEnabled ? indoorViewEnabled : null,
+      trafficEnabled: trafficEnabled != other.trafficEnabled ? trafficEnabled : null,
+      buildingsEnabled: buildingsEnabled != other.buildingsEnabled ? buildingsEnabled : null,
+      mapTypeControlEnabled: mapTypeControlEnabled != other.mapTypeControlEnabled
+          ? mapTypeControlEnabled
           : null,
-      trafficEnabled: trafficEnabled != other.trafficEnabled
-          ? trafficEnabled
+      fullscreenControlEnabled: fullscreenControlEnabled != other.fullscreenControlEnabled
+          ? fullscreenControlEnabled
           : null,
-      buildingsEnabled: buildingsEnabled != other.buildingsEnabled
-          ? buildingsEnabled
+      streetViewControlEnabled: streetViewControlEnabled != other.streetViewControlEnabled
+          ? streetViewControlEnabled
           : null,
       mapId: mapId != other.mapId ? mapId : null,
       style: style != other.style ? style : null,
+      backgroundColor: backgroundColor != other.backgroundColor ? backgroundColor : null,
       markerType: markerType != other.markerType ? markerType : null,
+      colorScheme: colorScheme != other.colorScheme ? colorScheme : null,
     );
   }
 
@@ -234,20 +256,16 @@ class MapConfiguration {
   /// replacing the previous values.
   MapConfiguration applyDiff(MapConfiguration diff) {
     return MapConfiguration(
-      webCameraControlPosition:
-          diff.webCameraControlPosition ?? webCameraControlPosition,
-      webCameraControlEnabled:
-          diff.webCameraControlEnabled ?? webCameraControlEnabled,
+      webCameraControlPosition: diff.webCameraControlPosition ?? webCameraControlPosition,
+      webCameraControlEnabled: diff.webCameraControlEnabled ?? webCameraControlEnabled,
       webGestureHandling: diff.webGestureHandling ?? webGestureHandling,
       compassEnabled: diff.compassEnabled ?? compassEnabled,
       mapToolbarEnabled: diff.mapToolbarEnabled ?? mapToolbarEnabled,
       cameraTargetBounds: diff.cameraTargetBounds ?? cameraTargetBounds,
       mapType: diff.mapType ?? mapType,
       minMaxZoomPreference: diff.minMaxZoomPreference ?? minMaxZoomPreference,
-      rotateGesturesEnabled:
-          diff.rotateGesturesEnabled ?? rotateGesturesEnabled,
-      scrollGesturesEnabled:
-          diff.scrollGesturesEnabled ?? scrollGesturesEnabled,
+      rotateGesturesEnabled: diff.rotateGesturesEnabled ?? rotateGesturesEnabled,
+      scrollGesturesEnabled: diff.scrollGesturesEnabled ?? scrollGesturesEnabled,
       tiltGesturesEnabled: diff.tiltGesturesEnabled ?? tiltGesturesEnabled,
       fortyFiveDegreeImageryEnabled:
           diff.fortyFiveDegreeImageryEnabled ?? fortyFiveDegreeImageryEnabled,
@@ -256,15 +274,19 @@ class MapConfiguration {
       zoomGesturesEnabled: diff.zoomGesturesEnabled ?? zoomGesturesEnabled,
       liteModeEnabled: diff.liteModeEnabled ?? liteModeEnabled,
       myLocationEnabled: diff.myLocationEnabled ?? myLocationEnabled,
-      myLocationButtonEnabled:
-          diff.myLocationButtonEnabled ?? myLocationButtonEnabled,
+      myLocationButtonEnabled: diff.myLocationButtonEnabled ?? myLocationButtonEnabled,
       padding: diff.padding ?? padding,
       indoorViewEnabled: diff.indoorViewEnabled ?? indoorViewEnabled,
       trafficEnabled: diff.trafficEnabled ?? trafficEnabled,
       buildingsEnabled: diff.buildingsEnabled ?? buildingsEnabled,
+      mapTypeControlEnabled: diff.mapTypeControlEnabled ?? mapTypeControlEnabled,
+      fullscreenControlEnabled: diff.fullscreenControlEnabled ?? fullscreenControlEnabled,
+      streetViewControlEnabled: diff.streetViewControlEnabled ?? streetViewControlEnabled,
       mapId: diff.mapId ?? mapId,
       style: diff.style ?? style,
+      backgroundColor: diff.backgroundColor ?? backgroundColor,
       markerType: diff.markerType ?? markerType,
+      colorScheme: diff.colorScheme ?? colorScheme,
     );
   }
 
@@ -292,9 +314,14 @@ class MapConfiguration {
       indoorViewEnabled == null &&
       trafficEnabled == null &&
       buildingsEnabled == null &&
+      mapTypeControlEnabled == null &&
+      fullscreenControlEnabled == null &&
+      streetViewControlEnabled == null &&
       mapId == null &&
       style == null &&
-      markerType == null;
+      backgroundColor == null &&
+      markerType == null &&
+      colorScheme == null;
 
   @override
   bool operator ==(Object other) {
@@ -327,9 +354,14 @@ class MapConfiguration {
         indoorViewEnabled == other.indoorViewEnabled &&
         trafficEnabled == other.trafficEnabled &&
         buildingsEnabled == other.buildingsEnabled &&
+        mapTypeControlEnabled == other.mapTypeControlEnabled &&
+        fullscreenControlEnabled == other.fullscreenControlEnabled &&
+        streetViewControlEnabled == other.streetViewControlEnabled &&
         mapId == other.mapId &&
         style == other.style &&
-        markerType == other.markerType;
+        backgroundColor == other.backgroundColor &&
+        markerType == other.markerType &&
+        colorScheme == other.colorScheme;
   }
 
   @override
@@ -356,9 +388,14 @@ class MapConfiguration {
     indoorViewEnabled,
     trafficEnabled,
     buildingsEnabled,
+    mapTypeControlEnabled,
+    fullscreenControlEnabled,
+    streetViewControlEnabled,
     mapId,
     style,
+    backgroundColor,
     markerType,
+    colorScheme,
   ]);
 }
 

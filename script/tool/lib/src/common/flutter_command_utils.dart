@@ -16,7 +16,7 @@ import 'repository_package.dart';
 Future<bool> runConfigOnlyBuild(
   RepositoryPackage package,
   ProcessRunner processRunner,
-  Platform platform,
+  NativePlatform platform,
   FlutterPlatform targetPlatform, {
   bool buildDebug = false,
   List<String> extraArgs = const <String>[],
@@ -32,16 +32,12 @@ Future<bool> runConfigOnlyBuild(
     FlutterPlatform.windows => 'windows',
   };
 
-  final int exitCode = await processRunner.runAndStream(
-    flutterCommand,
-    <String>[
-      'build',
-      target,
-      if (buildDebug) '--debug',
-      '--config-only',
-      ...extraArgs,
-    ],
-    workingDir: package.directory,
-  );
+  final int exitCode = await processRunner.runAndStream(flutterCommand, <String>[
+    'build',
+    target,
+    if (buildDebug) '--debug',
+    '--config-only',
+    ...extraArgs,
+  ], workingDir: package.directory);
   return exitCode == 0;
 }

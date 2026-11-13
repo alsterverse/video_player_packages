@@ -1,3 +1,34 @@
+## 1.0.34
+
+* Updates minimum supported SDK version to Flutter 3.41/Dart 3.11.
+* Fixes `getLaunchAction` throwing when there is no attached activity.
+
+## 1.0.33
+
+* Updates pigeon dev_dependency to ^27.3.2 for analyzer 14 compatibility.
+
+## 1.0.32
+
+* Bumps the androidx group across 10 directories with 1 update.
+
+## 1.0.31
+
+* Migrates to Built-in Kotlin to support AGP 9.
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 1.0.30
+
+* Updates internal implementation to use Kotlin Pigeon.
+
+## 1.0.29
+
+* Simplifies thread handling in message responses.
+
+## 1.0.28
+
+* Updates build files from Groovy to Kotlin.
+* Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
+
 ## 1.0.27
 
 * Bumps com.android.tools.build:gradle from 8.12.1 to 8.13.1.

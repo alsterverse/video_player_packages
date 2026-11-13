@@ -9,10 +9,10 @@
 bool isRepoLevelNonCodeImpactingFile(String path) {
   return <String>[
         'AUTHORS',
-        'CODEOWNERS',
         'CONTRIBUTING.md',
         'LICENSE',
         'README.md',
+        'SUGGESTED_REVIEWERS.md',
         'AGENTS.md',
         // This deliberate lists specific files rather than excluding the whole
         // .github directory since it's better to have false negatives than to
@@ -55,5 +55,6 @@ bool isPackageSupportFile(String path) {
   return path.endsWith('/AUTHORS') ||
       path.endsWith('/CHANGELOG.md') ||
       path.endsWith('/CONTRIBUTING.md') ||
-      path.endsWith('/README.md');
+      path.endsWith('/README.md') ||
+      path.endsWith('/AGENTS.md');
 }

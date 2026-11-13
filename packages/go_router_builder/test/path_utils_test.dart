@@ -12,9 +12,43 @@ void main() {
       expect(pathParametersFromPattern('/user'), const <String>{});
       expect(pathParametersFromPattern('/user/:id'), const <String>{'id'});
       expect(pathParametersFromPattern('/user/:id/book'), const <String>{'id'});
+      expect(pathParametersFromPattern('/user/:id/book/:bookId'), const <String>{'id', 'bookId'});
+    });
+  });
+
+  group('normalizePathParameters', () {
+    test('It should leave a pattern without parameters alone', () {
+      expect(normalizePathParameters('/'), '/');
+      expect(normalizePathParameters('/user/book'), '/user/book');
+    });
+
+    test('It should make patterns differing only in parameter name equal', () {
+      expect(normalizePathParameters('/user/:id'), normalizePathParameters('/user/:userId'));
       expect(
-        pathParametersFromPattern('/user/:id/book/:bookId'),
-        const <String>{'id', 'bookId'},
+        normalizePathParameters('/user/:id/book/:bookId'),
+        normalizePathParameters('/user/:a/book/:b'),
+      );
+    });
+
+    test('It should keep patterns with different literal segments distinct', () {
+      expect(normalizePathParameters('/user/:id'), isNot(normalizePathParameters('/book/:id')));
+      expect(
+        normalizePathParameters('/user/:id'),
+        isNot(normalizePathParameters('/user/:id/book')),
+      );
+    });
+
+    test('It should keep a parameter constraint, which changes what matches', () {
+      expect(normalizePathParameters(r'/user/:id(\d+)'), r'/user/:_(\d+)');
+      expect(
+        normalizePathParameters(r'/user/:id(\d+)'),
+        isNot(normalizePathParameters(r'/user/:id(\w+)')),
+      );
+      // A colon inside a constraint is part of the constraint, not a second
+      // parameter, so these two must stay distinct.
+      expect(
+        normalizePathParameters('/user/:id(mon:tue)'),
+        isNot(normalizePathParameters('/user/:id(mon:wed)')),
       );
     });
   });
@@ -23,14 +57,9 @@ void main() {
     test('It should replace the path parameters with their values', () {
       expect(patternToPath('/', const <String, String>{}), '/');
       expect(patternToPath('/user', const <String, String>{}), '/user');
+      expect(patternToPath('/user/:id', const <String, String>{'id': 'user-id'}), '/user/user-id');
       expect(
-        patternToPath('/user/:id', const <String, String>{'id': 'user-id'}),
-        '/user/user-id',
-      );
-      expect(
-        patternToPath('/user/:id/book', const <String, String>{
-          'id': 'user-id',
-        }),
+        patternToPath('/user/:id/book', const <String, String>{'id': 'user-id'}),
         '/user/user-id/book',
       );
       expect(

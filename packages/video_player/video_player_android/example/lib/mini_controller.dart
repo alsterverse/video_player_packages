@@ -44,16 +44,11 @@ class VideoPlayerValue {
   });
 
   /// Returns an instance for a video that hasn't been loaded.
-  const VideoPlayerValue.uninitialized()
-    : this(duration: Duration.zero, isInitialized: false);
+  const VideoPlayerValue.uninitialized() : this(duration: Duration.zero, isInitialized: false);
 
   /// Returns an instance with the given [errorDescription].
   const VideoPlayerValue.erroneous(String errorDescription)
-    : this(
-        duration: Duration.zero,
-        isInitialized: false,
-        errorDescription: errorDescription,
-      );
+    : this(duration: Duration.zero, isInitialized: false, errorDescription: errorDescription);
 
   /// The total duration of the video.
   ///
@@ -177,21 +172,16 @@ class MiniController extends ValueNotifier<VideoPlayerValue> {
   /// The name of the asset is given by the [dataSource] argument and must not be
   /// null. The [package] argument must be non-null when the asset comes from a
   /// package and null otherwise.
-  MiniController.asset(
-    this.dataSource, {
-    this.package,
-    this.viewType = VideoViewType.textureView,
-  }) : dataSourceType = DataSourceType.asset,
-       super(const VideoPlayerValue(duration: Duration.zero));
+  MiniController.asset(this.dataSource, {this.package, this.viewType = VideoViewType.textureView})
+    : dataSourceType = DataSourceType.asset,
+      super(const VideoPlayerValue(duration: Duration.zero));
 
   /// Constructs a [MiniController] playing a video from obtained from
   /// the network.
-  MiniController.network(
-    this.dataSource, {
-    this.viewType = VideoViewType.textureView,
-  }) : dataSourceType = DataSourceType.network,
-       package = null,
-       super(const VideoPlayerValue(duration: Duration.zero));
+  MiniController.network(this.dataSource, {this.viewType = VideoViewType.textureView})
+    : dataSourceType = DataSourceType.network,
+      package = null,
+      super(const VideoPlayerValue(duration: Duration.zero));
 
   /// Constructs a [MiniController] playing a video from obtained from a file.
   MiniController.file(File file, {this.viewType = VideoViewType.textureView})
@@ -241,20 +231,11 @@ class MiniController extends ValueNotifier<VideoPlayerValue> {
           package: package,
         );
       case DataSourceType.network:
-        dataSourceDescription = DataSource(
-          sourceType: DataSourceType.network,
-          uri: dataSource,
-        );
+        dataSourceDescription = DataSource(sourceType: DataSourceType.network, uri: dataSource);
       case DataSourceType.file:
-        dataSourceDescription = DataSource(
-          sourceType: DataSourceType.file,
-          uri: dataSource,
-        );
+        dataSourceDescription = DataSource(sourceType: DataSourceType.file, uri: dataSource);
       case DataSourceType.contentUri:
-        dataSourceDescription = DataSource(
-          sourceType: DataSourceType.contentUri,
-          uri: dataSource,
-        );
+        dataSourceDescription = DataSource(sourceType: DataSourceType.contentUri, uri: dataSource);
     }
 
     final creationOptions = VideoCreationOptions(
@@ -262,10 +243,8 @@ class MiniController extends ValueNotifier<VideoPlayerValue> {
       viewType: viewType,
     );
 
-    _playerId =
-        (await _platform.createWithOptions(creationOptions)) ??
-        kUninitializedPlayerId;
-    _creatingCompleter!.complete(null);
+    _playerId = (await _platform.createWithOptions(creationOptions)) ?? kUninitializedPlayerId;
+    _creatingCompleter!.complete();
     final initializingCompleter = Completer<void>();
 
     void eventListener(VideoEvent event) {
@@ -277,7 +256,7 @@ class MiniController extends ValueNotifier<VideoPlayerValue> {
             size: event.size,
             isInitialized: event.duration != null,
           );
-          initializingCompleter.complete(null);
+          initializingCompleter.complete();
           _platform.setVolume(_playerId, 1.0);
           _platform.setLooping(_playerId, true);
           _applyPlayPause();
@@ -348,9 +327,7 @@ class MiniController extends ValueNotifier<VideoPlayerValue> {
     if (value.isPlaying) {
       await _platform.play(_playerId);
 
-      _timer = Timer.periodic(const Duration(milliseconds: 500), (
-        Timer timer,
-      ) async {
+      _timer = Timer.periodic(const Duration(milliseconds: 500), (Timer timer) async {
         final Duration? newPosition = await position;
         if (newPosition == null) {
           return;
@@ -454,9 +431,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
         ? Container()
         : _VideoPlayerWithRotation(
             rotation: widget.controller.value.rotationCorrection,
-            child: _platform.buildViewWithOptions(
-              VideoViewOptions(playerId: _playerId),
-            ),
+            child: _platform.buildViewWithOptions(VideoViewOptions(playerId: _playerId)),
           );
   }
 }
@@ -591,10 +566,7 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
     }
     return _VideoScrubber(
       controller: controller,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 5.0),
-        child: progressIndicator,
-      ),
+      child: Padding(padding: const EdgeInsets.only(top: 5.0), child: progressIndicator),
     );
   }
 }

@@ -1,3 +1,11 @@
+## NEXT
+
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+
+## 2.4.3
+
+* Removes a LICENSE entry for code that no longer exists in the package.
+
 ## 2.4.2
 
 * Fixes an issue that caused duplicate semantic nodes for `Link` widgets.

@@ -9,12 +9,14 @@ import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:build/build.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
 
+import 'duplicate_path_severity.dart';
 import 'path_utils.dart';
 import 'type_helpers.dart';
 
@@ -83,8 +85,7 @@ class ShellRouteConfig extends RouteBaseConfig {
       '${restorationScopeId == null ? '' : 'restorationScopeId: $restorationScopeId,'}';
 
   @override
-  String get factorConstructorParameters =>
-      'factory: $_extensionName._fromState,';
+  String get factorConstructorParameters => 'factory: $_extensionName._fromState,';
 
   @override
   String get routeDataClassName => 'ShellRouteData';
@@ -128,8 +129,7 @@ extension $_extensionName on $_className {
       '${navigatorContainerBuilder == null ? '' : 'navigatorContainerBuilder: $navigatorContainerBuilder,'}';
 
   @override
-  String get factorConstructorParameters =>
-      'factory: $_extensionName._fromState,';
+  String get factorConstructorParameters => 'factory: $_extensionName._fromState,';
 
   @override
   String get routeDataClassName => 'StatefulShellRouteData';
@@ -190,9 +190,38 @@ class StatefulShellBranchConfig extends RouteBaseConfig {
 mixin _GoRouteMixin on RouteBaseConfig {
   String get _basePathForLocation;
 
-  late final Set<String> _pathParams = pathParametersFromPattern(
-    _basePathForLocation,
-  );
+  /// The path this route contributes to the URL, without any parent path.
+  ///
+  /// This is the path exactly as written in the annotation.
+  String get path;
+
+  /// Whether this route only matches a URL that matches its path's casing.
+  bool get caseSensitive;
+
+  /// The path this route matches, joined with the paths of its ancestors.
+  ///
+  /// Shell routes and branches contribute nothing, since they own no path, so
+  /// this is the URL pattern the route resolves to at runtime. Two routes with
+  /// the same pattern compete for the same URL no matter where they sit in the
+  /// tree, which is what [reportDuplicateRoutePaths] compares.
+  ///
+  /// [_basePathForLocation] cannot serve here, because a relative route
+  /// deliberately reports only its own path.
+  String get _joinedPath {
+    final pathSegments = <String>[];
+
+    RouteBaseConfig? config = this;
+    while (config != null) {
+      if (config case _GoRouteMixin(:final String path)) {
+        pathSegments.add(path);
+      }
+      config = config.parent;
+    }
+
+    return p.url.joinAll(pathSegments.reversed);
+  }
+
+  late final Set<String> _pathParams = pathParametersFromPattern(_basePathForLocation);
 
   // construct path bits using parent bits
   // if there are any queryParam objects, add in the `queryParam` bits
@@ -226,17 +255,13 @@ mixin _GoRouteMixin on RouteBaseConfig {
   /// The definition of the mixin to be generated.
   String get _mixinDefinition;
 
-  FormalParameterElement? get _extraParam =>
-      _ctor.formalParameters.singleWhereOrNull(
-        (FormalParameterElement element) => element.isExtraField,
-      );
+  FormalParameterElement? get _extraParam => _ctor.formalParameters.singleWhereOrNull(
+    (FormalParameterElement element) => element.isExtraField,
+  );
 
   String get _fromStateConstructor {
     final buffer = StringBuffer('=>');
-    if (_ctor.isConst &&
-        _ctorParams.isEmpty &&
-        _ctorQueryParams.isEmpty &&
-        _extraParam == null) {
+    if (_ctor.isConst && _ctorParams.isEmpty && _ctorQueryParams.isEmpty && _extraParam == null) {
       buffer.writeln('const ');
     }
 
@@ -254,9 +279,7 @@ mixin _GoRouteMixin on RouteBaseConfig {
   }
 
   String get _castedSelf {
-    if (_pathParams.isEmpty &&
-        _ctorQueryParams.isEmpty &&
-        _extraParam == null) {
+    if (_pathParams.isEmpty && _ctorQueryParams.isEmpty && _extraParam == null) {
       return '';
     }
 
@@ -273,14 +296,8 @@ mixin _GoRouteMixin on RouteBaseConfig {
         );
       }
     }
-    final List<ElementAnnotation>? metadata = _fieldMetadata(
-      element.displayName,
-    );
-    final String fromStateExpression = decodeParameter(
-      element,
-      _pathParams,
-      metadata,
-    );
+    final List<ElementAnnotation>? metadata = _fieldMetadata(element.displayName);
+    final String fromStateExpression = decodeParameter(element, _pathParams, metadata);
 
     if (element.isPositional) {
       return '$fromStateExpression,';
@@ -318,15 +335,12 @@ mixin _GoRouteMixin on RouteBaseConfig {
 
     for (final FormalParameterElement param in _ctorQueryParams) {
       final String parameterName = param.displayName;
-
       final conditions = <String>[];
       if (param.hasDefaultValue) {
         if (param.type.isNullableType) {
           throw NullableDefaultValueError(param);
         }
-        conditions.add(
-          compareField(param, parameterName, param.defaultValueCode!),
-        );
+        conditions.add(compareField(param));
       } else if (param.type.isNullableType) {
         conditions.add('$selfFieldName.$parameterName != null');
       }
@@ -335,7 +349,7 @@ mixin _GoRouteMixin on RouteBaseConfig {
         line = 'if (${conditions.join(' && ')}) ';
       }
       line +=
-          '${escapeDartString(parameterName.kebab)}: '
+          '${param.uriName}: '
           '${_encodeFor(parameterName)},';
 
       buffer.writeln(line);
@@ -346,17 +360,16 @@ mixin _GoRouteMixin on RouteBaseConfig {
     return buffer.toString();
   }
 
-  late final List<FormalParameterElement> _ctorParams = _ctor.formalParameters
-      .where((FormalParameterElement element) {
-        if (_pathParams.contains(element.displayName)) {
-          return true;
-        }
-        return false;
-      })
-      .toList();
+  late final List<FormalParameterElement> _ctorParams = _ctor.formalParameters.where((
+    FormalParameterElement element,
+  ) {
+    if (_pathParams.contains(element.displayName)) {
+      return true;
+    }
+    return false;
+  }).toList();
 
-  late final List<FormalParameterElement> _ctorQueryParams = _ctor
-      .formalParameters
+  late final List<FormalParameterElement> _ctorQueryParams = _ctor.formalParameters
       .where(
         (FormalParameterElement element) =>
             !_pathParams.contains(element.displayName) && !element.isExtraField,
@@ -367,34 +380,24 @@ mixin _GoRouteMixin on RouteBaseConfig {
     final ConstructorElement? ctor = routeDataClass.unnamedConstructor;
 
     if (ctor == null) {
-      throw InvalidGenerationSourceError(
-        'Missing default constructor',
-        element: routeDataClass,
-      );
+      throw InvalidGenerationSourceError('Missing default constructor', element: routeDataClass);
     }
     return ctor;
   }
 
   @override
-  Iterable<String> classDeclarations() => <String>[
-    _mixinDefinition,
-    ..._enumDeclarations(),
-  ];
+  Iterable<String> classDeclarations() => <String>[_mixinDefinition, ..._enumDeclarations()];
 
   /// Returns code representing the constant maps that contain the `enum` to
   /// [String] mapping for each referenced enum.
   Iterable<String> _enumDeclarations() {
     final enumParamTypes = <InterfaceType>{};
 
-    for (final ctorParam in <FormalParameterElement>[
-      ..._ctorParams,
-      ..._ctorQueryParams,
-    ]) {
+    for (final ctorParam in <FormalParameterElement>[..._ctorParams, ..._ctorQueryParams]) {
       DartType potentialEnumType = ctorParam.type;
       if (potentialEnumType is ParameterizedType &&
           (ctorParam.type as ParameterizedType).typeArguments.isNotEmpty) {
-        potentialEnumType =
-            (ctorParam.type as ParameterizedType).typeArguments.first;
+        potentialEnumType = (ctorParam.type as ParameterizedType).typeArguments.first;
       }
 
       if (potentialEnumType.isEnum) {
@@ -423,48 +426,40 @@ class GoRouteConfig extends RouteBaseConfig with _GoRouteMixin {
     required this.path,
     required this.name,
     required this.caseSensitive,
+    required this.hasOverriddenOnExit,
     required this.parentNavigatorKey,
     required super.routeDataClass,
     required super.parent,
   }) : super._();
 
   /// The path of the GoRoute to be created by this configuration.
+  @override
   final String path;
 
   /// The name of the GoRoute to be created by this configuration.
   final String? name;
 
   /// The case sensitivity of the GoRoute to be created by this configuration.
+  @override
   final bool caseSensitive;
+
+  /// Whether to enable the onExit callback for this route.
+  ///
+  /// When set to true, the route will include an onExit parameter in the
+  /// generated GoRoute constructor, allowing you to implement custom logic
+  /// when navigating away from this route.
+  final bool hasOverriddenOnExit;
 
   /// The parent navigator key.
   final String? parentNavigatorKey;
 
-  String get _rawJoinedPath {
-    final pathSegments = <String>[];
-
-    RouteBaseConfig? config = this;
-    while (config != null) {
-      if (config
-          case GoRouteConfig(:final String path) ||
-              RelativeGoRouteConfig(:final String path)) {
-        pathSegments.add(path);
-      }
-      config = config.parent;
-    }
-
-    return p.url.joinAll(pathSegments.reversed);
-  }
-
   @override
-  String get _basePathForLocation => _rawJoinedPath;
+  String get _basePathForLocation => _joinedPath;
 
   @override
   String get _mixinDefinition {
     final bool hasMixin =
-        getNodeDeclaration<ClassDeclaration>(routeDataClass)
-            ?.withClause
-            ?.mixinTypes
+        getNodeDeclaration<ClassDeclaration>(routeDataClass)?.withClause?.mixinTypes
             .any((NamedType e) => e.name.toString() == _mixinName) ??
         false;
 
@@ -506,6 +501,7 @@ mixin $_mixinName on $routeDataClassName {
       'path: ${escapeDartString(path)},'
       '${name != null ? 'name: ${escapeDartString(name!)},' : ''}'
       '${caseSensitive ? '' : 'caseSensitive: $caseSensitive,'}'
+      '${'hasOverriddenOnExit: $hasOverriddenOnExit,'}'
       '${parentNavigatorKey == null ? '' : 'parentNavigatorKey: $parentNavigatorKey,'}';
 
   @override
@@ -517,16 +513,26 @@ class RelativeGoRouteConfig extends RouteBaseConfig with _GoRouteMixin {
   RelativeGoRouteConfig._({
     required this.path,
     required this.caseSensitive,
+    required this.hasOverriddenOnExit,
     required this.parentNavigatorKey,
     required super.routeDataClass,
     required super.parent,
   }) : super._();
 
   /// The path of the GoRoute to be created by this configuration.
+  @override
   final String path;
 
   /// The case sensitivity of the GoRoute to be created by this configuration.
+  @override
   final bool caseSensitive;
+
+  /// Whether to enable the onExit callback for this route.
+  ///
+  /// When set to true, the route will include an onExit parameter in the
+  /// generated GoRoute constructor, allowing you to implement custom logic
+  /// when navigating away from this route.
+  final bool hasOverriddenOnExit;
 
   /// The parent navigator key.
   final String? parentNavigatorKey;
@@ -537,9 +543,7 @@ class RelativeGoRouteConfig extends RouteBaseConfig with _GoRouteMixin {
   @override
   String get _mixinDefinition {
     final bool hasMixin =
-        getNodeDeclaration<ClassDeclaration>(routeDataClass)
-            ?.withClause
-            ?.mixinTypes
+        getNodeDeclaration<ClassDeclaration>(routeDataClass)?.withClause?.mixinTypes
             .any((NamedType e) => e.name.toString() == _mixinName) ??
         false;
 
@@ -583,6 +587,7 @@ mixin $_mixinName on $routeDataClassName {
   String get routeConstructorParameters =>
       'path: ${escapeDartString(path)},'
       '${caseSensitive ? '' : 'caseSensitive: $caseSensitive,'}'
+      '${'hasOverriddenOnExit: $hasOverriddenOnExit,'}'
       '${parentNavigatorKey == null ? '' : 'parentNavigatorKey: $parentNavigatorKey,'}';
 
   @override
@@ -594,10 +599,7 @@ abstract class RouteBaseConfig {
   RouteBaseConfig._({required this.routeDataClass, required this.parent});
 
   /// Creates a new [RouteBaseConfig] represented the annotation data in [reader].
-  factory RouteBaseConfig.fromAnnotation(
-    ConstantReader reader,
-    InterfaceElement element,
-  ) {
+  factory RouteBaseConfig.fromAnnotation(ConstantReader reader, InterfaceElement element) {
     final definition = RouteBaseConfig._fromAnnotation(reader, element, null);
 
     if (element != definition.routeDataClass) {
@@ -628,8 +630,7 @@ abstract class RouteBaseConfig {
       );
     }
 
-    final bool isRelative =
-        isAncestorRelative || typeName == 'TypedRelativeGoRoute';
+    final bool isRelative = isAncestorRelative || typeName == 'TypedRelativeGoRoute';
 
     final DartType typeParamType = type.typeArguments.single;
     if (typeParamType is! InterfaceType) {
@@ -649,18 +650,12 @@ abstract class RouteBaseConfig {
         value = ShellRouteConfig._(
           routeDataClass: classElement,
           parent: parent,
-          navigatorKey: _generateParameterGetterCode(
-            classElement,
-            parameterName: r'$navigatorKey',
-          ),
+          navigatorKey: _generateParameterGetterCode(classElement, parameterName: r'$navigatorKey'),
           parentNavigatorKey: _generateParameterGetterCode(
             classElement,
             parameterName: r'$parentNavigatorKey',
           ),
-          observers: _generateParameterGetterCode(
-            classElement,
-            parameterName: r'$observers',
-          ),
+          observers: _generateParameterGetterCode(classElement, parameterName: r'$observers'),
           restorationScopeId: _generateParameterGetterCode(
             classElement,
             parameterName: r'$restorationScopeId',
@@ -687,10 +682,7 @@ abstract class RouteBaseConfig {
         value = StatefulShellBranchConfig._(
           routeDataClass: classElement,
           parent: parent,
-          navigatorKey: _generateParameterGetterCode(
-            classElement,
-            parameterName: r'$navigatorKey',
-          ),
+          navigatorKey: _generateParameterGetterCode(classElement, parameterName: r'$navigatorKey'),
           restorationScopeId: _generateParameterGetterCode(
             classElement,
             parameterName: r'$restorationScopeId',
@@ -699,14 +691,8 @@ abstract class RouteBaseConfig {
             classElement,
             parameterName: r'$initialLocation',
           ),
-          observers: _generateParameterGetterCode(
-            classElement,
-            parameterName: r'$observers',
-          ),
-          preload: _generateParameterGetterCode(
-            classElement,
-            parameterName: r'$preload',
-          ),
+          observers: _generateParameterGetterCode(classElement, parameterName: r'$observers'),
+          preload: _generateParameterGetterCode(classElement, parameterName: r'$preload'),
         );
       case 'TypedGoRoute':
         final ConstantReader pathValue = reader.read('path');
@@ -718,10 +704,14 @@ abstract class RouteBaseConfig {
         }
         final ConstantReader nameValue = reader.read('name');
         final ConstantReader caseSensitiveValue = reader.read('caseSensitive');
+        final bool hasOverriddenOnExit = classElement.methods.any(
+          (method) => method.name == 'onExit',
+        );
         value = GoRouteConfig._(
           path: pathValue.stringValue,
           name: nameValue.isNull ? null : nameValue.stringValue,
           caseSensitive: caseSensitiveValue.boolValue,
+          hasOverriddenOnExit: hasOverriddenOnExit,
           routeDataClass: classElement,
           parent: parent,
           parentNavigatorKey: _generateParameterGetterCode(
@@ -745,9 +735,13 @@ abstract class RouteBaseConfig {
           );
         }
         final ConstantReader caseSensitiveValue = reader.read('caseSensitive');
+        final bool hasOverriddenOnExit = classElement.methods.any(
+          (method) => method.name == 'onExit',
+        );
         value = RelativeGoRouteConfig._(
           path: pathValue.stringValue,
           caseSensitive: caseSensitiveValue.boolValue,
+          hasOverriddenOnExit: hasOverriddenOnExit,
           routeDataClass: classElement,
           parent: parent,
           parentNavigatorKey: _generateParameterGetterCode(
@@ -785,8 +779,7 @@ abstract class RouteBaseConfig {
   final RouteBaseConfig? parent;
 
   static String _generateChildrenGetterName(String name) {
-    return (name == 'TypedStatefulShellRoute' ||
-            name == 'StatefulShellRouteData')
+    return (name == 'TypedStatefulShellRoute' || name == 'StatefulShellRouteData')
         ? 'branches'
         : 'routes';
   }
@@ -800,9 +793,7 @@ abstract class RouteBaseConfig {
           if (!element.isStatic || element.displayName != parameterName) {
             return false;
           }
-          if (parameterName.toLowerCase().contains(
-            RegExp('navigatorKey | observers'),
-          )) {
+          if (parameterName.toLowerCase().contains(RegExp('navigatorKey | observers'))) {
             final DartType type = element.type;
             if (type is! ParameterizedType) {
               return false;
@@ -812,8 +803,7 @@ abstract class RouteBaseConfig {
               return false;
             }
             final DartType typeArgument = typeArguments.single;
-            if (withoutNullability(typeArgument.getDisplayString()) !=
-                'NavigatorState') {
+            if (typeArgument.toStringNonNullable() != 'NavigatorState') {
               return false;
             }
           }
@@ -839,10 +829,8 @@ abstract class RouteBaseConfig {
   }
 
   /// Generates all of the members that correspond to `this`.
-  InfoIterable generateMembers() => InfoIterable._(
-    members: _generateMembers().toList(),
-    routeGetterName: _routeGetterName,
-  );
+  InfoIterable generateMembers() =>
+      InfoIterable._(members: _generateMembers().toList(), routeGetterName: _routeGetterName);
 
   Iterable<String> _generateMembers() sync* {
     final items = <String>[_rootDefinition()];
@@ -856,9 +844,7 @@ abstract class RouteBaseConfig {
     yield* items
         .expand(
           (String e) => helperNames.entries
-              .where(
-                (MapEntry<String, String> element) => e.contains(element.key),
-              )
+              .where((MapEntry<String, String> element) => e.contains(element.key))
               .map((MapEntry<String, String> e) => e.value),
         )
         .toSet();
@@ -900,8 +886,7 @@ $routeDataClassName.$dataConvertionFunctionName(
 ''';
   }
 
-  PropertyAccessorElement? _field(String name) =>
-      routeDataClass.getGetter(name);
+  PropertyAccessorElement? _field(String name) => routeDataClass.getGetter(name);
 
   List<ElementAnnotation>? _fieldMetadata(String name) => routeDataClass.fields
       .firstWhereOrNull((FieldElement element) => element.displayName == name)
@@ -936,9 +921,7 @@ String _enumMapConst(InterfaceType type) {
 
   final buffer = StringBuffer('const ${enumMapName(type)} = {');
 
-  for (final FieldElement enumField in type.element.fields.where(
-    (FieldElement element) => element.isEnumConstant,
-  )) {
+  for (final FieldElement enumField in type.enumConstants) {
     buffer.writeln(
       '$enumName.${enumField.displayName}: ${escapeDartString(enumField.displayName.kebab)},',
     );
@@ -1005,3 +988,89 @@ bool $iterablesEqualHelperName<T>(Iterable<T>? iterable1, Iterable<T>? iterable2
     if (iterator1.current != iterator2.current) return false;
   }
 }''';
+
+/// Reports routes that resolve to the same URL pattern, with the severity
+/// selected by the `duplicate_route_paths` builder option.
+///
+/// [roots] holds every top-level route config in a library, which is the widest
+/// scope the builder can see, since it generates one library at a time.
+///
+/// Routes are compared by the whole URL pattern they resolve to, their
+/// [_GoRouteMixin._joinedPath], rather than by the path each one declares. Two
+/// routes at different depths can still land on one URL: a route nested as `a`
+/// then `b` resolves to the same place as a route declared at `a/b`. Comparing
+/// declared paths level by level misses that, and misses a collision between the
+/// children of two declarations that themselves share a path.
+///
+/// `go_router` tries routes in declaration order and takes the first whose
+/// pattern matches the whole URL, so of two routes sharing a pattern the later
+/// can never be the match for it.
+///
+/// Parameter names are normalized, since `:id` and `:userId` match the same URL
+/// segments. A route that is not case sensitive also shadows a later route whose
+/// pattern differs from it only in casing.
+void reportDuplicateRoutePaths(List<RouteBaseConfig> roots, DuplicatePathSeverity severity) {
+  if (severity == DuplicatePathSeverity.ignore) {
+    return;
+  }
+
+  final routes = <_GoRouteMixin>[];
+  _collectRoutes(roots, routes);
+
+  // Keyed by exact pattern, then again by folded pattern for the routes that
+  // match any casing. Both keep their first entry, which is the route
+  // `go_router` matches, because the walk above is in declaration order.
+  final seen = <String, _GoRouteMixin>{};
+  final seenIgnoringCase = <String, _GoRouteMixin>{};
+  for (final route in routes) {
+    final String pattern = normalizePathParameters(route._joinedPath);
+    final String folded = pattern.toLowerCase();
+
+    final _GoRouteMixin? existing = seen[pattern] ?? seenIgnoringCase[folded];
+    if (existing != null) {
+      final String message = _duplicatePathMessage(existing, route);
+      if (severity == DuplicatePathSeverity.error) {
+        throw InvalidGenerationSourceError(message, element: route.routeDataClass);
+      }
+      log.warning(message);
+    }
+
+    seen.putIfAbsent(pattern, () => route);
+    if (!route.caseSensitive) {
+      seenIgnoringCase.putIfAbsent(folded, () => route);
+    }
+  }
+}
+
+/// Describes the conflict between two routes that resolve to the same URL.
+///
+/// One route class declared twice at one URL gets its own wording, since naming
+/// that class on both sides of an "and" reads as though two classes were
+/// involved. Any other pair names both sides, which stays clear even when the
+/// class repeats, because the two patterns differ.
+String _duplicatePathMessage(_GoRouteMixin existing, _GoRouteMixin route) {
+  final String existingPattern = existing._joinedPath;
+  final String pattern = route._joinedPath;
+  if (existing.routeDataClass == route.routeDataClass && existingPattern == pattern) {
+    return 'Duplicate route path detected: ${route._className} is declared more '
+        'than once at "$pattern".';
+  }
+  return 'Duplicate route path detected: '
+      '"$existingPattern" from ${existing._className} and '
+      '"$pattern" from ${route._className} '
+      'both match the same URL pattern.';
+}
+
+/// Collects every route in the tree that resolves to a URL of its own, in
+/// declaration order.
+///
+/// Shell routes and branches own no path, so they contribute nothing themselves,
+/// but the routes inside them do and are collected all the same.
+void _collectRoutes(List<RouteBaseConfig> children, List<_GoRouteMixin> result) {
+  for (final child in children) {
+    if (child is _GoRouteMixin) {
+      result.add(child);
+    }
+    _collectRoutes(child._children, result);
+  }
+}

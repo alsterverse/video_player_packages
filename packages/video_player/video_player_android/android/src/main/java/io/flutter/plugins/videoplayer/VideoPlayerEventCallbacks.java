@@ -11,39 +11,59 @@ import io.flutter.plugin.common.BinaryMessenger;
 
 final class VideoPlayerEventCallbacks implements VideoPlayerCallbacks {
   private final QueuingEventSink eventSink;
+  private final @Nullable VideoEventsEventChannel eventChannel;
   // The plugin's identifier for this player, which is also the stream instance
   // name. Only used to name the player in VideoPlayerDiag lines; Android's
   // texture id cannot serve there because loadAsset replaces it.
   @NonNull private final String identifier;
 
+  @VisibleForTesting
+  interface EventChannelFactory {
+    VideoEventsEventChannel create(
+        BinaryMessenger messenger, VideoEventsStreamHandler handler, String identifier);
+  }
+
   static VideoPlayerEventCallbacks bindTo(
       @NonNull BinaryMessenger binaryMessenger, @NonNull String identifier) {
-    QueuingEventSink eventSink = new QueuingEventSink();
-    VideoEventsStreamHandler.Companion.register(
-        binaryMessenger,
-        new VideoEventsStreamHandler() {
-          @Override
-          public void onListen(
-              Object arguments, @NonNull PigeonEventSink<PlatformVideoEvent> events) {
-            eventSink.setDelegate(events);
-          }
-
-          @Override
-          public void onCancel(Object arguments) {
-            eventSink.setDelegate(null);
-          }
-        },
-        identifier);
-    return new VideoPlayerEventCallbacks(eventSink, identifier);
+    return bindTo(binaryMessenger, identifier, VideoEventsStreamHandler.Companion::register);
   }
 
   @VisibleForTesting
-  static VideoPlayerEventCallbacks withSink(QueuingEventSink eventSink) {
-    return new VideoPlayerEventCallbacks(eventSink, "?");
+  static VideoPlayerEventCallbacks bindTo(
+      @NonNull BinaryMessenger binaryMessenger,
+      @NonNull String identifier,
+      EventChannelFactory factory) {
+    QueuingEventSink eventSink = new QueuingEventSink();
+    final VideoEventsEventChannel eventChannel =
+        factory.create(
+            binaryMessenger,
+            new VideoEventsStreamHandler() {
+              @Override
+              public void onListen(
+                  Object arguments, @NonNull PigeonEventSink<PlatformVideoEvent> events) {
+                eventSink.setDelegate(events);
+              }
+
+              @Override
+              public void onCancel(Object arguments) {
+                eventSink.setDelegate(null);
+              }
+            },
+            identifier);
+    return new VideoPlayerEventCallbacks(eventSink, eventChannel, identifier);
   }
 
-  private VideoPlayerEventCallbacks(QueuingEventSink eventSink, @NonNull String identifier) {
+  @VisibleForTesting
+  static VideoPlayerEventCallbacks withSink(@NonNull QueuingEventSink eventSink) {
+    return new VideoPlayerEventCallbacks(eventSink, null, "?");
+  }
+
+  private VideoPlayerEventCallbacks(
+      @NonNull QueuingEventSink eventSink,
+      @Nullable VideoEventsEventChannel eventChannel,
+      @NonNull String identifier) {
     this.eventSink = eventSink;
+    this.eventChannel = eventChannel;
     this.identifier = identifier;
   }
 
@@ -95,5 +115,12 @@ final class VideoPlayerEventCallbacks implements VideoPlayerCallbacks {
   @Override
   public void onVideoTrackChanged(@Nullable String selectedTrackId) {
     eventSink.success(new VideoTrackChangedEvent(selectedTrackId));
+  }
+
+  @Override
+  public void onDisposed() {
+    if (eventChannel != null) {
+      eventChannel.setStreamHandler(null);
+    }
   }
 }

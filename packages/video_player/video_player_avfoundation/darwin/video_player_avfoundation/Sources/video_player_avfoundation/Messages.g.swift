@@ -76,7 +76,7 @@ enum MessagesPigeonInternal {
 
   static func doubleHash(_ value: Double, _ hasher: inout Hasher) {
     if value.isNaN {
-      hasher.combine(0x7FF8_0000_0000_0000)
+      hasher.combine(0x7FF8000000000000)
     } else {
       // Normalize -0.0 to 0.0
       hasher.combine(value == 0 ? 0 : value)
@@ -186,11 +186,13 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
   return value as! T?
 }
 
+
 /// Information passed to the platform view creation.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct PlatformVideoViewCreationParams: Hashable, CustomStringConvertible {
   var playerId: Int64
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> PlatformVideoViewCreationParams? {
@@ -205,9 +207,7 @@ struct PlatformVideoViewCreationParams: Hashable, CustomStringConvertible {
       playerId
     ]
   }
-  static func == (lhs: PlatformVideoViewCreationParams, rhs: PlatformVideoViewCreationParams)
-    -> Bool
-  {
+  static func == (lhs: PlatformVideoViewCreationParams, rhs: PlatformVideoViewCreationParams) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
@@ -229,6 +229,7 @@ struct CreationOptions: Hashable, CustomStringConvertible {
   var uri: String
   var httpHeaders: [String: String]
 
+
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> CreationOptions? {
     let uri = pigeonVar_list[0] as! String
@@ -249,8 +250,7 @@ struct CreationOptions: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.uri, rhs.uri)
-      && MessagesPigeonInternal.deepEquals(lhs.httpHeaders, rhs.httpHeaders)
+    return MessagesPigeonInternal.deepEquals(lhs.uri, rhs.uri) && MessagesPigeonInternal.deepEquals(lhs.httpHeaders, rhs.httpHeaders)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -260,8 +260,7 @@ struct CreationOptions: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return
-      "CreationOptions(uri: \(String(describing: uri)), httpHeaders: \(String(describing: httpHeaders)))"
+    return "CreationOptions(uri: \(String(describing: uri)), httpHeaders: \(String(describing: httpHeaders)))"
   }
 }
 
@@ -272,6 +271,7 @@ struct LoadMessage: Hashable, CustomStringConvertible {
   var uri: String? = nil
   var packageName: String? = nil
   var httpHeaders: [String: String]
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> LoadMessage? {
@@ -302,11 +302,7 @@ struct LoadMessage: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.playerId, rhs.playerId)
-      && MessagesPigeonInternal.deepEquals(lhs.asset, rhs.asset)
-      && MessagesPigeonInternal.deepEquals(lhs.uri, rhs.uri)
-      && MessagesPigeonInternal.deepEquals(lhs.packageName, rhs.packageName)
-      && MessagesPigeonInternal.deepEquals(lhs.httpHeaders, rhs.httpHeaders)
+    return MessagesPigeonInternal.deepEquals(lhs.playerId, rhs.playerId) && MessagesPigeonInternal.deepEquals(lhs.asset, rhs.asset) && MessagesPigeonInternal.deepEquals(lhs.uri, rhs.uri) && MessagesPigeonInternal.deepEquals(lhs.packageName, rhs.packageName) && MessagesPigeonInternal.deepEquals(lhs.httpHeaders, rhs.httpHeaders)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -319,8 +315,7 @@ struct LoadMessage: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return
-      "LoadMessage(playerId: \(String(describing: playerId)), asset: \(String(describing: asset)), uri: \(String(describing: uri)), packageName: \(String(describing: packageName)), httpHeaders: \(String(describing: httpHeaders)))"
+    return "LoadMessage(playerId: \(String(describing: playerId)), asset: \(String(describing: asset)), uri: \(String(describing: uri)), packageName: \(String(describing: packageName)), httpHeaders: \(String(describing: httpHeaders)))"
   }
 }
 
@@ -328,6 +323,7 @@ struct LoadMessage: Hashable, CustomStringConvertible {
 struct TexturePlayerIds: Hashable, CustomStringConvertible {
   var playerId: Int64
   var textureId: Int64
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> TexturePlayerIds? {
@@ -349,8 +345,7 @@ struct TexturePlayerIds: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.playerId, rhs.playerId)
-      && MessagesPigeonInternal.deepEquals(lhs.textureId, rhs.textureId)
+    return MessagesPigeonInternal.deepEquals(lhs.playerId, rhs.playerId) && MessagesPigeonInternal.deepEquals(lhs.textureId, rhs.textureId)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -360,8 +355,7 @@ struct TexturePlayerIds: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return
-      "TexturePlayerIds(playerId: \(String(describing: playerId)), textureId: \(String(describing: textureId)))"
+    return "TexturePlayerIds(playerId: \(String(describing: playerId)), textureId: \(String(describing: textureId)))"
   }
 }
 
@@ -374,6 +368,7 @@ struct MediaSelectionAudioTrackData: Hashable, CustomStringConvertible {
   var languageCode: String? = nil
   var isSelected: Bool
   var commonMetadataTitle: String? = nil
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> MediaSelectionAudioTrackData? {
@@ -404,11 +399,7 @@ struct MediaSelectionAudioTrackData: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.index, rhs.index)
-      && MessagesPigeonInternal.deepEquals(lhs.displayName, rhs.displayName)
-      && MessagesPigeonInternal.deepEquals(lhs.languageCode, rhs.languageCode)
-      && MessagesPigeonInternal.deepEquals(lhs.isSelected, rhs.isSelected)
-      && MessagesPigeonInternal.deepEquals(lhs.commonMetadataTitle, rhs.commonMetadataTitle)
+    return MessagesPigeonInternal.deepEquals(lhs.index, rhs.index) && MessagesPigeonInternal.deepEquals(lhs.displayName, rhs.displayName) && MessagesPigeonInternal.deepEquals(lhs.languageCode, rhs.languageCode) && MessagesPigeonInternal.deepEquals(lhs.isSelected, rhs.isSelected) && MessagesPigeonInternal.deepEquals(lhs.commonMetadataTitle, rhs.commonMetadataTitle)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -421,8 +412,7 @@ struct MediaSelectionAudioTrackData: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return
-      "MediaSelectionAudioTrackData(index: \(String(describing: index)), displayName: \(String(describing: displayName)), languageCode: \(String(describing: languageCode)), isSelected: \(String(describing: isSelected)), commonMetadataTitle: \(String(describing: commonMetadataTitle)))"
+    return "MediaSelectionAudioTrackData(index: \(String(describing: index)), displayName: \(String(describing: displayName)), languageCode: \(String(describing: languageCode)), isSelected: \(String(describing: isSelected)), commonMetadataTitle: \(String(describing: commonMetadataTitle)))"
   }
 }
 
@@ -438,6 +428,7 @@ struct MediaSelectionVideoTrackData: Hashable, CustomStringConvertible {
   var frameRate: Double? = nil
   var codec: String? = nil
   var isSelected: Bool
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> MediaSelectionVideoTrackData? {
@@ -477,14 +468,7 @@ struct MediaSelectionVideoTrackData: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.variantIndex, rhs.variantIndex)
-      && MessagesPigeonInternal.deepEquals(lhs.label, rhs.label)
-      && MessagesPigeonInternal.deepEquals(lhs.bitrate, rhs.bitrate)
-      && MessagesPigeonInternal.deepEquals(lhs.width, rhs.width)
-      && MessagesPigeonInternal.deepEquals(lhs.height, rhs.height)
-      && MessagesPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate)
-      && MessagesPigeonInternal.deepEquals(lhs.codec, rhs.codec)
-      && MessagesPigeonInternal.deepEquals(lhs.isSelected, rhs.isSelected)
+    return MessagesPigeonInternal.deepEquals(lhs.variantIndex, rhs.variantIndex) && MessagesPigeonInternal.deepEquals(lhs.label, rhs.label) && MessagesPigeonInternal.deepEquals(lhs.bitrate, rhs.bitrate) && MessagesPigeonInternal.deepEquals(lhs.width, rhs.width) && MessagesPigeonInternal.deepEquals(lhs.height, rhs.height) && MessagesPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate) && MessagesPigeonInternal.deepEquals(lhs.codec, rhs.codec) && MessagesPigeonInternal.deepEquals(lhs.isSelected, rhs.isSelected)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -500,8 +484,7 @@ struct MediaSelectionVideoTrackData: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return
-      "MediaSelectionVideoTrackData(variantIndex: \(String(describing: variantIndex)), label: \(String(describing: label)), bitrate: \(String(describing: bitrate)), width: \(String(describing: width)), height: \(String(describing: height)), frameRate: \(String(describing: frameRate)), codec: \(String(describing: codec)), isSelected: \(String(describing: isSelected)))"
+    return "MediaSelectionVideoTrackData(variantIndex: \(String(describing: variantIndex)), label: \(String(describing: label)), bitrate: \(String(describing: bitrate)), width: \(String(describing: width)), height: \(String(describing: height)), frameRate: \(String(describing: frameRate)), codec: \(String(describing: codec)), isSelected: \(String(describing: isSelected)))"
   }
 }
 
@@ -516,6 +499,7 @@ struct AssetVideoTrackData: Hashable, CustomStringConvertible {
   var frameRate: Double? = nil
   var codec: String? = nil
   var isSelected: Bool
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> AssetVideoTrackData? {
@@ -552,13 +536,7 @@ struct AssetVideoTrackData: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.trackId, rhs.trackId)
-      && MessagesPigeonInternal.deepEquals(lhs.label, rhs.label)
-      && MessagesPigeonInternal.deepEquals(lhs.width, rhs.width)
-      && MessagesPigeonInternal.deepEquals(lhs.height, rhs.height)
-      && MessagesPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate)
-      && MessagesPigeonInternal.deepEquals(lhs.codec, rhs.codec)
-      && MessagesPigeonInternal.deepEquals(lhs.isSelected, rhs.isSelected)
+    return MessagesPigeonInternal.deepEquals(lhs.trackId, rhs.trackId) && MessagesPigeonInternal.deepEquals(lhs.label, rhs.label) && MessagesPigeonInternal.deepEquals(lhs.width, rhs.width) && MessagesPigeonInternal.deepEquals(lhs.height, rhs.height) && MessagesPigeonInternal.deepEquals(lhs.frameRate, rhs.frameRate) && MessagesPigeonInternal.deepEquals(lhs.codec, rhs.codec) && MessagesPigeonInternal.deepEquals(lhs.isSelected, rhs.isSelected)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -573,8 +551,7 @@ struct AssetVideoTrackData: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return
-      "AssetVideoTrackData(trackId: \(String(describing: trackId)), label: \(String(describing: label)), width: \(String(describing: width)), height: \(String(describing: height)), frameRate: \(String(describing: frameRate)), codec: \(String(describing: codec)), isSelected: \(String(describing: isSelected)))"
+    return "AssetVideoTrackData(trackId: \(String(describing: trackId)), label: \(String(describing: label)), width: \(String(describing: width)), height: \(String(describing: height)), frameRate: \(String(describing: frameRate)), codec: \(String(describing: codec)), isSelected: \(String(describing: isSelected)))"
   }
 }
 
@@ -586,6 +563,7 @@ struct NativeVideoTrackData: Hashable, CustomStringConvertible {
   var assetTracks: [AssetVideoTrackData]? = nil
   /// Media selection tracks (for HLS variants on iOS 15+)
   var mediaSelectionTracks: [MediaSelectionVideoTrackData]? = nil
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> NativeVideoTrackData? {
@@ -607,8 +585,7 @@ struct NativeVideoTrackData: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.assetTracks, rhs.assetTracks)
-      && MessagesPigeonInternal.deepEquals(lhs.mediaSelectionTracks, rhs.mediaSelectionTracks)
+    return MessagesPigeonInternal.deepEquals(lhs.assetTracks, rhs.assetTracks) && MessagesPigeonInternal.deepEquals(lhs.mediaSelectionTracks, rhs.mediaSelectionTracks)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -618,8 +595,391 @@ struct NativeVideoTrackData: Hashable, CustomStringConvertible {
   }
 
   public var description: String {
-    return
-      "NativeVideoTrackData(assetTracks: \(String(describing: assetTracks)), mediaSelectionTracks: \(String(describing: mediaSelectionTracks)))"
+    return "NativeVideoTrackData(assetTracks: \(String(describing: assetTracks)), mediaSelectionTracks: \(String(describing: mediaSelectionTracks)))"
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+/// This protocol should not be extended by any user class outside of the generated file.
+protocol PlatformVideoEvent {
+
+}
+
+/// Sent when the video is initialized and ready to play.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct InitializationEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+  /// The video duration in milliseconds.
+  var durationMilliseconds: Int64
+  /// The width of the video in pixels.
+  var width: Double
+  /// The height of the video in pixels.
+  var height: Double
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> InitializationEvent? {
+    let durationMilliseconds = pigeonVar_list[0] as! Int64
+    let width = pigeonVar_list[1] as! Double
+    let height = pigeonVar_list[2] as! Double
+
+    return InitializationEvent(
+      durationMilliseconds: durationMilliseconds,
+      width: width,
+      height: height
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      durationMilliseconds,
+      width,
+      height,
+    ]
+  }
+  static func == (lhs: InitializationEvent, rhs: InitializationEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return MessagesPigeonInternal.deepEquals(lhs.durationMilliseconds, rhs.durationMilliseconds) && MessagesPigeonInternal.deepEquals(lhs.width, rhs.width) && MessagesPigeonInternal.deepEquals(lhs.height, rhs.height)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("InitializationEvent")
+    MessagesPigeonInternal.deepHash(value: durationMilliseconds, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: width, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: height, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "InitializationEvent(durationMilliseconds: \(String(describing: durationMilliseconds)), width: \(String(describing: width)), height: \(String(describing: height)))"
+  }
+}
+
+/// Sent when the video starts buffering.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BufferingStartEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BufferingStartEvent? {
+
+    return BufferingStartEvent(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: BufferingStartEvent, rhs: BufferingStartEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BufferingStartEvent")
+  }
+
+  public var description: String {
+    return "BufferingStartEvent()"
+  }
+}
+
+/// Sent when the video ends buffering.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BufferingEndEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BufferingEndEvent? {
+
+    return BufferingEndEvent(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: BufferingEndEvent, rhs: BufferingEndEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BufferingEndEvent")
+  }
+
+  public var description: String {
+    return "BufferingEndEvent()"
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct PlatformDurationRange: Hashable, CustomStringConvertible {
+  var startMilliseconds: Int64
+  var durationMilliseconds: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PlatformDurationRange? {
+    let startMilliseconds = pigeonVar_list[0] as! Int64
+    let durationMilliseconds = pigeonVar_list[1] as! Int64
+
+    return PlatformDurationRange(
+      startMilliseconds: startMilliseconds,
+      durationMilliseconds: durationMilliseconds
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      startMilliseconds,
+      durationMilliseconds,
+    ]
+  }
+  static func == (lhs: PlatformDurationRange, rhs: PlatformDurationRange) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return MessagesPigeonInternal.deepEquals(lhs.startMilliseconds, rhs.startMilliseconds) && MessagesPigeonInternal.deepEquals(lhs.durationMilliseconds, rhs.durationMilliseconds)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("PlatformDurationRange")
+    MessagesPigeonInternal.deepHash(value: startMilliseconds, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: durationMilliseconds, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "PlatformDurationRange(startMilliseconds: \(String(describing: startMilliseconds)), durationMilliseconds: \(String(describing: durationMilliseconds)))"
+  }
+}
+
+/// Sent when the video buffering position updates.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BufferingUpdateEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+  var bufferedRanges: [PlatformDurationRange]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BufferingUpdateEvent? {
+    let bufferedRanges = pigeonVar_list[0] as! [PlatformDurationRange]
+
+    return BufferingUpdateEvent(
+      bufferedRanges: bufferedRanges
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      bufferedRanges
+    ]
+  }
+  static func == (lhs: BufferingUpdateEvent, rhs: BufferingUpdateEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return MessagesPigeonInternal.deepEquals(lhs.bufferedRanges, rhs.bufferedRanges)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BufferingUpdateEvent")
+    MessagesPigeonInternal.deepHash(value: bufferedRanges, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "BufferingUpdateEvent(bufferedRanges: \(String(describing: bufferedRanges)))"
+  }
+}
+
+/// Sent when playback completes.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PlaybackCompleteEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PlaybackCompleteEvent? {
+
+    return PlaybackCompleteEvent(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: PlaybackCompleteEvent, rhs: PlaybackCompleteEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("PlaybackCompleteEvent")
+  }
+
+  public var description: String {
+    return "PlaybackCompleteEvent()"
+  }
+}
+
+/// Sent when the video starts or stops playing.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct IsPlayingStateEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+  var isPlaying: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> IsPlayingStateEvent? {
+    let isPlaying = pigeonVar_list[0] as! Bool
+
+    return IsPlayingStateEvent(
+      isPlaying: isPlaying
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      isPlaying
+    ]
+  }
+  static func == (lhs: IsPlayingStateEvent, rhs: IsPlayingStateEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return MessagesPigeonInternal.deepEquals(lhs.isPlaying, rhs.isPlaying)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("IsPlayingStateEvent")
+    MessagesPigeonInternal.deepHash(value: isPlaying, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "IsPlayingStateEvent(isPlaying: \(String(describing: isPlaying)))"
+  }
+}
+
+/// Sent when the player starts loading a new item.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ReloadingStartEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ReloadingStartEvent? {
+
+    return ReloadingStartEvent(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: ReloadingStartEvent, rhs: ReloadingStartEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("ReloadingStartEvent")
+  }
+
+  public var description: String {
+    return "ReloadingStartEvent()"
+  }
+}
+
+/// Sent the first time the engine is handed a decoded frame of the current
+/// asset.
+///
+/// Readiness is reported before the engine has asked the texture for anything,
+/// so a texture revealed on readiness alone is revealed a frame or so early.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct FirstFrameRenderedEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> FirstFrameRenderedEvent? {
+
+    return FirstFrameRenderedEvent(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: FirstFrameRenderedEvent, rhs: FirstFrameRenderedEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("FirstFrameRenderedEvent")
+  }
+
+  public var description: String {
+    return "FirstFrameRenderedEvent()"
+  }
+}
+
+/// Sent when the player finishes loading a new item.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct ReloadingEndEvent: PlatformVideoEvent, Hashable, CustomStringConvertible {
+  /// The video duration in milliseconds.
+  var durationMilliseconds: Int64
+  /// The width of the video in pixels.
+  var width: Double
+  /// The height of the video in pixels.
+  var height: Double
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> ReloadingEndEvent? {
+    let durationMilliseconds = pigeonVar_list[0] as! Int64
+    let width = pigeonVar_list[1] as! Double
+    let height = pigeonVar_list[2] as! Double
+
+    return ReloadingEndEvent(
+      durationMilliseconds: durationMilliseconds,
+      width: width,
+      height: height
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      durationMilliseconds,
+      width,
+      height,
+    ]
+  }
+  static func == (lhs: ReloadingEndEvent, rhs: ReloadingEndEvent) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return MessagesPigeonInternal.deepEquals(lhs.durationMilliseconds, rhs.durationMilliseconds) && MessagesPigeonInternal.deepEquals(lhs.width, rhs.width) && MessagesPigeonInternal.deepEquals(lhs.height, rhs.height)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("ReloadingEndEvent")
+    MessagesPigeonInternal.deepHash(value: durationMilliseconds, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: width, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: height, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "ReloadingEndEvent(durationMilliseconds: \(String(describing: durationMilliseconds)), width: \(String(describing: width)), height: \(String(describing: height)))"
   }
 }
 
@@ -642,6 +1002,26 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
       return AssetVideoTrackData.fromList(self.readValue() as! [Any?])
     case 136:
       return NativeVideoTrackData.fromList(self.readValue() as! [Any?])
+    case 137:
+      return InitializationEvent.fromList(self.readValue() as! [Any?])
+    case 138:
+      return BufferingStartEvent.fromList(self.readValue() as! [Any?])
+    case 139:
+      return BufferingEndEvent.fromList(self.readValue() as! [Any?])
+    case 140:
+      return PlatformDurationRange.fromList(self.readValue() as! [Any?])
+    case 141:
+      return BufferingUpdateEvent.fromList(self.readValue() as! [Any?])
+    case 142:
+      return PlaybackCompleteEvent.fromList(self.readValue() as! [Any?])
+    case 143:
+      return IsPlayingStateEvent.fromList(self.readValue() as! [Any?])
+    case 144:
+      return ReloadingStartEvent.fromList(self.readValue() as! [Any?])
+    case 145:
+      return FirstFrameRenderedEvent.fromList(self.readValue() as! [Any?])
+    case 146:
+      return ReloadingEndEvent.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -674,6 +1054,36 @@ private class MessagesPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? NativeVideoTrackData {
       super.writeByte(136)
       super.writeValue(value.toList())
+    } else if let value = value as? InitializationEvent {
+      super.writeByte(137)
+      super.writeValue(value.toList())
+    } else if let value = value as? BufferingStartEvent {
+      super.writeByte(138)
+      super.writeValue(value.toList())
+    } else if let value = value as? BufferingEndEvent {
+      super.writeByte(139)
+      super.writeValue(value.toList())
+    } else if let value = value as? PlatformDurationRange {
+      super.writeByte(140)
+      super.writeValue(value.toList())
+    } else if let value = value as? BufferingUpdateEvent {
+      super.writeByte(141)
+      super.writeValue(value.toList())
+    } else if let value = value as? PlaybackCompleteEvent {
+      super.writeByte(142)
+      super.writeValue(value.toList())
+    } else if let value = value as? IsPlayingStateEvent {
+      super.writeByte(143)
+      super.writeValue(value.toList())
+    } else if let value = value as? ReloadingStartEvent {
+      super.writeByte(144)
+      super.writeValue(value.toList())
+    } else if let value = value as? FirstFrameRenderedEvent {
+      super.writeByte(145)
+      super.writeValue(value.toList())
+    } else if let value = value as? ReloadingEndEvent {
+      super.writeByte(146)
+      super.writeValue(value.toList())
     } else {
       super.writeValue(value)
     }
@@ -694,12 +1104,14 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
   static let shared = MessagesPigeonCodec(readerWriter: MessagesPigeonCodecReaderWriter())
 }
 
+var messagesPigeonMethodCodec = FlutterStandardMethodCodec(readerWriter: MessagesPigeonCodecReaderWriter());
+
+
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol AVFoundationVideoPlayerApi {
   func initialize() throws
   func createPlatformViewPlayer(options creationOptions: CreationOptions) async throws -> Int64
-  func createTexturePlayer(options creationOptions: CreationOptions) async throws
-    -> TexturePlayerIds
+  func createTexturePlayer(options creationOptions: CreationOptions) async throws -> TexturePlayerIds
   func load(_ msg: LoadMessage) throws
   func setMixWithOthers(_ mixWithOthers: Bool) throws
   func fileURLForAsset(name asset: String, package: String?) throws -> String?
@@ -709,15 +1121,9 @@ protocol AVFoundationVideoPlayerApi {
 class AVFoundationVideoPlayerApiSetup {
   static var codec: FlutterStandardMessageCodec { MessagesPigeonCodec.shared }
   /// Sets up an instance of `AVFoundationVideoPlayerApi` to handle messages through the `binaryMessenger`.
-  static func setUp(
-    binaryMessenger: FlutterBinaryMessenger, api: AVFoundationVideoPlayerApi?,
-    messageChannelSuffix: String = ""
-  ) {
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: AVFoundationVideoPlayerApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    let initializeChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.initialize\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let initializeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.initialize\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       initializeChannel.setMessageHandler { _, reply in
         do {
@@ -730,10 +1136,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       initializeChannel.setMessageHandler(nil)
     }
-    let createForPlatformViewChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForPlatformView\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let createForPlatformViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForPlatformView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       createForPlatformViewChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -750,10 +1153,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       createForPlatformViewChannel.setMessageHandler(nil)
     }
-    let createForTextureViewChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForTextureView\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let createForTextureViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForTextureView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       createForTextureViewChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -770,10 +1170,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       createForTextureViewChannel.setMessageHandler(nil)
     }
-    let loadChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.load\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let loadChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.load\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       loadChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -788,10 +1185,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       loadChannel.setMessageHandler(nil)
     }
-    let setMixWithOthersChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.setMixWithOthers\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let setMixWithOthersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.setMixWithOthers\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setMixWithOthersChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -806,10 +1200,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       setMixWithOthersChannel.setMessageHandler(nil)
     }
-    let getAssetUrlChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.getAssetUrl\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let getAssetUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.getAssetUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       getAssetUrlChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -845,23 +1236,16 @@ protocol VideoPlayerInstanceApi {
   /// Selects a video track by setting preferredPeakBitRate.
   /// Pass 0 to enable auto quality selection.
   func selectVideoTrack(withBitrate bitrate: Int64) throws
-  func setPreventsDisplaySleepDuringVideoPlayback(_ preventsDisplaySleepDuringVideoPlayback: Bool)
-    throws
+  func setPreventsDisplaySleepDuringVideoPlayback(_ preventsDisplaySleepDuringVideoPlayback: Bool) throws
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
 class VideoPlayerInstanceApiSetup {
   static var codec: FlutterStandardMessageCodec { MessagesPigeonCodec.shared }
   /// Sets up an instance of `VideoPlayerInstanceApi` to handle messages through the `binaryMessenger`.
-  static func setUp(
-    binaryMessenger: FlutterBinaryMessenger, api: VideoPlayerInstanceApi?,
-    messageChannelSuffix: String = ""
-  ) {
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: VideoPlayerInstanceApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    let setLoopingChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setLooping\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let setLoopingChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setLooping\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setLoopingChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -876,10 +1260,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       setLoopingChannel.setMessageHandler(nil)
     }
-    let setVolumeChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setVolume\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let setVolumeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setVolume\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setVolumeChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -894,10 +1275,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       setVolumeChannel.setMessageHandler(nil)
     }
-    let setPlaybackSpeedChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setPlaybackSpeed\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let setPlaybackSpeedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setPlaybackSpeed\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setPlaybackSpeedChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -912,10 +1290,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       setPlaybackSpeedChannel.setMessageHandler(nil)
     }
-    let playChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.play\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let playChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.play\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       playChannel.setMessageHandler { _, reply in
         do {
@@ -928,10 +1303,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       playChannel.setMessageHandler(nil)
     }
-    let getPositionChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.getPosition\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let getPositionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.getPosition\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       getPositionChannel.setMessageHandler { _, reply in
         do {
@@ -944,10 +1316,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       getPositionChannel.setMessageHandler(nil)
     }
-    let seekToChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.seekTo\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let seekToChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.seekTo\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       seekToChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -964,10 +1333,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       seekToChannel.setMessageHandler(nil)
     }
-    let pauseChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.pause\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let pauseChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.pause\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       pauseChannel.setMessageHandler { _, reply in
         do {
@@ -980,10 +1346,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       pauseChannel.setMessageHandler(nil)
     }
-    let stopChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.stop\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let stopChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.stop\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       stopChannel.setMessageHandler { _, reply in
         do {
@@ -996,10 +1359,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       stopChannel.setMessageHandler(nil)
     }
-    let disposeChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.dispose\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let disposeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.dispose\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       disposeChannel.setMessageHandler { _, reply in
         do {
@@ -1012,10 +1372,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       disposeChannel.setMessageHandler(nil)
     }
-    let getAudioTracksChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.getAudioTracks\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let getAudioTracksChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.getAudioTracks\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       getAudioTracksChannel.setMessageHandler { _, reply in
         Task { @MainActor in
@@ -1030,10 +1387,7 @@ class VideoPlayerInstanceApiSetup {
     } else {
       getAudioTracksChannel.setMessageHandler(nil)
     }
-    let selectAudioTrackChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.selectAudioTrack\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let selectAudioTrackChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.selectAudioTrack\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       selectAudioTrackChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -1051,10 +1405,7 @@ class VideoPlayerInstanceApiSetup {
       selectAudioTrackChannel.setMessageHandler(nil)
     }
     /// Gets the available video tracks for the video.
-    let getVideoTracksChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.getVideoTracks\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let getVideoTracksChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.getVideoTracks\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       getVideoTracksChannel.setMessageHandler { _, reply in
         Task { @MainActor in
@@ -1071,10 +1422,7 @@ class VideoPlayerInstanceApiSetup {
     }
     /// Selects a video track by setting preferredPeakBitRate.
     /// Pass 0 to enable auto quality selection.
-    let selectVideoTrackChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.selectVideoTrack\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let selectVideoTrackChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.selectVideoTrack\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       selectVideoTrackChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -1089,17 +1437,13 @@ class VideoPlayerInstanceApiSetup {
     } else {
       selectVideoTrackChannel.setMessageHandler(nil)
     }
-    let setPreventsDisplaySleepDuringVideoPlaybackChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setPreventsDisplaySleepDuringVideoPlayback\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let setPreventsDisplaySleepDuringVideoPlaybackChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setPreventsDisplaySleepDuringVideoPlayback\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setPreventsDisplaySleepDuringVideoPlaybackChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
         let preventsDisplaySleepDuringVideoPlaybackArg = args[0] as! Bool
         do {
-          try api.setPreventsDisplaySleepDuringVideoPlayback(
-            preventsDisplaySleepDuringVideoPlaybackArg)
+          try api.setPreventsDisplaySleepDuringVideoPlayback(preventsDisplaySleepDuringVideoPlaybackArg)
           reply(wrapResult(nil))
         } catch {
           reply(wrapError(error))
@@ -1110,3 +1454,91 @@ class VideoPlayerInstanceApiSetup {
     }
   }
 }
+
+private class PigeonStreamHandler<ReturnType>: NSObject, FlutterStreamHandler {
+  private let wrapper: PigeonEventChannelWrapper<ReturnType>
+  private var pigeonSink: PigeonEventSink<ReturnType>? = nil
+
+  init(wrapper: PigeonEventChannelWrapper<ReturnType>) {
+    self.wrapper = wrapper
+  }
+
+  func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink)
+    -> FlutterError?
+  {
+    pigeonSink = PigeonEventSink<ReturnType>(events)
+    wrapper.onListen(withArguments: arguments, sink: pigeonSink!)
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    pigeonSink = nil
+    wrapper.onCancel(withArguments: arguments)
+    return nil
+  }
+}
+
+class PigeonEventChannelWrapper<ReturnType> {
+  func onListen(withArguments arguments: Any?, sink: PigeonEventSink<ReturnType>) {}
+  func onCancel(withArguments arguments: Any?) {}
+}
+
+class PigeonEventSink<ReturnType> {
+  private let sink: FlutterEventSink
+
+  init(_ sink: @escaping FlutterEventSink) {
+    self.sink = sink
+  }
+
+  func success(_ value: ReturnType) {
+    sink(value)
+  }
+
+  func error(code: String, message: String?, details: Any?) {
+    sink(FlutterError(code: code, message: message, details: details))
+  }
+
+  func endOfStream() {
+    sink(FlutterEndOfEventStream)
+  }
+
+}
+
+/// A typed channel for communicating with the Flutter application using asynchronous event streams.
+class VideoEventsEventChannel {
+  private let channel: FlutterEventChannel
+
+  init(messenger: FlutterBinaryMessenger, instanceName: String = "") {
+    var channelName = "dev.flutter.pigeon.video_player_avfoundation.VideoEventChannel.videoEvents"
+    if !instanceName.isEmpty {
+      channelName += ".\(instanceName)"
+    }
+    channel = FlutterEventChannel(name: channelName, binaryMessenger: messenger, codec: messagesPigeonMethodCodec)
+  }
+
+  /// Sets the stream handler for this channel, replacing any previous handler.
+  /// 
+  /// Pass `nil` to remove the event channel registration.
+  func setStreamHandler(_ streamHandler: VideoEventsStreamHandler?) {
+    let internalHandler = streamHandler.map({ PigeonStreamHandler<PlatformVideoEvent>(wrapper: $0) })
+    channel.setStreamHandler(internalHandler)
+  }
+}
+
+class VideoEventsStreamHandler: PigeonEventChannelWrapper<PlatformVideoEvent> {
+  /// Creates and returns a new event channel that calls the provided stream handler.
+  /// 
+  /// The returned channel can be stored to allow changing or removing the stream handler.
+  /// If the handler will not be changed for the lifetime of the engine associated with the messenger,
+  /// the return value can be ignored.
+  @discardableResult static func register(
+    with messenger: FlutterBinaryMessenger,
+    instanceName: String = "",
+    streamHandler: VideoEventsStreamHandler
+  ) -> VideoEventsEventChannel {
+    let channel = VideoEventsEventChannel(messenger: messenger, instanceName: instanceName)
+    channel.setStreamHandler(streamHandler)
+    return channel
+  }
+}
+      

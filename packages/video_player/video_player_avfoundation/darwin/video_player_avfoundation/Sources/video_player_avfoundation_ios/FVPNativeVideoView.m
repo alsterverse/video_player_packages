@@ -18,7 +18,7 @@
 - (void)setPlayer:(AVPlayer *)player {
   ((AVPlayerLayer *)(self.layer)).player = player;
 
-  if (@available(iOS 16.0, *)) {
+  if (@available(iOS 17.0, *)) {
     self.layer.wantsExtendedDynamicRangeContent = YES;
   }
 }

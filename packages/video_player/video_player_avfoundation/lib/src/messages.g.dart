@@ -559,6 +559,438 @@ class NativeVideoTrackData {
   }
 }
 
+sealed class PlatformVideoEvent {}
+
+/// Sent when the video is initialized and ready to play.
+class InitializationEvent extends PlatformVideoEvent {
+  InitializationEvent({
+    required this.durationMilliseconds,
+    required this.width,
+    required this.height,
+  });
+
+  /// The video duration in milliseconds.
+  int durationMilliseconds;
+
+  /// The width of the video in pixels.
+  double width;
+
+  /// The height of the video in pixels.
+  double height;
+
+  List<Object?> _toList() {
+    return <Object?>[durationMilliseconds, width, height];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static InitializationEvent decode(Object result) {
+    result as List<Object?>;
+    return InitializationEvent(
+      durationMilliseconds: result[0]! as int,
+      width: result[1]! as double,
+      height: result[2]! as double,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! InitializationEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(durationMilliseconds, other.durationMilliseconds) &&
+        _deepEquals(width, other.width) &&
+        _deepEquals(height, other.height);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'InitializationEvent(durationMilliseconds: $durationMilliseconds, width: $width, height: $height)';
+  }
+}
+
+/// Sent when the video starts buffering.
+class BufferingStartEvent extends PlatformVideoEvent {
+  BufferingStartEvent();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BufferingStartEvent decode(Object result) {
+    result as List<Object?>;
+    return BufferingStartEvent();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BufferingStartEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BufferingStartEvent()';
+  }
+}
+
+/// Sent when the video ends buffering.
+class BufferingEndEvent extends PlatformVideoEvent {
+  BufferingEndEvent();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BufferingEndEvent decode(Object result) {
+    result as List<Object?>;
+    return BufferingEndEvent();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BufferingEndEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BufferingEndEvent()';
+  }
+}
+
+class PlatformDurationRange {
+  PlatformDurationRange({required this.startMilliseconds, required this.durationMilliseconds});
+
+  int startMilliseconds;
+
+  int durationMilliseconds;
+
+  List<Object?> _toList() {
+    return <Object?>[startMilliseconds, durationMilliseconds];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static PlatformDurationRange decode(Object result) {
+    result as List<Object?>;
+    return PlatformDurationRange(
+      startMilliseconds: result[0]! as int,
+      durationMilliseconds: result[1]! as int,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PlatformDurationRange || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(startMilliseconds, other.startMilliseconds) &&
+        _deepEquals(durationMilliseconds, other.durationMilliseconds);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'PlatformDurationRange(startMilliseconds: $startMilliseconds, durationMilliseconds: $durationMilliseconds)';
+  }
+}
+
+/// Sent when the video buffering position updates.
+class BufferingUpdateEvent extends PlatformVideoEvent {
+  BufferingUpdateEvent({required this.bufferedRanges});
+
+  List<PlatformDurationRange> bufferedRanges;
+
+  List<Object?> _toList() {
+    return <Object?>[bufferedRanges];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BufferingUpdateEvent decode(Object result) {
+    result as List<Object?>;
+    return BufferingUpdateEvent(
+      bufferedRanges: (result[0]! as List<Object?>).cast<PlatformDurationRange>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BufferingUpdateEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(bufferedRanges, other.bufferedRanges);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BufferingUpdateEvent(bufferedRanges: $bufferedRanges)';
+  }
+}
+
+/// Sent when playback completes.
+class PlaybackCompleteEvent extends PlatformVideoEvent {
+  PlaybackCompleteEvent();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static PlaybackCompleteEvent decode(Object result) {
+    result as List<Object?>;
+    return PlaybackCompleteEvent();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PlaybackCompleteEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'PlaybackCompleteEvent()';
+  }
+}
+
+/// Sent when the video starts or stops playing.
+class IsPlayingStateEvent extends PlatformVideoEvent {
+  IsPlayingStateEvent({required this.isPlaying});
+
+  bool isPlaying;
+
+  List<Object?> _toList() {
+    return <Object?>[isPlaying];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static IsPlayingStateEvent decode(Object result) {
+    result as List<Object?>;
+    return IsPlayingStateEvent(isPlaying: result[0]! as bool);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! IsPlayingStateEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(isPlaying, other.isPlaying);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'IsPlayingStateEvent(isPlaying: $isPlaying)';
+  }
+}
+
+/// Sent when the player starts loading a new item.
+class ReloadingStartEvent extends PlatformVideoEvent {
+  ReloadingStartEvent();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static ReloadingStartEvent decode(Object result) {
+    result as List<Object?>;
+    return ReloadingStartEvent();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ReloadingStartEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'ReloadingStartEvent()';
+  }
+}
+
+/// Sent the first time the engine is handed a decoded frame of the current
+/// asset.
+///
+/// Readiness is reported before the engine has asked the texture for anything,
+/// so a texture revealed on readiness alone is revealed a frame or so early.
+class FirstFrameRenderedEvent extends PlatformVideoEvent {
+  FirstFrameRenderedEvent();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static FirstFrameRenderedEvent decode(Object result) {
+    result as List<Object?>;
+    return FirstFrameRenderedEvent();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! FirstFrameRenderedEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'FirstFrameRenderedEvent()';
+  }
+}
+
+/// Sent when the player finishes loading a new item.
+class ReloadingEndEvent extends PlatformVideoEvent {
+  ReloadingEndEvent({
+    required this.durationMilliseconds,
+    required this.width,
+    required this.height,
+  });
+
+  /// The video duration in milliseconds.
+  int durationMilliseconds;
+
+  /// The width of the video in pixels.
+  double width;
+
+  /// The height of the video in pixels.
+  double height;
+
+  List<Object?> _toList() {
+    return <Object?>[durationMilliseconds, width, height];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static ReloadingEndEvent decode(Object result) {
+    result as List<Object?>;
+    return ReloadingEndEvent(
+      durationMilliseconds: result[0]! as int,
+      width: result[1]! as double,
+      height: result[2]! as double,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! ReloadingEndEvent || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(durationMilliseconds, other.durationMilliseconds) &&
+        _deepEquals(width, other.width) &&
+        _deepEquals(height, other.height);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'ReloadingEndEvent(durationMilliseconds: $durationMilliseconds, width: $width, height: $height)';
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -590,6 +1022,36 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is NativeVideoTrackData) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
+    } else if (value is InitializationEvent) {
+      buffer.putUint8(137);
+      writeValue(buffer, value.encode());
+    } else if (value is BufferingStartEvent) {
+      buffer.putUint8(138);
+      writeValue(buffer, value.encode());
+    } else if (value is BufferingEndEvent) {
+      buffer.putUint8(139);
+      writeValue(buffer, value.encode());
+    } else if (value is PlatformDurationRange) {
+      buffer.putUint8(140);
+      writeValue(buffer, value.encode());
+    } else if (value is BufferingUpdateEvent) {
+      buffer.putUint8(141);
+      writeValue(buffer, value.encode());
+    } else if (value is PlaybackCompleteEvent) {
+      buffer.putUint8(142);
+      writeValue(buffer, value.encode());
+    } else if (value is IsPlayingStateEvent) {
+      buffer.putUint8(143);
+      writeValue(buffer, value.encode());
+    } else if (value is ReloadingStartEvent) {
+      buffer.putUint8(144);
+      writeValue(buffer, value.encode());
+    } else if (value is FirstFrameRenderedEvent) {
+      buffer.putUint8(145);
+      writeValue(buffer, value.encode());
+    } else if (value is ReloadingEndEvent) {
+      buffer.putUint8(146);
+      writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
     }
@@ -614,11 +1076,33 @@ class _PigeonCodec extends StandardMessageCodec {
         return AssetVideoTrackData.decode(readValue(buffer)!);
       case 136:
         return NativeVideoTrackData.decode(readValue(buffer)!);
+      case 137:
+        return InitializationEvent.decode(readValue(buffer)!);
+      case 138:
+        return BufferingStartEvent.decode(readValue(buffer)!);
+      case 139:
+        return BufferingEndEvent.decode(readValue(buffer)!);
+      case 140:
+        return PlatformDurationRange.decode(readValue(buffer)!);
+      case 141:
+        return BufferingUpdateEvent.decode(readValue(buffer)!);
+      case 142:
+        return PlaybackCompleteEvent.decode(readValue(buffer)!);
+      case 143:
+        return IsPlayingStateEvent.decode(readValue(buffer)!);
+      case 144:
+        return ReloadingStartEvent.decode(readValue(buffer)!);
+      case 145:
+        return FirstFrameRenderedEvent.decode(readValue(buffer)!);
+      case 146:
+        return ReloadingEndEvent.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
   }
 }
+
+const StandardMethodCodec pigeonMethodCodec = StandardMethodCodec(_PigeonCodec());
 
 class AVFoundationVideoPlayerApi {
   /// Constructor for [AVFoundationVideoPlayerApi]. The [binaryMessenger] named argument is
@@ -947,4 +1431,23 @@ class VideoPlayerInstanceApi {
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
     _extractReplyValueOrThrow(pigeonVar_replyList, pigeonVar_channelName, isNullValid: true);
   }
+}
+
+/// Returns a broadcast [Stream] of events from the `videoEvents` event channel.
+///
+/// Each call to this method creates a new [EventChannel], so it should
+/// not be called multiple times for the same `instanceName`. To deliver
+/// events to multiple listeners, call this method once and listen to the
+/// returned broadcast stream multiple times instead.
+Stream<PlatformVideoEvent> videoEvents({String instanceName = ''}) {
+  if (instanceName.isNotEmpty) {
+    instanceName = '.$instanceName';
+  }
+  final EventChannel videoEventsChannel = EventChannel(
+    'dev.flutter.pigeon.video_player_avfoundation.VideoEventChannel.videoEvents$instanceName',
+    pigeonMethodCodec,
+  );
+  return videoEventsChannel.receiveBroadcastStream().map((dynamic event) {
+    return event as PlatformVideoEvent;
+  });
 }
